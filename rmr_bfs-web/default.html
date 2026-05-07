@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Infinite 3D Point Grid</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body { width: 100%; height: 100%; overflow: hidden; background: #ffffff; }
+            #pageBackground { position: fixed; inset: 0; overflow: hidden; }
+        </style>
+    </head>
+    <body>
+        <div id="pageBackground"></div>
+        <script>
+            /**
+             * startPointGrid(containerId)
+             *   Mounts the infinite 3-D point grid into the element with the given id.
+             *   Returns a Promise that resolves to { stop } once running.
+             *   stop() tears down the animation and removes the canvas.
+             *
+             * @param {string} [containerId='pageBackground']
+             * @returns {Promise<{ stop: () => void }>}
+             */
+            window.startPointGrid = async function startPointGrid(containerId = 'pageBackground') {
+                const THREE = await import('https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js');
+
+                const container = document.getElementById(containerId);
+                if (!container) throw new Error(`No element found with id "${containerId}"`);
+
+                // Ensure the container is a positioned block so the canvas's
+                // position:absolute resolves to it, not a parent element.
+                const existingPosition = getComputedStyle(container).position;
+                if (existingPosition === 'static') {
+                    container.style.position = 'relative';
+                }
+
+                // --- Renderer ---
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setClearColor(0x000000, 0);
+                container.appendChild(renderer.domElement);
+                const canvas = renderer.domElement;
+                canvas.style.display  = 'block';
+                canvas.style.position = 'absolute';
+                canvas.style.inset    = '0';
+                canvas.style.zIndex   = '-1';
+                // Size to container — attributes will match actual pixel dimensions
+                renderer.setSize(container.clientWidth, container.clientHeight);
+
+                // --- Scene ---
+                const scene = new THREE.Scene();
+
+                // --- Camera ---
+                const camera = new THREE.PerspectiveCamera(
+                    70,
+                    container.clientWidth / container.clientHeight,
+                    0.1,
+                    300
+                );
+                camera.position.set(1, 1, 0);
+
+                // --- Grid config ---
+                const spacing  = 2;
+                const xyExtent = 18;
+                const numSlabs = 15;
+                const speed    = 1;
+                const uFarDist = numSlabs * spacing;
+
+                // --- Material ---
+                const material = new THREE.ShaderMaterial({
+                    transparent: true,
+                    depthWrite: false,
+                    vertexShader: `
+                        varying float vWorldZ;
+                        void main() {
+                            vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                            vWorldZ = worldPos.z;
+                            gl_Position = projectionMatrix * viewMatrix * worldPos;
+                            gl_PointSize = 3.0;
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform float uCameraZ;
+                        uniform float uFarDist;
+                        uniform vec3  uColor;
+                        varying float vWorldZ;
+                        void main() {
+                            float dist  = uCameraZ - vWorldZ;
+                            float alpha = 1.0 - clamp(dist / uFarDist, 0.0, 1.0);
+                            if (alpha < 0.01) discard;
+                            gl_FragColor = vec4(uColor, alpha);
+                        }
+                    `,
+                    uniforms: {
+                        uCameraZ: { value: 0.0 },
+                        uFarDist: { value: uFarDist },
+                        uColor:   { value: new THREE.Color(0x074f89) },
+                    },
+                });
+
+                // --- Slab pool ---
+                const slabs = new Map();
+                let currentMinZIdx = null;
+                let currentMaxZIdx = null;
+
+                function createSlab(zIdx) {
+                    if (slabs.has(zIdx)) return;
+                    const z = zIdx * spacing;
+                    const positions = [];
+                    for (let x = -xyExtent; x <= xyExtent; x++) {
+                        for (let y = -xyExtent; y <= xyExtent; y++) {
+                            positions.push(x * spacing, y * spacing, z);
+                        }
+                    }
+                    const geo = new THREE.BufferGeometry();
+                    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                    const pts = new THREE.Points(geo, material);
+                    scene.add(pts);
+                    slabs.set(zIdx, pts);
+                }
+
+                function removeSlab(zIdx) {
+                    const pts = slabs.get(zIdx);
+                    if (!pts) return;
+                    scene.remove(pts);
+                    pts.geometry.dispose();
+                    slabs.delete(zIdx);
+                }
+
+                function updateSlabs() {
+                    const camZIdx    = Math.floor(camera.position.z / spacing);
+                    const newMaxZIdx = camZIdx;
+                    const newMinZIdx = camZIdx - numSlabs;
+
+                    if (currentMinZIdx === null) {
+                        for (let z = newMinZIdx; z <= newMaxZIdx; z++) createSlab(z);
+                    } else {
+                        for (let z = newMinZIdx; z < currentMinZIdx; z++) createSlab(z);
+                        for (let z = newMaxZIdx + 1; z <= currentMaxZIdx; z++) removeSlab(z);
+                    }
+
+                    currentMinZIdx = newMinZIdx;
+                    currentMaxZIdx = newMaxZIdx;
+                }
+
+                // --- Origin reset (float precision guard) ---
+                const resetPeriod = numSlabs * spacing;
+
+                function maybeResetOrigin() {
+                    if (camera.position.z > -resetPeriod) return;
+
+                    camera.position.z += resetPeriod;
+                    material.uniforms.uCameraZ.value = camera.position.z;
+
+                    const shiftIdx = numSlabs;
+                    const rebuilt  = new Map();
+                    for (const [zIdx, pts] of slabs) {
+                        pts.position.z += resetPeriod;
+                        rebuilt.set(zIdx + shiftIdx, pts);
+                    }
+                    slabs.clear();
+                    for (const [k, v] of rebuilt) slabs.set(k, v);
+
+                    if (currentMinZIdx !== null) currentMinZIdx += shiftIdx;
+                    if (currentMaxZIdx !== null) currentMaxZIdx += shiftIdx;
+                }
+
+                // --- Resize ---
+                function onResize() {
+                    camera.aspect = container.clientWidth / container.clientHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(container.clientWidth, container.clientHeight);
+                }
+                const resizeObserver = new ResizeObserver(onResize);
+                resizeObserver.observe(container);
+                onResize(); // run once immediately to match current size
+
+                // --- Mouse tracking ---
+                const mouse      = new THREE.Vector2(Infinity, Infinity);
+                const raycaster  = new THREE.Raycaster();
+
+                let lastClientX = null, lastClientY = null;
+
+                function updateMouseNDC(clientX, clientY) {
+                    const rect = canvas.getBoundingClientRect();
+                    mouse.x =  ((clientX - rect.left) / rect.width)  * 2 - 1;
+                    mouse.y = -((clientY - rect.top)  / rect.height) * 2 + 1;
+                }
+
+                container.addEventListener('mousemove', e => {
+                    lastClientX = e.clientX;
+                    lastClientY = e.clientY;
+                    updateMouseNDC(e.clientX, e.clientY);
+                });
+                container.addEventListener('mouseleave', () => {
+                    lastClientX = lastClientY = null;
+                    mouse.set(Infinity, Infinity);
+                });
+                window.addEventListener('scroll', () => {
+                    if (lastClientX !== null) updateMouseNDC(lastClientX, lastClientY);
+                }, { passive: true });
+
+                // --- Mouse line geometry ---
+                const MAX_LINES    = 1024;
+                const linePosBuf   = new Float32Array(MAX_LINES * 6); // 2 verts * xyz
+                const lineAlphaBuf = new Float32Array(MAX_LINES * 2); // 1 alpha per vert
+
+                const lineGeo = new THREE.BufferGeometry();
+                lineGeo.setAttribute('position',
+                    new THREE.BufferAttribute(linePosBuf,   3).setUsage(THREE.DynamicDrawUsage));
+                lineGeo.setAttribute('aAlpha',
+                    new THREE.BufferAttribute(lineAlphaBuf, 1).setUsage(THREE.DynamicDrawUsage));
+                lineGeo.setDrawRange(0, 0);
+
+                const lineMat = new THREE.ShaderMaterial({
+                    transparent: true,
+                    depthWrite: false,
+                    vertexShader: `
+                        attribute float aAlpha;
+                        varying   float vAlpha;
+                        void main() {
+                            vAlpha      = aAlpha;
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform vec3  uColor;
+                        varying float vAlpha;
+                        void main() {
+                            if (vAlpha < 0.01) discard;
+                            gl_FragColor = vec4(uColor, vAlpha);
+                        }
+                    `,
+                    uniforms: {
+                        uColor: { value: material.uniforms.uColor.value },
+                    },
+                });
+                const lineSegments = new THREE.LineSegments(lineGeo, lineMat);
+                lineSegments.frustumCulled = false; // bounding sphere is never computed on dynamic buffer
+                scene.add(lineSegments);
+
+                // --- Mouse line update ---
+                const _hitRadius = spacing * 1; // world-unit XY proximity threshold
+
+                function updateMouseLines() {
+                    if (mouse.x === Infinity) { lineGeo.setDrawRange(0, 0); return; }
+
+                    raycaster.setFromCamera(mouse, camera);
+                    const ro = raycaster.ray.origin;
+                    const rd = raycaster.ray.direction;
+
+                    let lineCount = 0;
+
+                    for (const [, pts] of slabs) {
+                        // World Z of this slab — geometry local Z + object position offset
+                        const worldZ = pts.geometry.attributes.position.getZ(0) + pts.position.z;
+
+                        // Ray-plane intersection at this slab's Z
+                        if (Math.abs(rd.z) < 0.0001) continue;
+                        const t = (worldZ - ro.z) / rd.z;
+                        if (t < 0.01) continue;
+
+                        const hitX = ro.x + rd.x * t;
+                        const hitY = ro.y + rd.y * t;
+
+                        // Depth-based alpha — mirrors the point shader
+                        const depthDist = camera.position.z - worldZ;
+                        const slabAlpha = 1.0 - Math.max(0, Math.min(1, depthDist / uFarDist));
+                        if (slabAlpha < 0.01) continue;
+
+                        // Grid indices of nearby points in XY
+                        const gxMin = Math.max(-xyExtent, Math.ceil( (hitX - _hitRadius) / spacing));
+                        const gxMax = Math.min( xyExtent, Math.floor((hitX + _hitRadius) / spacing));
+                        const gyMin = Math.max(-xyExtent, Math.ceil( (hitY - _hitRadius) / spacing));
+                        const gyMax = Math.min( xyExtent, Math.floor((hitY + _hitRadius) / spacing));
+
+                        for (let gx = gxMin; gx <= gxMax && lineCount < MAX_LINES; gx++) {
+                            for (let gy = gyMin; gy <= gyMax && lineCount < MAX_LINES; gy++) {
+                                const px = gx * spacing;
+                                const py = gy * spacing;
+
+                                const dx2d   = px - hitX;
+                                const dy2d   = py - hitY;
+                                const dist2d = Math.sqrt(dx2d * dx2d + dy2d * dy2d);
+                                const fade   = 1.0 - dist2d / _hitRadius;
+                                if (fade <= 0) continue;
+
+                                const alpha = slabAlpha * fade;
+                                const base  = lineCount * 6;
+                                const ab    = lineCount * 2;
+
+                                // Segment: grid point -> ray intersection at same Z
+                                linePosBuf[base]     = px;   linePosBuf[base + 1] = py;   linePosBuf[base + 2] = worldZ;
+                                linePosBuf[base + 3] = hitX; linePosBuf[base + 4] = hitY; linePosBuf[base + 5] = worldZ;
+                                lineAlphaBuf[ab]     = alpha;
+                                lineAlphaBuf[ab + 1] = alpha * 0.2; // fade toward cursor end
+
+                                lineCount++;
+                            }
+                        }
+                    }
+
+                    lineGeo.attributes.position.needsUpdate = true;
+                    lineGeo.attributes.aAlpha.needsUpdate   = true;
+                    lineGeo.setDrawRange(0, lineCount * 2);
+                    if (lineCount > 0) lineGeo.computeBoundingSphere();
+                }
+
+                // --- Render loop ---
+                const clock = new THREE.Clock();
+                let rafId   = null;
+                let running = true;
+
+                function animate() {
+                    if (!running) return;
+                    rafId = requestAnimationFrame(animate);
+                    const delta = clock.getDelta();
+
+                    camera.position.z -= speed * delta;
+                    material.uniforms.uCameraZ.value = camera.position.z;
+
+                    maybeResetOrigin();
+                    updateSlabs();
+                    updateMouseLines();
+                    renderer.render(scene, camera);
+                }
+
+                animate();
+
+                // --- Stop / teardown ---
+                function stop() {
+                    running = false;
+                    if (rafId !== null) cancelAnimationFrame(rafId);
+                    resizeObserver.disconnect();
+                    scene.remove(lineSegments);
+                    lineGeo.dispose();
+                    lineMat.dispose();
+                    for (const zIdx of [...slabs.keys()]) removeSlab(zIdx);
+                    material.dispose();
+                    renderer.dispose();
+                    if (renderer.domElement.parentNode) {
+                        renderer.domElement.parentNode.removeChild(renderer.domElement);
+                    }
+                }
+
+                return { stop };
+            };
+
+            // Auto-start on page load
+            startPointGrid('pageBackground');
+        </script>
+    </body>
+</html>
