@@ -6,5 +6,5 @@ async function loadGLSL(path) {
 
 const base = new URL('../glsl/', import.meta.url);
 
-export const LINE_VERTEX   = await loadGLSL(new URL('line.vert.glsl', base));
-export const LINE_FRAGMENT = await loadGLSL(new URL('line.frag.glsl', base));
+export const CUBE_VERTEX   = await loadGLSL(new URL('cube.vert.glsl', base));
+export const CUBE_FRAGMENT = await loadGLSL(new URL('cube.frag.glsl', base));

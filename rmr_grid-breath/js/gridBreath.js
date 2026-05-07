@@ -154,7 +154,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
         const mat = new THREE.ShaderMaterial({
             transparent:    true,
             depthWrite:     false,
-            vertexShader:   `uniform float uPointSize;\n` + POINT_VERTEX,
+            vertexShader:   POINT_VERTEX,
             fragmentShader: POINT_FRAGMENT,
             uniforms: {
                 uPointSize:  { value: pointSize },

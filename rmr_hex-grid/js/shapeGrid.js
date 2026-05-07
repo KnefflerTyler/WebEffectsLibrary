@@ -1,113 +1,8 @@
 import { THREE_CDN, DEFAULTS } from './config.js';
 import { LINE_VERTEX, LINE_FRAGMENT } from './shaders.js';
-
-// ── Shared edge-deduplication helpers ────────────────────────────────────────
-const PREC  = 10;
-const round = v => Math.round(v * PREC) / PREC;
-
-function edgeKey(x1, y1, x2, y2) {
-    const ax = round(x1), ay = round(y1);
-    const bx = round(x2), by = round(y2);
-    if (ax < bx || (ax === bx && ay <= by)) return `${ax},${ay}|${bx},${by}`;
-    return `${bx},${by}|${ax},${ay}`;
-}
-
-function addEdge(seen, verts, x1, y1, x2, y2) {
-    const key = edgeKey(x1, y1, x2, y2);
-    if (!seen.has(key)) {
-        seen.add(key);
-        verts.push(x1, y1, 0, x2, y2, 0);
-    }
-}
-
-// ── Layout builders ───────────────────────────────────────────────────────────
-
-function buildHex(w, h, S) {
-    // Flat-top hexagons.  S = circumradius.
-    const hx      = 1.5 * S;
-    const hy      = Math.sqrt(3) * S;
-    const cols    = Math.ceil(w / hx) + 2;
-    const rows    = Math.ceil(h / hy) + 2;
-    const originX = -((cols - 1) * hx) / 2;
-    const originY = -((rows - 1) * hy) / 2;
-
-    const seen = new Set(), verts = [];
-    for (let col = 0; col < cols; col++) {
-        for (let row = 0; row < rows; row++) {
-            const cx = originX + col * hx;
-            const cy = originY + row * hy + (col % 2 === 1 ? hy / 2 : 0);
-            const vx = [], vy = [];
-            for (let i = 0; i < 6; i++) {
-                const a = (i * Math.PI) / 3;
-                vx[i] = cx + S * Math.cos(a);
-                vy[i] = cy + S * Math.sin(a);
-            }
-            for (let i = 0; i < 6; i++) {
-                const j = (i + 1) % 6;
-                addEdge(seen, verts, vx[i], vy[i], vx[j], vy[j]);
-            }
-        }
-    }
-    return new Float32Array(verts);
-}
-
-function buildSquare(w, h, S) {
-    // Axis-aligned squares.  S = side length.
-    const cols    = Math.ceil(w / S) + 2;
-    const rows    = Math.ceil(h / S) + 2;
-    const originX = -((cols - 1) * S) / 2;
-    const originY = -((rows - 1) * S) / 2;
-
-    const seen = new Set(), verts = [];
-    for (let col = 0; col < cols; col++) {
-        for (let row = 0; row < rows; row++) {
-            const x0 = originX + col * S;
-            const y0 = originY + row * S;
-            const x1 = x0 + S, y1 = y0 + S;
-            addEdge(seen, verts, x0, y0, x1, y0);
-            addEdge(seen, verts, x1, y0, x1, y1);
-            addEdge(seen, verts, x1, y1, x0, y1);
-            addEdge(seen, verts, x0, y1, x0, y0);
-        }
-    }
-    return new Float32Array(verts);
-}
-
-function buildTriangle(w, h, S) {
-    // Equilateral triangles, alternating up/down rows.  S = side length.
-    // Slot (r,c): up-pointing when (r+c) is even, down-pointing when odd.
-    const ht      = S * Math.sqrt(3) / 2;
-    const slotW   = S / 2;
-    const nCols   = Math.ceil(w / slotW) + 4;
-    const nRows   = Math.ceil(h / ht)   + 2;
-    const originX = -(nCols * slotW) / 2;
-    const originY = -(nRows * ht)    / 2;
-
-    const seen = new Set(), verts = [];
-    for (let r = 0; r < nRows; r++) {
-        for (let c = 0; c < nCols; c++) {
-            const x0 = originX + c * slotW;
-            const y0 = originY + r * ht;
-            const y1 = y0 + ht;
-            const xR = x0 + S;
-
-            if ((r + c) % 2 === 0) {
-                // Up-pointing ▲: base at y0, apex at y1
-                addEdge(seen, verts, x0, y0, xR, y0);
-                addEdge(seen, verts, x0, y0, x0 + slotW, y1);
-                addEdge(seen, verts, xR, y0, x0 + slotW, y1);
-            } else {
-                // Down-pointing ▽: base at y1, apex at y0
-                addEdge(seen, verts, x0, y1, xR, y1);
-                addEdge(seen, verts, x0, y1, x0 + slotW, y0);
-                addEdge(seen, verts, xR, y1, x0 + slotW, y0);
-            }
-        }
-    }
-    return new Float32Array(verts);
-}
-
-// ── Main entry point ──────────────────────────────────────────────────────────
+import { buildGridGeometry } from './gridGeometry.js';
+import { createSpotlightAgents, updateSpotlightAgents } from './spotlight.js';
+import { RippleSystem } from './ripple.js';
 
 /**
  * Render a static tessellating shape grid that fills the full viewport.
@@ -141,12 +36,16 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     container.appendChild(canvas);
 
     // ── Scene — orthographic camera, 1 world unit = 1 pixel ──────────────────
-    const scene = new THREE.Scene();
+    const scene         = new THREE.Scene();
     let camera;
-    let linesMesh      = null;
-    let currentPosArray = null; // Float32Array of vertex positions (world pixels)
-    let alphaBuf        = null; // Float32Array CPU-side lerp state, one value per vertex
+    let linesMesh       = null;
+    let currentPosArray = null;
+    let alphaBuf        = null;
+    let spotlightAgents = null;
     let canvasW = 0, canvasH = 0;
+
+    // ── Sub-systems ───────────────────────────────────────────────────────────
+    const rippleSystem = new RippleSystem(cfg);
 
     // ── Mouse state (world / pixel coords) ───────────────────────────────────
     const mouse     = { wx: Infinity, wy: Infinity };
@@ -161,13 +60,16 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     }
 
     function onMouseMove(e) {
+        if (!cfg.mouseReveal) return;
         lastClientX = e.clientX;
         lastClientY = e.clientY;
         updateMouseWorld();
+        rippleSystem.onMouseMove(mouse.wx, mouse.wy);
     }
 
     container.addEventListener('mousemove',  onMouseMove);
     container.addEventListener('mouseleave', () => {
+        if (!cfg.mouseReveal) return;
         mouse.wx = mouse.wy = Infinity;
         lastClientX = lastClientY = Infinity;
     });
@@ -177,15 +79,10 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     function buildGrid(w, h) {
         canvasW = w;
         canvasH = h;
-        camera = new THREE.OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, -1, 1);
+        camera  = new THREE.OrthographicCamera(-w / 2, w / 2, h / 2, -h / 2, -1, 1);
 
-        const S = cfg.cellSize;
-        let posArray;
-        switch (cfg.shape) {
-            case 'square':   posArray = buildSquare(w, h, S);   break;
-            case 'triangle': posArray = buildTriangle(w, h, S); break;
-            default:         posArray = buildHex(w, h, S);      break;
-        }
+        const posArray  = buildGridGeometry(cfg.shape, w, h, cfg.cellSize, cfg);
+        const vertCount = posArray.length / 3;
 
         if (linesMesh) {
             scene.remove(linesMesh);
@@ -193,10 +90,9 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
             linesMesh.material.dispose();
         }
 
-        const vertCount  = posArray.length / 3;
-        currentPosArray  = posArray;
-        alphaBuf         = new Float32Array(vertCount);
-        const alphaGpu   = new Float32Array(vertCount);
+        currentPosArray = posArray;
+        alphaBuf        = new Float32Array(vertCount);
+        const alphaGpu  = new Float32Array(vertCount);
 
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
@@ -212,6 +108,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
                 uColor:      { value: new THREE.Color(cfg.color) },
                 uHoverColor: { value: new THREE.Color(cfg.hoverColor) },
                 uMinOpacity: { value: cfg.opacity },
+                uMaxOpacity: { value: cfg.maxOpacity ?? 1.0 },
             },
         });
 
@@ -220,6 +117,10 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
 
         renderer.setSize(w, h);
         updateMouseWorld();
+
+        if (cfg.spotlight) {
+            spotlightAgents = createSpotlightAgents(cfg.spotlightCount, w, h, cfg);
+        }
     }
 
     // ── Resize ────────────────────────────────────────────────────────────────
@@ -231,8 +132,8 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     onResize();
 
     // ── Render loop ───────────────────────────────────────────────────────────
-    let rafId   = null;
-    let running = true;
+    let rafId    = null;
+    let running  = true;
     let lastTime = performance.now();
 
     function animate() {
@@ -243,29 +144,62 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
         const dt  = Math.min((now - lastTime) / 1000, 0.1);
         lastTime  = now;
 
-        if (linesMesh && alphaBuf && currentPosArray) {
-            const alphaAttr = linesMesh.geometry.attributes.aAlpha;
-            const alphaArr  = alphaAttr.array;
-            const radius    = cfg.hoverRadius;
-            const kIn       = 1 - Math.exp(-cfg.fadeInSpeed  * dt);
-            const kOut      = 1 - Math.exp(-cfg.fadeOutSpeed * dt);
-            const { wx, wy } = mouse;
-            const infinite  = wx === Infinity;
-            const vertCount = alphaBuf.length;
+        // Advance ripple system
+        if (cfg.ripple) rippleSystem.tick(dt);
 
+        if (linesMesh && alphaBuf && currentPosArray) {
+            const alphaAttr  = linesMesh.geometry.attributes.aAlpha;
+            const alphaArr   = alphaAttr.array;
+            const radius     = cfg.hoverRadius;
+            const kIn        = 1 - Math.exp(-cfg.fadeInSpeed  * dt);
+            const kOut       = 1 - Math.exp(-cfg.fadeOutSpeed * dt);
+            const { wx, wy } = mouse;
+            const infinite   = wx === Infinity;
+            const vertCount  = alphaBuf.length;
+            const rippleOn    = cfg.ripple && rippleSystem.ripples.length > 0;
+            const slRadius    = cfg.spotlightRadius ?? radius;
+
+            // Advance spotlight agents
+            if (cfg.spotlight && spotlightAgents) {
+                updateSpotlightAgents(
+                    spotlightAgents, dt, canvasW, canvasH, cfg,
+                    cfg.ripple ? rippleSystem.ripples : null,
+                );
+            }
+
+            // Ripple × spotlight collision
+            if (cfg.ripple && cfg.spotlight && cfg.spotlightRippleCollision && spotlightAgents) {
+                rippleSystem.checkSpotlightCollisions(spotlightAgents, dt);
+            }
+
+            // Per-vertex alpha update
             for (let i = 0; i < vertCount; i++) {
+                const px = currentPosArray[i * 3];
+                const py = currentPosArray[i * 3 + 1];
                 let target = 0;
-                if (!infinite) {
-                    const px   = currentPosArray[i * 3];
-                    const py   = currentPosArray[i * 3 + 1];
+
+                if (!infinite && cfg.mouseReveal) {
                     const dx   = px - wx;
                     const dy   = py - wy;
                     const dist = Math.sqrt(dx * dx + dy * dy);
-                    target = Math.max(0, 1 - dist / radius);
+                    target = Math.max(target, Math.max(0, 1 - dist / radius));
                 }
+
+                if (cfg.spotlight && spotlightAgents) {
+                    for (const agent of spotlightAgents) {
+                        const dx   = px - agent.x;
+                        const dy   = py - agent.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        target = Math.max(target, Math.max(0, 1 - dist / slRadius));
+                    }
+                }
+
                 const k = target > alphaBuf[i] ? kIn : kOut;
                 alphaBuf[i] += (target - alphaBuf[i]) * k;
-                alphaArr[i]  = alphaBuf[i];
+
+                alphaArr[i] = rippleOn
+                    ? Math.max(alphaBuf[i], rippleSystem.alphaAt(px, py))
+                    : alphaBuf[i];
             }
 
             alphaAttr.needsUpdate = true;
@@ -280,6 +214,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
         stop() {
             running = false;
             if (rafId !== null) cancelAnimationFrame(rafId);
+            rippleSystem.cancelStopTimer();
             resizeObserver.disconnect();
             container.removeEventListener('mousemove',  onMouseMove);
             window.removeEventListener('scroll', updateMouseWorld);
@@ -295,4 +230,4 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
 }
 
 window.startShapeGrid = startShapeGrid;
-startShapeGrid('pageBody');
+startShapeGrid('pageBody', { spotlight: true });
