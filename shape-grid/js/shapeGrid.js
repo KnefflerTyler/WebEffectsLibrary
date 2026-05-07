@@ -230,4 +230,4 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
 }
 
 window.startShapeGrid = startShapeGrid;
-startShapeGrid('pageBody', { spotlight: true });
+startShapeGrid('pageBackground', { spotlight: true });
