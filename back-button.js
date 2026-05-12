@@ -1,4 +1,5 @@
 (() => {
+    if (new URLSearchParams(window.location.search).has('preview')) return;
     const btn = document.createElement('a');
     btn.href      = '../index.html';
     btn.innerText = '← Back';
