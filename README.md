@@ -2,7 +2,7 @@
 
 A collection of interactive WebGL/Three.js visual effects, each self-contained in its own directory.
 
-**Live site:** [https://knefflertyler.github.io/WebEffectsLibrary/](https://knefflertyler.github.io/WebEffectsLibrary/)
+**Live site:** [https://tylerkneffler.github.io/WebEffectsLibrary/](https://knefflertyler.github.io/WebEffectsLibrary/)
 
 ## Effects
 
