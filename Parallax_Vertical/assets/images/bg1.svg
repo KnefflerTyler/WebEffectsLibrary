@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" width="800" height="1200">
+  <defs>
+    <radialGradient id="orb1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#b06fff" stop-opacity="0.55"/>
+      <stop offset="55%"  stop-color="#6030c0" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#6030c0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#60c8ff" stop-opacity="0.45"/>
+      <stop offset="55%"  stop-color="#2060b0" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#2060b0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#ff70c0" stop-opacity="0.40"/>
+      <stop offset="55%"  stop-color="#a02060" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#a02060" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb4" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#ffe060" stop-opacity="0.35"/>
+      <stop offset="55%"  stop-color="#c07010" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#c07010" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background fill -->
+  <rect width="800" height="1200" fill="#03021a"/>
+
+  <!-- Row 0 — y ≈ 0–200 -->
+  <ellipse cx="120"  cy="80"   rx="90"  ry="90"  fill="url(#orb1)"/>
+  <ellipse cx="480"  cy="50"   rx="70"  ry="70"  fill="url(#orb2)"/>
+  <ellipse cx="700"  cy="150"  rx="110" ry="110" fill="url(#orb3)"/>
+  <ellipse cx="300"  cy="170"  rx="55"  ry="55"  fill="url(#orb4)"/>
+
+  <!-- Row 1 — y ≈ 200–400 -->
+  <ellipse cx="60"   cy="290"  rx="75"  ry="75"  fill="url(#orb2)"/>
+  <ellipse cx="380"  cy="310"  rx="100" ry="100" fill="url(#orb1)"/>
+  <ellipse cx="620"  cy="260"  rx="65"  ry="65"  fill="url(#orb4)"/>
+  <ellipse cx="760"  cy="370"  rx="80"  ry="80"  fill="url(#orb3)"/>
+  <ellipse cx="200"  cy="385"  rx="50"  ry="50"  fill="url(#orb2)"/>
+
+  <!-- Row 2 — y ≈ 400–600 -->
+  <ellipse cx="130"  cy="480"  rx="95"  ry="95"  fill="url(#orb3)"/>
+  <ellipse cx="460"  cy="450"  rx="70"  ry="70"  fill="url(#orb1)"/>
+  <ellipse cx="680"  cy="510"  rx="85"  ry="85"  fill="url(#orb2)"/>
+  <ellipse cx="310"  cy="570"  rx="60"  ry="60"  fill="url(#orb4)"/>
+  <ellipse cx="790"  cy="480"  rx="55"  ry="55"  fill="url(#orb1)"/>
+
+  <!-- Row 3 — y ≈ 600–800 -->
+  <ellipse cx="50"   cy="670"  rx="80"  ry="80"  fill="url(#orb4)"/>
+  <ellipse cx="280"  cy="700"  rx="105" ry="105" fill="url(#orb2)"/>
+  <ellipse cx="560"  cy="650"  rx="70"  ry="70"  fill="url(#orb3)"/>
+  <ellipse cx="730"  cy="760"  rx="90"  ry="90"  fill="url(#orb1)"/>
+  <ellipse cx="420"  cy="790"  rx="55"  ry="55"  fill="url(#orb4)"/>
+
+  <!-- Row 4 — y ≈ 800–1000 -->
+  <ellipse cx="150"  cy="870"  rx="75"  ry="75"  fill="url(#orb1)"/>
+  <ellipse cx="500"  cy="840"  rx="95"  ry="95"  fill="url(#orb3)"/>
+  <ellipse cx="710"  cy="920"  rx="65"  ry="65"  fill="url(#orb2)"/>
+  <ellipse cx="330"  cy="970"  rx="80"  ry="80"  fill="url(#orb4)"/>
+  <ellipse cx="40"   cy="960"  rx="50"  ry="50"  fill="url(#orb3)"/>
+
+  <!-- Row 5 — y ≈ 1000–1200 -->
+  <ellipse cx="230"  cy="1060" rx="90"  ry="90"  fill="url(#orb2)"/>
+  <ellipse cx="590"  cy="1040" rx="70"  ry="70"  fill="url(#orb1)"/>
+  <ellipse cx="770"  cy="1110" rx="85"  ry="85"  fill="url(#orb4)"/>
+  <ellipse cx="80"   cy="1140" rx="60"  ry="60"  fill="url(#orb3)"/>
+  <ellipse cx="420"  cy="1170" rx="75"  ry="75"  fill="url(#orb2)"/>
+</svg>

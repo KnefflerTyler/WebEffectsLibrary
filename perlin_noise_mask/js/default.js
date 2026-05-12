@@ -99,3 +99,56 @@ const clock = new THREE.Clock();
     uniforms.uTime.value = clock.getElapsedTime();
     renderer.render(scene, camera);
 })();
+
+// ── Settings panel ────────────────────────────────────────────────────────────
+
+(function initSettings() {
+    const NS    = 'pn:';
+    const btn   = document.getElementById('spBtn');
+    const panel = document.getElementById('spPanel');
+    if (!btn || !panel) return;
+
+    btn.addEventListener('click', () => {
+        btn.classList.toggle('sp-open');
+        panel.classList.toggle('sp-open');
+    });
+    document.addEventListener('click', (e) => {
+        if (!panel.contains(e.target) && e.target !== btn) {
+            btn.classList.remove('sp-open');
+            panel.classList.remove('sp-open');
+        }
+    });
+
+    const reg = [];
+    function wire(id, valId, decimals, onInput) {
+        const el  = document.getElementById(id);
+        const val = valId ? document.getElementById(valId) : null;
+        if (!el) return;
+        reg.push({ id, el, val, decimals, onInput });
+        el.addEventListener('input', () => {
+            const v = el.type === 'checkbox' ? el.checked : +el.value;
+            localStorage.setItem(NS + id, el.type === 'checkbox' ? String(v) : el.value);
+            if (val) val.textContent = el.type === 'checkbox' ? '' : (+el.value).toFixed(decimals);
+            onInput(v);
+        });
+    }
+
+    wire('cfgScale',     'valScale',     1, v => { uniforms.uScale.value        = v; });
+    wire('cfgContrast',  'valContrast',  1, v => { uniforms.uContrast.value     = v; });
+    wire('cfgAmplitude', 'valAmplitude', 1, v => { uniforms.uAmplitude.value    = v; });
+    wire('cfgBias',      'valBias',      2, v => { uniforms.uBias.value         = v; });
+    wire('cfgRidged',    null,           0, v => { uniforms.uRidged.value       = v ? 1 : 0; });
+    wire('cfgSpeed',     'valSpeed',     2, v => { uniforms.uSpeed.value        = v; });
+    wire('cfgThreshold', 'valThreshold', 2, v => { uniforms.uThreshold.value    = v; });
+    wire('cfgSoftness',  'valSoftness',  3, v => { uniforms.uSoftness.value     = v; });
+    wire('cfgWarp',      'valWarp',      2, v => { uniforms.uWarpStrength.value = v; });
+
+    reg.forEach(({ id, el, val, decimals, onInput }) => {
+        const stored = localStorage.getItem(NS + id);
+        if (stored === null) return;
+        if (el.type === 'checkbox') el.checked = stored === 'true';
+        else el.value = stored;
+        if (val) val.textContent = el.type === 'checkbox' ? '' : (+stored).toFixed(decimals);
+        onInput(el.type === 'checkbox' ? (stored === 'true') : +stored);
+    });
+})();

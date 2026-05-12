@@ -261,6 +261,58 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
 
     animate();
 
+    // ── Settings panel ────────────────────────────────────────────────────────
+    (function initSettings() {
+        const NS    = 'gb:';
+        const btn   = document.getElementById('spBtn');
+        const panel = document.getElementById('spPanel');
+        if (!btn || !panel) return;
+
+        btn.addEventListener('click', () => {
+            btn.classList.toggle('sp-open');
+            panel.classList.toggle('sp-open');
+        });
+        document.addEventListener('click', (e) => {
+            if (!panel.contains(e.target) && e.target !== btn) {
+                btn.classList.remove('sp-open');
+                panel.classList.remove('sp-open');
+            }
+        });
+
+        const reg = [];
+        function wire(id, valId, onInput) {
+            const el  = document.getElementById(id);
+            const val = valId ? document.getElementById(valId) : null;
+            if (!el) return;
+            reg.push({ id, el, val, onInput });
+            el.addEventListener('input', () => {
+                const v = el.type === 'checkbox' ? el.checked : el.value;
+                localStorage.setItem(NS + id, el.type === 'checkbox' ? String(v) : v);
+                if (val) { const dec = el.step && el.step.includes('.') ? el.step.split('.')[1].length : 0; val.textContent = (+v).toFixed(dec); }
+                onInput(v, el);
+            });
+        }
+
+        wire('cfgBgColor',     null,             v => { document.body.style.background = v; });
+        wire('cfgColor',       null,             v => points && points.material.uniforms.uColor.value.set(v));
+        wire('cfgHoverColor',  null,             v => points && points.material.uniforms.uHoverColor.value.set(v));
+        wire('cfgPointSize',   'valPointSize',   v => { cfg.pointSize = +v; onResize(); });
+        wire('cfgHoverScale',  'valHoverScale',  v => { cfg.hoverScale = +v; });
+        wire('cfgRadius',      'valRadius',      v => { cfg.radius = +v; });
+        wire('cfgDensity',     'valDensity',     v => { cfg.gridDensity = +v; onResize(); });
+        wire('cfgRipple',      null,             v => { cfg.ripple = v; });
+        wire('cfgRippleSpeed', 'valRippleSpeed', v => { cfg.rippleSpeed = +v; });
+
+        reg.forEach(({ id, el, val, onInput }) => {
+            const stored = localStorage.getItem(NS + id);
+            if (stored === null) return;
+            if (el.type === 'checkbox') el.checked = stored === 'true';
+            else el.value = stored;
+            if (val) { const dec = el.step && el.step.includes('.') ? el.step.split('.')[1].length : 0; val.textContent = (+stored).toFixed(dec); }
+            onInput(el.type === 'checkbox' ? (stored === 'true') : stored, el);
+        });
+    })();
+
     return {
         stop() {
             running = false;

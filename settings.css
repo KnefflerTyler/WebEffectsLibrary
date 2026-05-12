@@ -1,0 +1,153 @@
+/* ── Shared settings panel styles ── */
+
+.sp-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 200;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.25);
+  background: rgba(5, 3, 20, 0.55);
+  color: rgba(255,255,255,0.85);
+  font-size: 20px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.sp-btn:hover {
+  background: rgba(5, 3, 20, 0.80);
+  border-color: rgba(255,255,255,0.55);
+  transform: rotate(30deg);
+}
+.sp-btn.sp-open {
+  transform: rotate(90deg);
+  border-color: rgba(160,130,255,0.6);
+}
+
+.sp-panel {
+  position: fixed;
+  top: 0;
+  right: -380px;
+  width: 360px;
+  height: 100vh;
+  z-index: 199;
+  background: rgba(6, 4, 22, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  padding: 72px 24px 32px;
+  transition: right 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+  font-family: system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+}
+.sp-panel.sp-open {
+  right: 0;
+}
+.sp-panel h2 {
+  color: rgba(255,255,255,0.95);
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 24px;
+  letter-spacing: 0.01em;
+}
+
+/* ── Cards ── */
+.sp-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+}
+.sp-card-title {
+  color: rgba(255,255,255,0.45);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 12px;
+}
+
+/* ── Row ── */
+.sp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.sp-row:last-child { margin-bottom: 0; }
+
+.sp-label {
+  color: rgba(255,255,255,0.4);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  flex-shrink: 0;
+  min-width: 72px;
+}
+
+/* ── Range slider ── */
+input[type="range"].sp-range {
+  flex: 1;
+  height: 4px;
+  cursor: pointer;
+  accent-color: #8b6fef;
+  border-radius: 2px;
+  min-width: 0;
+}
+.sp-val {
+  color: rgba(255,255,255,0.5);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  min-width: 44px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ── Color picker ── */
+input[type="color"].sp-color {
+  width: 32px;
+  height: 24px;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 5px;
+  background: none;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+/* ── Checkbox toggle ── */
+input[type="checkbox"].sp-check {
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #8b6fef;
+  flex-shrink: 0;
+}
+
+/* ── Select ── */
+select.sp-select {
+  flex: 1;
+  height: 28px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.75);
+  border-radius: 6px;
+  padding: 0 8px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+  min-width: 0;
+}
+select.sp-select option { background: #0f0d2a; }

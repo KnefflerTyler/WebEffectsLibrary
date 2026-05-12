@@ -2,18 +2,52 @@
 <html>
     <head>
         <title>Galaxy *unfinished*</title>
+        <link rel="stylesheet" href="../settings.css">
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0e14; }
             #pageBackground { position: fixed; inset: 0; overflow: hidden; }
-            canvas {
-                image-rendering: pixelated;
-                image-rendering: crisp-edges;
-            }
+            canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
         </style>
     </head>
     <body>
         <div id="pageBackground"></div>
+
+        <button class="sp-btn" id="spBtn" title="Settings" aria-label="Open settings">⚙</button>
+
+        <div class="sp-panel" id="spPanel" role="dialog" aria-label="Galaxy settings">
+            <h2>Galaxy Settings</h2>
+
+            <div class="sp-card">
+                <div class="sp-card-title">Camera</div>
+                <div class="sp-row">
+                    <span class="sp-label">Distance</span>
+                    <input type="range" class="sp-range" id="cfgCamDist" min="10" max="270" step="1" value="90">
+                    <span class="sp-val" id="valCamDist">90</span>
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Orbit Spd</span>
+                    <input type="range" class="sp-range" id="cfgOrbitSpeed" min="0" max="4" step="0.1" value="1">
+                    <span class="sp-val" id="valOrbitSpeed">1.0×</span>
+                </div>
+            </div>
+
+            <div class="sp-card">
+                <div class="sp-card-title">Body Colors</div>
+                <div class="sp-row"><span class="sp-label">Stars</span><input type="color" class="sp-color" id="cfgStarColor" value="#ffee44"></div>
+                <div class="sp-row"><span class="sp-label">Planets</span><input type="color" class="sp-color" id="cfgPlanetColor" value="#3399ff"></div>
+                <div class="sp-row"><span class="sp-label">Moons</span><input type="color" class="sp-color" id="cfgMoonColor" value="#cccccc"></div>
+                <div class="sp-row"><span class="sp-label">Meteors</span><input type="color" class="sp-color" id="cfgMeteorColor" value="#cc6622"></div>
+                <div class="sp-row"><span class="sp-label">Black Holes</span><input type="color" class="sp-color" id="cfgBlackHoleColor" value="#9900cc"></div>
+            </div>
+
+            <div class="sp-card">
+                <div class="sp-card-title">Lighting</div>
+                <div class="sp-row"><span class="sp-label">Core</span><input type="color" class="sp-color" id="cfgCoreColor" value="#cc88ff"></div>
+                <div class="sp-row"><span class="sp-label">Rim</span><input type="color" class="sp-color" id="cfgRimColor" value="#4466ff"></div>
+            </div>
+        </div>
+
         <script src="../back-button.js"></script>
         <script type="module" src="js/galaxy.js"></script>
     </body>

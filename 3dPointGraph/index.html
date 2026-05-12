@@ -2,14 +2,39 @@
 <html>
     <head>
         <title>Infinite 3D Point Grid</title>
+        <link rel="stylesheet" href="../settings.css">
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             html, body { width: 100%; height: 100%; overflow: hidden; background: rgb(71, 62, 42); }
             #pageBackground { position: fixed; inset: 0; overflow: hidden; }
         </style>
+        <script>(function(){var v=localStorage.getItem('pg:cfgBgColor');if(v)document.documentElement.style.background=v;})();</script>
     </head>
     <body>
         <div id="pageBackground"></div>
+
+        <button class="sp-btn" id="spBtn" title="Settings" aria-label="Open settings">⚙</button>
+
+        <div class="sp-panel" id="spPanel" role="dialog" aria-label="Point Grid settings">
+            <h2>Point Grid Settings</h2>
+
+            <div class="sp-card">
+                <div class="sp-card-title">Flight</div>
+                <div class="sp-row">
+                    <span class="sp-label">Speed</span>
+                    <input type="range" class="sp-range" id="cfgSpeed" min="0" max="20" step="0.5" value="1">
+                    <span class="sp-val" id="valSpeed">1.0</span>
+                </div>
+            </div>
+
+            <div class="sp-card">
+                <div class="sp-card-title">Colors</div>
+                <div class="sp-row"><span class="sp-label">Background</span><input type="color" class="sp-color" id="cfgBgColor" value="#473e2a"></div>
+                <div class="sp-row"><span class="sp-label">Points</span><input type="color" class="sp-color" id="cfgColor" value="#074f89"></div>
+                <div class="sp-row"><span class="sp-label">Mouse Web</span><input type="color" class="sp-color" id="cfgMouseColor" value="#ffffff"></div>
+            </div>
+        </div>
+
         <script src="../back-button.js"></script>
         <script type="module" src="js/pointGrid.js"></script>
     </body>

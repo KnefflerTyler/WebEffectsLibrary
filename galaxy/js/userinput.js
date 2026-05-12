@@ -80,6 +80,7 @@ export function createInputHandler(canvas, {
 
     return {
         get dist()      { return dist; },
+        set dist(v)     { dist = Math.max(distMin, Math.min(distMax, v)); },
         get dragPhi()   { return dragPhi; },
         get dragTheta() { return dragTheta; },
     };

@@ -143,6 +143,11 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
 
     animate();
 
+    // Expose cfg for external settings control
+    window.__pgCfg        = cfg;
+    window.__pgMouseLines = mouseLines;
+    window.__pgPointMat   = pointMaterial;
+
     // ── Public API ────────────────────────────────────────────────────────────
     function stop() {
         running = false;
@@ -175,4 +180,63 @@ window.startPointGrid = startPointGrid;
 
 // Auto-start when this module is loaded as the page entry point.
 // The DOM is ready by the time module scripts execute.
-startPointGrid('pageBackground');
+const _instance = startPointGrid('pageBackground');
+
+// ── Settings panel ────────────────────────────────────────────────────────────
+
+(async function initSettings() {
+    const NS = 'pg:';
+    const { stop, setColor } = await _instance;
+
+    const btn   = document.getElementById('spBtn');
+    const panel = document.getElementById('spPanel');
+    if (!btn || !panel) return;
+
+    btn.addEventListener('click', () => {
+        btn.classList.toggle('sp-open');
+        panel.classList.toggle('sp-open');
+    });
+    document.addEventListener('click', (e) => {
+        if (!panel.contains(e.target) && e.target !== btn) {
+            btn.classList.remove('sp-open');
+            panel.classList.remove('sp-open');
+        }
+    });
+
+    // Speed
+    const speedEl  = document.getElementById('cfgSpeed');
+    const speedVal = document.getElementById('valSpeed');
+    if (speedEl) {
+        speedEl.addEventListener('input', () => {
+            localStorage.setItem(NS + 'cfgSpeed', speedEl.value);
+            window.__pgCfg && (window.__pgCfg.speed = +speedEl.value);
+            if (speedVal) speedVal.textContent = (+speedEl.value).toFixed(1);
+        });
+        const sv = localStorage.getItem(NS + 'cfgSpeed');
+        if (sv !== null) { speedEl.value = sv; if (speedVal) speedVal.textContent = (+sv).toFixed(1); window.__pgCfg && (window.__pgCfg.speed = +sv); }
+    }
+
+    // Background color
+    const bgColorEl = document.getElementById('cfgBgColor');
+    if (bgColorEl) {
+        bgColorEl.addEventListener('input', () => { localStorage.setItem(NS + 'cfgBgColor', bgColorEl.value); document.body.style.background = bgColorEl.value; });
+        const bv = localStorage.getItem(NS + 'cfgBgColor');
+        if (bv !== null) { bgColorEl.value = bv; document.body.style.background = bv; }
+    }
+
+    // Point color
+    const colorEl = document.getElementById('cfgColor');
+    if (colorEl) {
+        colorEl.addEventListener('input', () => { localStorage.setItem(NS + 'cfgColor', colorEl.value); window.__pgPointMat && window.__pgPointMat.uniforms.uColor.value.set(colorEl.value); });
+        const cv = localStorage.getItem(NS + 'cfgColor');
+        if (cv !== null) { colorEl.value = cv; window.__pgPointMat && window.__pgPointMat.uniforms.uColor.value.set(cv); }
+    }
+
+    // Mouse web color
+    const mouseColorEl = document.getElementById('cfgMouseColor');
+    if (mouseColorEl) {
+        mouseColorEl.addEventListener('input', () => { localStorage.setItem(NS + 'cfgMouseColor', mouseColorEl.value); window.__pgMouseLines && window.__pgMouseLines.setColor(mouseColorEl.value); });
+        const mv = localStorage.getItem(NS + 'cfgMouseColor');
+        if (mv !== null) { mouseColorEl.value = mv; window.__pgMouseLines && window.__pgMouseLines.setColor(mv); }
+    }
+})();
