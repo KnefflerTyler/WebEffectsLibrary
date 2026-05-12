@@ -3,10 +3,10 @@ export const THREE_CDN = 'https://cdn.jsdelivr.net/npm/three@0.164.1/build/three
 
 export const GALAXY_CONFIG = {
     /** 'spiral' | 'elliptical' | 'irregular' */
-    type: 'spiral',
+    type: 'irregular',
 
     /** Seed for the pseudo-random generator (change for a different galaxy) */
-    seed: 137,
+    seed: 1,
 
     /** Number of spiral arms (spiral type only) */
     arms: 3,

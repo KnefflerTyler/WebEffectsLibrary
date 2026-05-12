@@ -1,18 +1,20 @@
-﻿import THREE             from './three.js';
-import { GALAXY_CONFIG } from './config.js';
-import { Galaxy }        from './GalaxySystem.js';
+﻿import THREE                  from './three.js';
+import { GALAXY_CONFIG }      from './config.js';
+import { Galaxy }             from './GalaxySystem.js';
 import {
     BODY_VERT, BODY_FRAG,
+    PLANET_FRAG, MOON_FRAG,
     STAR_FRAG,
     BLACKHOLE_FRAG,
 } from './shaders.js';
+import { createInputHandler } from './userinput.js';
 
 // ── Renderer + Scene ─────────────────────────────────────────────────────────
 
 const container = document.getElementById('pageBackground');
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(window.devicePixelRatio);
+const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+renderer.setPixelRatio(1);
 renderer.setSize(window.innerWidth, window.innerHeight);
 container.appendChild(renderer.domElement);
 
@@ -75,7 +77,7 @@ const CORE_POS    = new THREE.Vector3(0, 5, 0);
 const CORE_COLOR  = new THREE.Color(0xcc88ff);
 const RIM_DIR     = new THREE.Vector3(60, 40, -30).normalize();
 const RIM_COLOR   = new THREE.Color(0x4466ff);
-const AMBIENT_COL = new THREE.Color(0x111128);
+const AMBIENT_COL = new THREE.Color(0x2a2a2a); // neutral grey — prevents purple bleed into planet colours
 
 function bodyUniforms(shininess) {
     return {
@@ -89,52 +91,20 @@ function bodyUniforms(shininess) {
     };
 }
 
-// ── Materials ─────────────────────────────────────────────────────────────────
+// ── TEST: Solid-colour materials per body type ───────────────────────────────
+// Each type gets a distinct flat colour so they are unambiguously identifiable.
+//   Stars       → bright yellow
+//   Planets     → blue
+//   Moons       → grey-white
+//   Meteors     → brown-orange
+//   Black holes → deep purple
 
-// Stars — self-luminous, no external lighting
-const starMat = new THREE.ShaderMaterial({
-    vertexShader  : BODY_VERT,
-    fragmentShader: STAR_FRAG,
-    vertexColors  : true,
-    uniforms: {
-        uLuminosity: { value: 0.85 },
-        uTime      : { value: 0 },
-    },
-});
-
-// Planets — Blinn-Phong, moderate shininess
-const planetMat = new THREE.ShaderMaterial({
-    vertexShader  : BODY_VERT,
-    fragmentShader: BODY_FRAG,
-    vertexColors  : true,
-    uniforms      : bodyUniforms(35),
-});
-
-// Moons — rougher surface, low shininess
-const moonMat = new THREE.ShaderMaterial({
-    vertexShader  : BODY_VERT,
-    fragmentShader: BODY_FRAG,
-    vertexColors  : true,
-    uniforms      : bodyUniforms(12),
-});
-
-// Meteors — very rough, almost matte
-const meteorMat = new THREE.ShaderMaterial({
-    vertexShader  : BODY_VERT,
-    fragmentShader: BODY_FRAG,
-    vertexColors  : true,
-    uniforms      : bodyUniforms(4),
-});
-
-// Black holes — animated rim / event horizon
-const blackHoleMat = new THREE.ShaderMaterial({
-    vertexShader  : BODY_VERT,
-    fragmentShader: BLACKHOLE_FRAG,
-    vertexColors  : true,
-    uniforms: {
-        uTime: { value: 0 },
-    },
-});
+const starMat      = new THREE.MeshBasicMaterial({ color: 0xffee44 });
+const starGlowMat  = null;   // disabled during test
+const planetMat    = new THREE.MeshBasicMaterial({ color: 0x3399ff });
+const moonMat      = new THREE.MeshBasicMaterial({ color: 0xcccccc });
+const meteorMat    = new THREE.MeshBasicMaterial({ color: 0xcc6622 });
+const blackHoleMat = new THREE.MeshBasicMaterial({ color: 0x9900cc });
 
 // ── Build instanced meshes ────────────────────────────────────────────────────
 
@@ -144,19 +114,31 @@ const moonMesh      = buildMesh(galaxy.moons,      moonMat);
 const meteorMesh    = buildMesh(galaxy.meteors,    meteorMat);
 const blackHoleMesh = buildMesh(galaxy.blackHoles, blackHoleMat);
 
-// ── Accretion disks around black holes ────────────────────────────────────────
+// ── Accretion disk cube rings around black holes ───────────────────────────────
+// 18 cubes in a ring — fits the cube-based pixel-art aesthetic.
 
-const accretionMeshes = galaxy.blackHoles.map(bh => {
-    const geo  = new THREE.TorusGeometry(bh.size * 3.5, bh.size * 0.4, 6, 32);
-    const mat  = new THREE.MeshBasicMaterial({
-        color      : bh.accretionColor,
-        transparent: true,
-        opacity    : 0.55,
-    });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.rotation.x = Math.PI / 2 + bh.orbitTilt;
+const DISK_SEGS     = 18;
+const diskCubeMat   = new THREE.MeshBasicMaterial({ vertexColors: true });
+const accretionData = galaxy.blackHoles.map(bh => {
+    const mesh  = new THREE.InstancedMesh(cubeGeo, diskCubeMat, DISK_SEGS);
+    mesh.frustumCulled = false;
+    const color = new THREE.Color();
+    for (let i = 0; i < DISK_SEGS; i++) {
+        const angle = (i / DISK_SEGS) * Math.PI * 2;
+        const r     = bh.size * 3.8;
+        dummy.position.set(bh.position.x + Math.cos(angle) * r, bh.position.y,
+                           bh.position.z + Math.sin(angle) * r);
+        dummy.scale.setScalar(bh.size * 0.38);
+        dummy.rotation.set(0, -angle, 0);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+        color.setHSL(0.75 + (i / DISK_SEGS) * 0.22, 1.0, 0.55);
+        mesh.setColorAt(i, color);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     scene.add(mesh);
-    return mesh;
+    return { mesh, bh, phase: 0 };
 });
 
 // ── Background starfield ──────────────────────────────────────────────────────
@@ -181,25 +163,13 @@ scene.add(new THREE.Points(bgGeo, new THREE.PointsMaterial({
 })));
 
 // ── Galactic core glow ────────────────────────────────────────────────────────
+// Small dim sphere — just enough to mark the galactic centre.
 
 const glowMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(4.5, 20, 20),
-    new THREE.MeshBasicMaterial({ color: 0xaa66ff, transparent: true, opacity: 0.10 }),
+    new THREE.SphereGeometry(2.0, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xaa66ff, transparent: true, opacity: 0.06 }),
 );
 scene.add(glowMesh);
-
-// Subtle galactic-disk plane
-const diskMesh = new THREE.Mesh(
-    new THREE.CircleGeometry(GALAXY_CONFIG.radius * 1.05, 64),
-    new THREE.MeshBasicMaterial({
-        color      : 0x3311aa,
-        transparent: true,
-        opacity    : 0.04,
-        side       : THREE.DoubleSide,
-    }),
-);
-diskMesh.rotation.x = Math.PI / 2;
-scene.add(diskMesh);
 
 // ── Lighting ──────────────────────────────────────────────────────────────────
 
@@ -234,15 +204,41 @@ hud.innerHTML =
 document.body.appendChild(hud);
 
 // ── Camera orbit ──────────────────────────────────────────────────────────────
+//
+// Spherical camera path driven by two independent sinusoids:
+//
+//   azimuth φ — horizontal rotation around the galaxy (fast-ish)
+//   polar θ   — elevation from equator toward poles (slow, wide sweep)
+//
+// Using two incommensurable frequencies means the path never exactly repeats,
+// so the viewer sees the disk edge-on, obliquely, and top-down over time.
+//
+//   φ(t) = φ_speed * t
+//   θ(t) = θ_amp * sin(θ_speed * t)         ← swings −θ_amp … +θ_amp
+//
+// Camera sits at: ( cos(φ)·cos(θ)·R,  sin(θ)·R,  sin(φ)·cos(θ)·R )
 
-let camAngle     = 0.0;
-let camTiltPhase = 0.0;
-const CAM_DIST       = GALAXY_CONFIG.cameraDistance;
-const CAM_ORBIT_SPDS = 0.00025;  // rad/ms
-const CAM_TILT_AMP   = 0.30;     // max tilt (rad)
-const CAM_TILT_SPEED = 0.000055; // rad/ms
+const CAM_DIST_DEFAULT = GALAXY_CONFIG.cameraDistance;
+const CAM_DIST_MIN     = 4;
+const CAM_DIST_MAX     = CAM_DIST_DEFAULT * 3;
+const ZOOM_SPEED       = 0.12;   // fraction of current distance per scroll tick
 
-camera.position.set(0, CAM_DIST * 0.3, CAM_DIST);
+const PHI_SPEED   = 0.000035;   // rad/ms  — ∼5 min full lap
+const THETA_SPEED = 0.0000083;  // rad/ms  — ∼12.5 min pole-to-pole cycle
+const THETA_AMP   = 1.15;       // radians — goes well past 45°, approaches poles
+
+let camPhi   = 0.0;   // auto-orbit azimuth
+let camTheta = 0.0;   // auto-orbit polar phase
+
+// Input handler — scroll zoom + right-click drag orbit
+const input = createInputHandler(renderer.domElement, {
+    distDefault: CAM_DIST_DEFAULT,
+    distMin:     CAM_DIST_MIN,
+    distMax:     CAM_DIST_MAX,
+    zoomSpeed:   ZOOM_SPEED,
+});
+
+camera.position.set(0, CAM_DIST_DEFAULT * 0.3, CAM_DIST_DEFAULT);
 camera.lookAt(0, 0, 0);
 
 // ── Resize ────────────────────────────────────────────────────────────────────
@@ -274,10 +270,24 @@ let lastTime = performance.now();
     syncMesh(meteorMesh,    galaxy.meteors);
     syncMesh(blackHoleMesh, galaxy.blackHoles);
 
-    // Sync accretion disks
-    galaxy.blackHoles.forEach((bh, i) => {
-        accretionMeshes[i].position.copy(bh.position);
-        accretionMeshes[i].rotation.z += 0.008;
+    // Sync accretion disk cube rings
+    accretionData.forEach(item => {
+        item.phase += 0.006 * dt;
+        const { mesh, bh } = item;
+        for (let i = 0; i < DISK_SEGS; i++) {
+            const angle = item.phase + (i / DISK_SEGS) * Math.PI * 2;
+            const r     = bh.size * 3.8;
+            dummy.position.set(
+                bh.position.x + Math.cos(angle) * r,
+                bh.position.y,
+                bh.position.z + Math.sin(angle) * r,
+            );
+            dummy.scale.setScalar(bh.size * 0.38);
+            dummy.rotation.set(0.2, -angle, 0.2);
+            dummy.updateMatrix();
+            mesh.setMatrixAt(i, dummy.matrix);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
     });
 
     // Pulsing core glow
@@ -285,17 +295,20 @@ let lastTime = performance.now();
 
     // Update time uniforms for animated shaders
     const t = now * 0.001;
-    starMat.uniforms.uTime.value      = t;
-    blackHoleMat.uniforms.uTime.value = t;
+    // (time uniforms unused during solid-colour test mode)
 
-    // Orbit camera with slow vertical sine
-    camAngle     += CAM_ORBIT_SPDS * 1000 * dt;
-    camTiltPhase += CAM_TILT_SPEED  * 1000 * dt;
+    // Advance spherical camera (auto-orbit + manual drag offset)
+    camPhi   += PHI_SPEED   * 1000 * dt;
+    camTheta += THETA_SPEED * 1000 * dt;
+
+    const phi       = camPhi   + input.dragPhi;
+    const elevation = Math.sin(camTheta) * THETA_AMP + input.dragTheta;
+    const dist      = input.dist;
 
     camera.position.set(
-        Math.cos(camAngle) * CAM_DIST,
-        Math.sin(camTiltPhase) * CAM_TILT_AMP * CAM_DIST * 0.45,
-        Math.sin(camAngle) * CAM_DIST,
+        Math.cos(phi) * Math.cos(elevation) * dist,
+        Math.sin(elevation)                 * dist,
+        Math.sin(phi) * Math.cos(elevation) * dist,
     );
     camera.lookAt(0, 0, 0);
 

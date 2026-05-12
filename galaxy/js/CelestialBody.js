@@ -48,9 +48,9 @@ export class CelestialBody {
         // ── Self-rotation ───────────────────────────────────────────────────
         /** Spin speed on each axis (rad/s) */
         this.rotationSpeed = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.8,
-            (Math.random() - 0.5) * 0.8,
-            (Math.random() - 0.5) * 0.8,
+            (Math.random() - 0.5) * 0.08,
+            (Math.random() - 0.5) * 0.08,
+            (Math.random() - 0.5) * 0.08,
         );
         /** Accumulated Euler angles for instanced-mesh dummy */
         this.rotation = new THREE.Euler(

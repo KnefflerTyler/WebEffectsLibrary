@@ -7,5 +7,7 @@ async function loadGLSL(filename) {
 
 export const BODY_VERT      = await loadGLSL('body.vert.glsl');
 export const BODY_FRAG      = await loadGLSL('body.frag.glsl');
+export const PLANET_FRAG    = await loadGLSL('planet.frag.glsl');
+export const MOON_FRAG      = await loadGLSL('moon.frag.glsl');
 export const STAR_FRAG      = await loadGLSL('star.frag.glsl');
 export const BLACKHOLE_FRAG = await loadGLSL('blackhole.frag.glsl');

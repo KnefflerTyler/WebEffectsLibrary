@@ -80,7 +80,7 @@ export class Galaxy {
             const bh = new BlackHole({ rng: this.rng.fn, size: this.rng.range(0.7, 1.3) });
             bh.orbitRadius = this.rng.range(0.5, 3.5);
             bh.orbitAngle  = this.rng.range(0, Math.PI * 2);
-            bh.orbitSpeed  = this.rng.range(0.008, 0.025);
+            bh.orbitSpeed  = this.rng.range(0.001, 0.003);
             bh.orbitTilt   = this.rng.range(-0.4, 0.4);
             bh.orbitCenter.set(0, 0, 0);
             this.blackHoles.push(bh);
@@ -164,11 +164,11 @@ export class Galaxy {
             );
         }
 
-        // Keplerian-ish angular speed: ω ∝ 1/√r (flat rotation curve compromise)
+        // Near-solid-body rotation keeps the spiral arm shape intact.
+        // All stars orbit at roughly the same angular speed, with tiny variation.
         star.orbitRadius = orbitRadius;
         star.orbitAngle  = orbitAngle;
-        star.orbitSpeed  = 0.14 / Math.sqrt(orbitRadius + 0.5)
-                           * this.rng.range(0.85, 1.15);
+        star.orbitSpeed  = 0.004 * this.rng.range(0.95, 1.05);
         star.orbitTilt   = this.rng.range(-0.12, 0.12);
         star.orbitCenter.set(0, 0, 0);
 
@@ -185,7 +185,7 @@ export class Galaxy {
 
         planet.orbitRadius = this.rng.range(inner, outer);
         planet.orbitAngle  = this.rng.range(0, Math.PI * 2);
-        planet.orbitSpeed  = this.rng.range(0.4, 0.9)
+        planet.orbitSpeed  = this.rng.range(0.05, 0.11)
                              / Math.sqrt(planet.orbitRadius);
         planet.orbitTilt   = this.rng.range(-0.25, 0.25);
 
@@ -208,7 +208,7 @@ export class Galaxy {
 
         moon.orbitRadius = this.rng.range(inner, outer);
         moon.orbitAngle  = this.rng.range(0, Math.PI * 2);
-        moon.orbitSpeed  = this.rng.range(1.0, 2.5) / Math.sqrt(moon.orbitRadius);
+        moon.orbitSpeed  = this.rng.range(0.12, 0.30) / Math.sqrt(moon.orbitRadius);
         moon.orbitTilt   = this.rng.range(-0.5, 0.5);
 
         moon.position
@@ -235,7 +235,7 @@ export class Galaxy {
         meteor.position.set(Math.cos(angle) * r, height, Math.sin(angle) * r);
 
         // Mostly tangential velocity gives a sense of orbital motion
-        const speed    = this.rng.range(0.8, 4.5);
+        const speed    = this.rng.range(0.10, 0.55);
         const velAngle = angle + Math.PI * 0.5 + this.rng.range(-0.6, 0.6);
         meteor.velocity.set(
             Math.cos(velAngle) * speed,

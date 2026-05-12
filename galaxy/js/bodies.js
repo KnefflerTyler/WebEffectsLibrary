@@ -24,7 +24,7 @@ export class Star extends CelestialBody {
     constructor(opts = {}) {
         const rng = opts.rng ?? Math.random;
         super({
-            size : opts.size  ?? (0.18 + rng() * 0.40),
+            size : opts.size  ?? (1.2  + rng() * 1.2),
             mass : opts.mass  ?? (0.5  + rng() * 2.0),
             color: opts.color ?? pick(rng, STAR_COLORS),
             ...opts,
@@ -54,7 +54,7 @@ export class Planet extends CelestialBody {
     constructor(opts = {}) {
         const rng = opts.rng ?? Math.random;
         super({
-            size : opts.size  ?? (0.07 + rng() * 0.16),
+            size : opts.size  ?? (0.45 + rng() * 0.30),
             mass : opts.mass  ?? (0.1  + rng() * 0.5),
             color: opts.color ?? pick(rng, PLANET_COLORS),
             ...opts,
@@ -73,7 +73,7 @@ export class Moon extends CelestialBody {
     constructor(opts = {}) {
         const rng = opts.rng ?? Math.random;
         super({
-            size : opts.size  ?? (0.025 + rng() * 0.05),
+            size : opts.size  ?? (0.16  + rng() * 0.10),
             mass : opts.mass  ?? 0.01,
             color: opts.color ?? pick(rng, MOON_COLORS),
             ...opts,
@@ -95,7 +95,7 @@ export class Meteor extends CelestialBody {
     constructor(opts = {}) {
         const rng = opts.rng ?? Math.random;
         super({
-            size : opts.size  ?? (0.018 + rng() * 0.04),
+            size : opts.size  ?? (0.10  + rng() * 0.08),
             mass : opts.mass  ?? 0.001,
             color: opts.color ?? pick(rng, METEOR_COLORS),
             ...opts,
@@ -126,7 +126,7 @@ export class BlackHole extends CelestialBody {
     constructor(opts = {}) {
         const rng = opts.rng ?? Math.random;
         super({
-            size : opts.size ?? (0.7 + rng() * 0.5),
+            size : opts.size ?? (2.2  + rng() * 0.8),
             mass : opts.mass ?? 120,
             color: opts.color ?? new THREE.Color(0x050008),
             ...opts,

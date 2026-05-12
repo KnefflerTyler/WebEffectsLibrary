@@ -1,49 +1,55 @@
-﻿// Planet / Moon / Meteor — Blinn-Phong with galactic-core point light + rim directional.
+﻿// Planet / Moon / Meteor — cel (toon) shading for pixel-art cube look.
+// Hard-quantized diffuse bands: bright / mid / dark — no specular.
 
-uniform float uShininess;   // specular tightness
+uniform float uShininess;   // unused in cel mode, kept for API consistency
 
 // Galactic core point light
-uniform vec3  uCorePos;     // world-space position of the core light
-uniform vec3  uCoreColor;   // core light colour
-uniform float uCoreIntens;  // core intensity
+uniform vec3  uCorePos;
+uniform vec3  uCoreColor;
+uniform float uCoreIntens;
 
 // Rim directional light
-uniform vec3  uRimDir;      // world-space direction (normalised)
-uniform vec3  uRimColor;    // rim light colour
+uniform vec3  uRimDir;
+uniform vec3  uRimColor;
 
 // Ambient
 uniform vec3  uAmbient;
 
 varying vec3 vNormal;
 varying vec3 vWorldPos;
-varying vec3 vColor;        // per-instance colour from instanceColor buffer
+varying vec3 vColor;
 
 void main() {
     vec3 N = normalize(vNormal);
     vec3 V = normalize(cameraPosition - vWorldPos);
 
-    // Core point light
-    vec3  toCore    = uCorePos - vWorldPos;
-    float coreDist  = length(toCore);
-    vec3  L_core    = toCore / coreDist;
-    float atten     = uCoreIntens / (1.0 + 0.004 * coreDist * coreDist);
+    // Core point light (attenuated)
+    vec3  toCore   = uCorePos - vWorldPos;
+    float coreDist = length(toCore);
+    vec3  L_core   = toCore / coreDist;
+    float atten    = uCoreIntens / (1.0 + 0.006 * coreDist * coreDist);
+    float d_core   = max(dot(N, L_core), 0.0) * atten;
 
-    float diff_core = max(dot(N, L_core), 0.0);
-    vec3  H_core    = normalize(L_core + V);
-    float spec_core = pow(max(dot(N, H_core), 0.0), uShininess);
+    // Rim directional
+    float d_rim = max(dot(N, normalize(uRimDir)), 0.0) * 0.5;
 
-    // Rim directional light
-    vec3  L_rim    = normalize(uRimDir);
-    float diff_rim = max(dot(N, L_rim), 0.0);
-    vec3  H_rim    = normalize(L_rim + V);
-    float spec_rim = pow(max(dot(N, H_rim), 0.0), uShininess * 0.5);
+    // Combined brightness, quantized into 3 cel bands
+    float brightness = clamp(d_core + d_rim, 0.0, 1.0);
+    float cel;
+    if      (brightness > 0.55) cel = 1.0;
+    else if (brightness > 0.20) cel = 0.55;
+    else                        cel = 0.28;  // raised from 0.12 — keeps planet hue on dark faces
 
-    // Combine
-    vec3 color = uAmbient * vColor
-               + diff_core * atten * uCoreColor * vColor
-               + spec_core * atten * uCoreColor * 0.35
-               + diff_rim  * uRimColor * vColor * 0.30
-               + spec_rim  * uRimColor * 0.10;
+    // Lit colour + neutral ambient floor so dark faces show their actual hue.
+    // uAmbient is kept as a gentle multiplier (no 2× boost) to avoid purple cast.
+    vec3 lit   = vColor * cel;
+    vec3 amb   = uAmbient * vColor;
+    vec3 color = max(lit, amb);
+
+    // Silhouette darkening: faces nearly perpendicular to camera go darker,
+    // which makes individual cube edges pop at pixel-art scale.
+    float edge = smoothstep(0.0, 0.28, max(dot(N, V), 0.0));
+    color *= mix(0.15, 1.0, edge);
 
     gl_FragColor = vec4(color, 1.0);
 }
