@@ -19,7 +19,8 @@ A collection of interactive visual effects, each self-contained in its own direc
 | [Parallax Vertical](https://tylerkneffler.github.io/WebEffectsLibrary/Parallax_Vertical/) | Vertical multi-layer parallax scrolling |
 | [Marching Cubes](https://tylerkneffler.github.io/WebEffectsLibrary/marching_cubes/) | Infinite smooth procedural terrain — GPU Perlin fBm displacement, chunk streaming, fog, fly camera |
 | [Hex Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/marching_hex/) | Same GPU-driven terrain as Marching Cubes but built from pointy-top hexagonal cells |
-| [Voxel Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/marching_cubes_voxel/) | Blocky stepped terrain — GPU Perlin fBm quantized to discrete height steps, height/normal-based grass and dirt coloring |
+| [Cubic Voxel Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/voxel_cubes/) | Blocky stepped terrain — GPU Perlin fBm quantized to discrete height steps, height/normal-based grass and dirt coloring |
+| [Hex Voxel Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/voxel_hex/) | Hexagonal cells with GPU Perlin fBm + voxel quantization — blocky stepped topology on a pointy-top hex grid |
 
 ## Running Locally
 

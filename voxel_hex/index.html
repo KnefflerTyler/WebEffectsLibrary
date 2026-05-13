@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Voxel Terrain</title>
+        <title>Hex Voxel Terrain</title>
         <script src="../preview.js"></script>
         <script src="../back-button.js"></script>
         <link rel="stylesheet" href="../settings.css">
@@ -35,7 +35,7 @@
         <button class="sp-btn" id="spBtn" title="Settings" aria-label="Open settings">⚙</button>
 
         <div class="sp-panel" id="spPanel" role="dialog" aria-label="Terrain settings">
-            <h2>Voxel Terrain Settings</h2>
+            <h2>Hex Voxel Terrain Settings</h2>
 
             <!-- Controls -->
             <div class="sp-card">
@@ -61,14 +61,20 @@
                 <div class="sp-row">
                     <span class="sp-label">View Dist</span>
                     <input type="range" class="sp-range" id="cfgViewDistance"
-                           min="1" max="12" step="1" value="5">
-                    <span class="sp-val" id="valViewDistance">5</span>
+                           min="1" max="12" step="1" value="6">
+                    <span class="sp-val" id="valViewDistance">6</span>
                 </div>
                 <div class="sp-row">
-                    <span class="sp-label">Cell Size</span>
-                    <input type="range" class="sp-range" id="cfgCellSize"
+                    <span class="sp-label">Hex Size</span>
+                    <input type="range" class="sp-range" id="cfgHexSize"
+                           min="0.5" max="4" step="0.1" value="1.2">
+                    <span class="sp-val" id="valHexSize">1.2</span>
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Height Step</span>
+                    <input type="range" class="sp-range" id="cfgHeightStep"
                            min="0.5" max="4" step="0.1" value="1">
-                    <span class="sp-val" id="valCellSize">1.0</span>
+                    <span class="sp-val" id="valHeightStep">1.0</span>
                 </div>
             </div>
 
@@ -97,6 +103,17 @@
                     <input type="range" class="sp-range" id="cfgAmbient"
                            min="0" max="100" step="1" value="22">
                     <span class="sp-val" id="valAmbient">22</span>
+                </div>
+            </div>
+
+            <!-- Noise -->
+            <div class="sp-card">
+                <div class="sp-card-title">Noise</div>
+                <div class="sp-row">
+                    <span class="sp-label">Scale</span>
+                    <input type="range" class="sp-range" id="cfgNoiseScale"
+                           min="10" max="200" step="1" value="60">
+                    <span class="sp-val" id="valNoiseScale">60</span>
                 </div>
             </div>
 
