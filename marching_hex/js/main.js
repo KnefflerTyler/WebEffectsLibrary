@@ -8,10 +8,8 @@ const THREE = await import(THREE_CDN);
 // ── Noise seed + permutation texture ─────────────────────────────────────────
 setSeed(CFG.noiseSeed);
 
-// Upload the 512-entry permutation table as a 512×1 R8 texture so the vertex
-// shader can evaluate the same seeded Perlin noise entirely on the GPU.
 const permTex = new THREE.DataTexture(
-    getPermTable().slice(),   // Uint8Array copy — safe after future setSeed calls
+    getPermTable().slice(),
     512, 1,
     THREE.RedFormat,
     THREE.UnsignedByteType,
@@ -46,14 +44,12 @@ const material = new THREE.ShaderMaterial({
     vertexShader:   TERRAIN_VERTEX,
     fragmentShader: TERRAIN_FRAGMENT,
     uniforms: {
-        // ── Noise (GPU mesh generation) ────────────────────────────────────
         uPermTex:     { value: permTex          },
         uNoiseScale:  { value: CFG.noiseScale   },
         uOctaves:     { value: CFG.octaves      },
         uPersistence: { value: CFG.persistence  },
         uLacunarity:  { value: CFG.lacunarity   },
-        // ── Rendering ─────────────────────────────────────────────────────
-        uHeightScale: { value: CFG.heightScale },
+        uHeightScale: { value: CFG.heightScale  },
         uColorLow:    { value: new THREE.Color(CFG.colorLow)  },
         uColorMid:    { value: new THREE.Color(CFG.colorMid)  },
         uColorHigh:   { value: new THREE.Color(CFG.colorHigh) },
@@ -72,8 +68,8 @@ const chunkManager = new ChunkManager(scene, CFG, THREE, material);
 
 // ── Camera state ──────────────────────────────────────────────────────────────
 let camX = 0, camZ = 0;
-let yaw   = 0;          // horizontal rotation (radians)
-let pitch = -0.35;      // vertical tilt (radians, negative = looking slightly down)
+let yaw   = 0;
+let pitch = -0.35;
 
 // 'auto' = forward drift, 'manual' = WASD + mouse look
 let controlMode = 'auto';
@@ -101,7 +97,7 @@ function onMouseMove(e) {
     if (controlMode !== 'manual') return;
     yaw   -= e.movementX * CFG.lookSensitivity;
     pitch -= e.movementY * CFG.lookSensitivity;
-    pitch  = Math.max(-1.2, Math.min(0.3, pitch));  // clamp vertical look
+    pitch  = Math.max(-1.2, Math.min(0.3, pitch));
 }
 
 // ── Resize ────────────────────────────────────────────────────────────────────
@@ -133,11 +129,11 @@ function bindColor(id, uniform) {
     });
 }
 
-bindRange('cfgMoveSpeed',  'valMoveSpeed',  null);   // handled in animation loop
+bindRange('cfgMoveSpeed',  'valMoveSpeed',  null);
 bindRange('cfgFogNear',    'valFogNear',    'uFogNear');
 bindRange('cfgFogFar',     'valFogFar',     'uFogFar');
 bindRange('cfgAmbient',    'valAmbient',    'uAmbient', 0.01);
-bindRange('cfgNoiseScale', 'valNoiseScale', 'uNoiseScale');  // live GPU update
+bindRange('cfgNoiseScale', 'valNoiseScale', 'uNoiseScale');
 bindColor('cfgColorLow',   'uColorLow');
 bindColor('cfgColorMid',   'uColorMid');
 bindColor('cfgColorHigh',  'uColorHigh');
@@ -157,13 +153,10 @@ document.getElementById('cfgControlMode')?.addEventListener('change', e => {
 });
 
 document.getElementById('cfgWireframe')?.addEventListener('change', e => {
-    // wireframe is per-chunk; toggling it live rebuilds all chunks
     CFG.wireframe = e.target.checked;
     chunkManager.disposeAll();
 });
 
-
-// Settings panel toggle
 const btn   = document.getElementById('spBtn');
 const panel = document.getElementById('spPanel');
 btn?.addEventListener('click', () => panel.classList.toggle('sp-open'));
@@ -178,11 +171,9 @@ let prev = performance.now();
     const dt  = Math.min((now - prev) / 1000, 0.1);
     prev = now;
 
-    // Read live move speed from slider if present
     const speedEl = document.getElementById('cfgMoveSpeed');
     const speed   = speedEl ? parseFloat(speedEl.value) : CFG.moveSpeed;
 
-    // ── Movement ──────────────────────────────────────────────────────────────
     const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
 
     if (controlMode === 'auto') {
@@ -208,16 +199,13 @@ let prev = performance.now();
         }
     }
 
-    // ── Camera position ───────────────────────────────────────────────────────
     camera.position.set(camX, CFG.cameraHeight, camZ);
     material.uniforms.uCameraPos.value.set(camX, CFG.cameraHeight, camZ);
 
-    // Apply yaw + pitch
     camera.rotation.order = 'YXZ';
     camera.rotation.y     = yaw;
     camera.rotation.x     = pitch;
 
-    // ── Chunk streaming ───────────────────────────────────────────────────────
     chunkManager.update(camX, camZ);
 
     renderer.render(scene, camera);
