@@ -1,6 +1,6 @@
 # Web Effects Library
 
-A collection of interactive WebGL/Three.js visual effects, each self-contained in its own directory.
+A collection of interactive visual effects, each self-contained in its own directory.
 
 **Live site:** [https://tylerkneffler.github.io/WebEffectsLibrary/](https://knefflertyler.github.io/WebEffectsLibrary/)
 
