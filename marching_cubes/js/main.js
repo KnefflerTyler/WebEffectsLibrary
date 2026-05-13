@@ -1,18 +1,24 @@
 import { THREE_CDN, TERRAIN_CONFIG as CFG } from './config.js';
 import { TERRAIN_VERTEX, TERRAIN_FRAGMENT }  from './shaders.js';
-import { setSeed, fbm }                       from './perlin.js';
+import { setSeed, getPermTable }             from './perlin.js';
 import { ChunkManager }                       from './ChunkManager.js';
 
 const THREE = await import(THREE_CDN);
 
-// ── Noise seed ────────────────────────────────────────────────────────────────
+// ── Noise seed + permutation texture ─────────────────────────────────────────
 setSeed(CFG.noiseSeed);
 
-// ── Height field  (worldX, worldZ) → terrain surface Y ───────────────────────
-function scalarField(wx, wz) {
-    return fbm(wx, wz, CFG.octaves, CFG.persistence, CFG.lacunarity, CFG.noiseScale)
-           * CFG.heightScale;
-}
+// Upload the 512-entry permutation table as a 512×1 R8 texture so the vertex
+// shader can evaluate the same seeded Perlin noise entirely on the GPU.
+const permTex = new THREE.DataTexture(
+    getPermTable().slice(),   // Uint8Array copy — safe after future setSeed calls
+    512, 1,
+    THREE.RedFormat,
+    THREE.UnsignedByteType,
+);
+permTex.magFilter  = THREE.NearestFilter;
+permTex.minFilter  = THREE.NearestFilter;
+permTex.needsUpdate = true;
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
 const container = document.getElementById('pageBackground');
@@ -36,9 +42,17 @@ camera.position.set(0, CFG.cameraHeight, 0);
 const lightDir = new THREE.Vector3(...CFG.lightDir).normalize();
 
 const material = new THREE.ShaderMaterial({
+    glslVersion:    THREE.GLSL3,
     vertexShader:   TERRAIN_VERTEX,
     fragmentShader: TERRAIN_FRAGMENT,
     uniforms: {
+        // ── Noise (GPU mesh generation) ────────────────────────────────────
+        uPermTex:     { value: permTex          },
+        uNoiseScale:  { value: CFG.noiseScale   },
+        uOctaves:     { value: CFG.octaves      },
+        uPersistence: { value: CFG.persistence  },
+        uLacunarity:  { value: CFG.lacunarity   },
+        // ── Rendering ─────────────────────────────────────────────────────
         uHeightScale: { value: CFG.heightScale },
         uColorLow:    { value: new THREE.Color(CFG.colorLow)  },
         uColorMid:    { value: new THREE.Color(CFG.colorMid)  },
@@ -54,7 +68,7 @@ const material = new THREE.ShaderMaterial({
 });
 
 // ── Chunk manager ─────────────────────────────────────────────────────────────
-const chunkManager = new ChunkManager(scene, CFG, THREE, material, scalarField);
+const chunkManager = new ChunkManager(scene, CFG, THREE, material);
 
 // ── Camera state ──────────────────────────────────────────────────────────────
 let camX = 0, camZ = 0;
@@ -119,7 +133,7 @@ bindRange('cfgMoveSpeed',  'valMoveSpeed',  null);   // handled in animation loo
 bindRange('cfgFogNear',    'valFogNear',    'uFogNear');
 bindRange('cfgFogFar',     'valFogFar',     'uFogFar');
 bindRange('cfgAmbient',    'valAmbient',    'uAmbient', 0.01);
-bindRange('cfgNoiseScale', 'valNoiseScale', null);   // needs chunk rebuild
+bindRange('cfgNoiseScale', 'valNoiseScale', 'uNoiseScale');  // live GPU update
 bindColor('cfgColorLow',   'uColorLow');
 bindColor('cfgColorMid',   'uColorMid');
 bindColor('cfgColorHigh',  'uColorHigh');
@@ -130,11 +144,6 @@ document.getElementById('cfgWireframe')?.addEventListener('change', e => {
     chunkManager.disposeAll();
 });
 
-document.getElementById('cfgNoiseScale')?.addEventListener('change', () => {
-    const v = parseFloat(document.getElementById('cfgNoiseScale').value);
-    CFG.noiseScale = v;
-    chunkManager.disposeAll();
-});
 
 // Settings panel toggle
 const btn   = document.getElementById('spBtn');

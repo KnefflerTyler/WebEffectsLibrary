@@ -18,9 +18,8 @@ export class Chunk {
      * @param {object}   cfg       TERRAIN_CONFIG reference.
      * @param {object}   THREE     Three.js module.
      * @param {object}   material  Shared ShaderMaterial.
-     * @param {Function} scalarFn  (wx, wy, wz) → number.
      */
-    constructor(cx, cz, cfg, THREE, material, scalarFn) {
+    constructor(cx, cz, cfg, THREE, material) {
         this.cx = cx;
         this.cz = cz;
         this.key = `${cx},${cz}`;
@@ -31,9 +30,8 @@ export class Chunk {
         const ox = cx * chunkSize * cellSize;
         const oz = cz * chunkSize * cellSize;
 
-        // Build quad-mesh height field
-        const { positions, normals, indices } = buildChunk(
-            scalarFn,
+        // Build flat XZ grid — vertex shader handles Y displacement
+        const { positions, indices } = buildChunk(
             ox, oz,
             chunkSize,
             cellSize,
@@ -41,7 +39,6 @@ export class Chunk {
 
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        geometry.setAttribute('normal',   new THREE.BufferAttribute(normals,   3));
         geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
         this.mesh = new THREE.Mesh(geometry, material);

@@ -1,4 +1,4 @@
-// ── Terrain fragment shader ───────────────────────────────────────────────────
+// ── Terrain fragment shader (GLSL ES 3.00 / WebGL 2) ─────────────────────────
 precision highp float;
 
 uniform float uHeightScale;
@@ -12,9 +12,11 @@ uniform vec3  uLightDir;       // world-space, pre-normalised
 uniform float uAmbient;        // [0..1]
 uniform vec3  uCameraPos;      // for fog distance calculation
 
-varying vec3  vNormal;
-varying vec3  vWorldPos;
-varying float vHeight;
+in vec3  vNormal;
+in vec3  vWorldPos;
+in float vHeight;
+
+out vec4 fragColor;
 
 void main() {
     // ── Height-based albedo ───────────────────────────────────────────────────
@@ -48,5 +50,5 @@ void main() {
 
     vec3 color = mix(lit, uFogColor, fogFactor);
 
-    gl_FragColor = vec4(color, 1.0);
+    fragColor = vec4(color, 1.0);
 }

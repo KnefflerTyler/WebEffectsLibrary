@@ -14,14 +14,12 @@ export class ChunkManager {
      * @param {object}   cfg       TERRAIN_CONFIG reference.
      * @param {object}   THREE     Three.js module.
      * @param {object}   material  Shared ShaderMaterial (all chunks share it).
-     * @param {Function} scalarFn  (wx, wy, wz) → number.
      */
-    constructor(scene, cfg, THREE, material, scalarFn) {
+    constructor(scene, cfg, THREE, material) {
         this._scene    = scene;
         this._cfg      = cfg;
         this._THREE    = THREE;
         this._material = material;
-        this._scalar   = scalarFn;
 
         /** @type {Map<string, Chunk>} */
         this._chunks   = new Map();
@@ -89,7 +87,6 @@ export class ChunkManager {
                 this._cfg,
                 this._THREE,
                 this._material,
-                this._scalar,
             );
             this._scene.add(chunk.mesh);
             this._chunks.set(key, chunk);

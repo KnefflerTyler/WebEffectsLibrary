@@ -462,37 +462,34 @@ function computeNormals(positions, scalarFn, eps) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Quad-mesh height-field builder  (replaces marchChunk for standard terrain)
+// Quad-mesh height-field builder  — GPU displacement version
 // ═══════════════════════════════════════════════════════════════════════════════
 /**
- * Build an indexed quad-mesh for a height-field terrain chunk.
+ * Build a flat (y=0) indexed quad-mesh for a terrain chunk.
+ * Vertex Y displacement and normal computation are handled entirely in the
+ * vertex shader via GPU FBM noise, so no height function is needed here.
  *
- * @param {Function} heightFn  (worldX, worldZ) → y  — terrain surface height.
- * @param {number}   ox        World-space X origin of the chunk.
- * @param {number}   oz        World-space Z origin of the chunk.
- * @param {number}   chunkSize Number of quad cells per side.
- * @param {number}   cellSize  World units per cell.
- * @returns {{ positions: Float32Array, normals: Float32Array, indices: Uint32Array }}
+ * @param {number} ox        World-space X origin of the chunk.
+ * @param {number} oz        World-space Z origin of the chunk.
+ * @param {number} chunkSize Number of quad cells per side.
+ * @param {number} cellSize  World units per cell.
+ * @returns {{ positions: Float32Array, indices: Uint32Array }}
  */
-export function buildChunk(heightFn, ox, oz, chunkSize, cellSize) {
+export function buildChunk(ox, oz, chunkSize, cellSize) {
     const N  = chunkSize + 1;              // vertices per side
     const nv = N * N;
     const ni = chunkSize * chunkSize * 6;  // 2 triangles × 3 indices per quad
 
     const positions = new Float32Array(nv * 3);
-    const normals   = new Float32Array(nv * 3);
     const indices   = new Uint32Array(ni);
 
-    // ── Vertex positions ──────────────────────────────────────────────────────
+    // ── Vertex positions (flat XZ grid, y = 0) ────────────────────────────────
     for (let iz = 0; iz < N; iz++) {
         for (let ix = 0; ix < N; ix++) {
-            const wx = ox + ix * cellSize;
-            const wz = oz + iz * cellSize;
-            const wy = heightFn(wx, wz);
             const vi = (iz * N + ix) * 3;
-            positions[vi]     = wx;
-            positions[vi + 1] = wy;
-            positions[vi + 2] = wz;
+            positions[vi]     = ox + ix * cellSize;
+            positions[vi + 1] = 0;
+            positions[vi + 2] = oz + iz * cellSize;
         }
     }
 
@@ -511,27 +508,5 @@ export function buildChunk(heightFn, ox, oz, chunkSize, cellSize) {
         }
     }
 
-    // ── Smooth normals via finite-difference height gradient ──────────────────
-    // Sample heightFn directly at world-space ±1 step in each direction rather
-    // than reading from the positions array.  This guarantees the normal at any
-    // world position is identical regardless of which chunk computed it, so
-    // lighting transitions seamlessly across chunk boundaries.
-    for (let iz = 0; iz < N; iz++) {
-        for (let ix = 0; ix < N; ix++) {
-            const wx = ox + ix * cellSize;
-            const wz = oz + iz * cellSize;
-
-            const dhdx = (heightFn(wx + cellSize, wz) - heightFn(wx - cellSize, wz)) / (2 * cellSize);
-            const dhdz = (heightFn(wx, wz + cellSize) - heightFn(wx, wz - cellSize)) / (2 * cellSize);
-
-            // Normal of a height field: normalize(-dh/dx, 1, -dh/dz)
-            const len = Math.sqrt(dhdx * dhdx + 1.0 + dhdz * dhdz);
-            const ni2 = (iz * N + ix) * 3;
-            normals[ni2]     = -dhdx / len;
-            normals[ni2 + 1] =  1.0  / len;
-            normals[ni2 + 2] = -dhdz / len;
-        }
-    }
-
-    return { positions, normals, indices };
+    return { positions, indices };
 }

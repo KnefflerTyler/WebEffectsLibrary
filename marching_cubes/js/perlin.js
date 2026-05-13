@@ -108,3 +108,10 @@ export function fbm(x, z, octaves, persistence, lacunarity, scale) {
     }
     return value / maxAmp;   // normalised to approximately [-1, 1]
 }
+
+/**
+ * Returns the 512-entry permutation table populated by the last setSeed() call.
+ * Used to upload the table as a GPU texture for GLSL noise evaluation.
+ * @returns {Uint8Array}
+ */
+export function getPermTable() { return PERM; }
