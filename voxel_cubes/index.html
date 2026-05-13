@@ -3,7 +3,7 @@
     <head>
         <title>Cubic Voxel Terrain</title>
         <script src="../preview.js"></script>
-        <script src="../back-button.js"></script>
+        <script defer src="../back-button.js"></script>
         <link rel="stylesheet" href="../settings.css">
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -55,19 +55,19 @@
                 <div class="sp-row">
                     <span class="sp-label">Speed</span>
                     <input type="range" class="sp-range" id="cfgMoveSpeed"
-                           min="2" max="60" step="1" value="14">
+                           min="2" max="120" step="1" value="14">
                     <span class="sp-val" id="valMoveSpeed">14</span>
                 </div>
                 <div class="sp-row">
                     <span class="sp-label">View Dist</span>
                     <input type="range" class="sp-range" id="cfgViewDistance"
-                           min="1" max="12" step="1" value="5">
+                           min="1" max="128" step="1" value="5">
                     <span class="sp-val" id="valViewDistance">5</span>
                 </div>
                 <div class="sp-row">
                     <span class="sp-label">Cell Size</span>
                     <input type="range" class="sp-range" id="cfgCellSize"
-                           min="0.5" max="4" step="0.1" value="1">
+                           min="0.5" max="8" step="0.1" value="1">
                     <span class="sp-val" id="valCellSize">1.0</span>
                 </div>
             </div>
@@ -78,13 +78,13 @@
                 <div class="sp-row">
                     <span class="sp-label">Near</span>
                     <input type="range" class="sp-range" id="cfgFogNear"
-                           min="10" max="200" step="1" value="50">
+                           min="10" max="500" step="1" value="50">
                     <span class="sp-val" id="valFogNear">50</span>
                 </div>
                 <div class="sp-row">
                     <span class="sp-label">Far</span>
                     <input type="range" class="sp-range" id="cfgFogFar"
-                           min="20" max="400" step="1" value="140">
+                           min="20" max="1000" step="1" value="140">
                     <span class="sp-val" id="valFogFar">140</span>
                 </div>
             </div>
@@ -97,6 +97,12 @@
                     <input type="range" class="sp-range" id="cfgAmbient"
                            min="0" max="100" step="1" value="22">
                     <span class="sp-val" id="valAmbient">22</span>
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Brightness</span>
+                    <input type="range" class="sp-range" id="cfgBrightness"
+                           min="0" max="200" step="1" value="100">
+                    <span class="sp-val" id="valBrightness">100</span>
                 </div>
             </div>
 

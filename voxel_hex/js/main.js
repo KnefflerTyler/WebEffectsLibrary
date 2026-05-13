@@ -1,15 +1,18 @@
 import { THREE_CDN, TERRAIN_CONFIG as CFG } from './config.js';
 import { TERRAIN_VERTEX, TERRAIN_FRAGMENT }   from './shaders.js';
-import { setSeed, getPermTable }               from './perlin.js';
+import { setSeed }                             from './perlin.js';
 import { ChunkManager }                        from './ChunkManager.js';
 
 const THREE = await import(THREE_CDN);
 
-// ── Renderer ─────────────────────────────────────────────────────────────────
+// Seed the permutation table used by buildHexVoxelMesh on the CPU.
+setSeed(CFG.noiseSeed);
+
+// ── Renderer ───────────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
-document.body.appendChild(renderer.domElement);
+document.getElementById('pageBackground').appendChild(renderer.domElement);
 
 window.addEventListener('resize', () => {
     camera.aspect = innerWidth / innerHeight;
@@ -24,15 +27,7 @@ const camera = new THREE.PerspectiveCamera(CFG.fov, innerWidth / innerHeight, 0.
 let camX = 0, camY = CFG.cameraHeight, camZ = 0;
 camera.position.set(camX, camY, camZ);
 
-// ── Permutation texture (512×1 R8) ────────────────────────────────────────────
-setSeed(CFG.noiseSeed);
-const permData = getPermTable();          // Uint8Array[512]
-const permTex  = new THREE.DataTexture(permData, 512, 1, THREE.RedFormat, THREE.UnsignedByteType);
-permTex.magFilter = THREE.NearestFilter;
-permTex.minFilter = THREE.NearestFilter;
-permTex.needsUpdate = true;
-
-// ── Terrain material ──────────────────────────────────────────────────────────
+// ── Terrain material ────────────────────────────────────────────────────────────
 const lightDir = new THREE.Vector3(...CFG.lightDir).normalize();
 
 const material = new THREE.ShaderMaterial({
@@ -41,13 +36,6 @@ const material = new THREE.ShaderMaterial({
     fragmentShader: TERRAIN_FRAGMENT,
     wireframe:      CFG.wireframe,
     uniforms: {
-        uPermTex:     { value: permTex },
-        uNoiseScale:  { value: CFG.noiseScale },
-        uOctaves:     { value: CFG.octaves },
-        uPersistence: { value: CFG.persistence },
-        uLacunarity:  { value: CFG.lacunarity },
-        uHeightScale: { value: CFG.heightScale },
-        uCellSize:    { value: CFG.cellSize },
         uHeightMax:   { value: CFG.heightScale },
         uColorGrass:  { value: new THREE.Color(CFG.colorGrass) },
         uColorPeak:   { value: new THREE.Color(CFG.colorPeak) },
@@ -58,6 +46,7 @@ const material = new THREE.ShaderMaterial({
         uFogFar:      { value: CFG.fogFar },
         uLightDir:    { value: lightDir },
         uAmbient:     { value: CFG.ambient },
+        uBrightness:  { value: 1.0 },
         uCameraPos:   { value: camera.position },
     },
 });
@@ -120,7 +109,12 @@ bindRange('cfgMoveSpeed', 'valMoveSpeed', null);
 bindRange('cfgFogNear',   'valFogNear',   'uFogNear');
 bindRange('cfgFogFar',    'valFogFar',    'uFogFar');
 bindRange('cfgAmbient',   'valAmbient',   'uAmbient', 0.01);
-bindRange('cfgNoiseScale','valNoiseScale','uNoiseScale', 0.001);
+bindRange('cfgBrightness','valBrightness','uBrightness', 0.01);
+document.getElementById('cfgNoiseScale')?.addEventListener('input', e => {
+    document.getElementById('valNoiseScale').textContent = parseFloat(e.target.value).toFixed(2);
+    CFG.noiseScale = parseFloat(e.target.value) * 0.001;
+    chunkManager.disposeAll();
+});
 
 document.getElementById('cfgViewDistance')?.addEventListener('input', e => {
     document.getElementById('valViewDistance').textContent = e.target.value;
@@ -137,8 +131,7 @@ document.getElementById('cfgHexSize')?.addEventListener('input', e => {
 document.getElementById('cfgHeightStep')?.addEventListener('input', e => {
     document.getElementById('valHeightStep').textContent = parseFloat(e.target.value).toFixed(1);
     CFG.cellSize = parseFloat(e.target.value);
-    material.uniforms.uCellSize.value = CFG.cellSize;
-    // Live update — no chunk rebuild needed since displacement is pure GPU
+    chunkManager.disposeAll();
 });
 
 bindColor('cfgColorGrass', 'uColorGrass');

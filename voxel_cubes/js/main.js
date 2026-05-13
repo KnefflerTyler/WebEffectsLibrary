@@ -1,23 +1,12 @@
 import { THREE_CDN, TERRAIN_CONFIG as CFG } from './config.js';
 import { TERRAIN_VERTEX, TERRAIN_FRAGMENT }  from './shaders.js';
-import { setSeed, getPermTable }             from './perlin.js';
+import { setSeed }                            from './perlin.js';
 import { ChunkManager }                       from './ChunkManager.js';
 
 const THREE = await import(THREE_CDN);
 
-// Seed the permutation table, then upload it as a 512×1 R8 texture for the
-// GPU vertex shader (same pattern as marching_cubes / marching_hex).
+// Seed the permutation table used by buildVoxelMesh on the CPU.
 setSeed(CFG.noiseSeed);
-
-const permTex = new THREE.DataTexture(
-    getPermTable().slice(),
-    512, 1,
-    THREE.RedFormat,
-    THREE.UnsignedByteType,
-);
-permTex.magFilter   = THREE.NearestFilter;
-permTex.minFilter   = THREE.NearestFilter;
-permTex.needsUpdate = true;
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
 const container = document.getElementById('pageBackground');
@@ -45,14 +34,6 @@ const material = new THREE.ShaderMaterial({
     vertexShader:   TERRAIN_VERTEX,
     fragmentShader: TERRAIN_FRAGMENT,
     uniforms: {
-        // ── Noise (GPU terrain generation + quantization) ──────────────────
-        uPermTex:     { value: permTex           },
-        uNoiseScale:  { value: CFG.noiseScale    },
-        uOctaves:     { value: CFG.octaves       },
-        uPersistence: { value: CFG.persistence   },
-        uLacunarity:  { value: CFG.lacunarity    },
-        uHeightScale: { value: CFG.heightScale   },
-        uCellSize:    { value: CFG.cellSize      },
         // ── Rendering ─────────────────────────────────────────────────────
         uHeightMax:  { value: CFG.heightScale   },
         uColorGrass: { value: new THREE.Color(CFG.colorGrass) },
@@ -64,6 +45,7 @@ const material = new THREE.ShaderMaterial({
         uFogFar:     { value: CFG.fogFar   },
         uLightDir:   { value: lightDir },
         uAmbient:    { value: CFG.ambient  },
+        uBrightness: { value: 1.0 },
         uCameraPos:  { value: camera.position },
     },
     side: THREE.FrontSide,
@@ -146,11 +128,11 @@ document.getElementById('cfgViewDistance')?.addEventListener('input', e => {
 document.getElementById('cfgCellSize')?.addEventListener('input', e => {
     document.getElementById('valCellSize').textContent = parseFloat(e.target.value).toFixed(1);
     CFG.cellSize = parseFloat(e.target.value);
-    material.uniforms.uCellSize.value = CFG.cellSize;
     chunkManager.disposeAll();
 });
 bindRange('cfgFogFar',    'valFogFar',    'uFogFar');
-bindRange('cfgAmbient',   'valAmbient',   'uAmbient', 0.01);
+bindRange('cfgAmbient',   'valAmbient',    'uAmbient', 0.01);
+bindRange('cfgBrightness','valBrightness', 'uBrightness', 0.01);
 bindColor('cfgColorGrass', 'uColorGrass');
 bindColor('cfgColorPeak',  'uColorPeak');
 bindColor('cfgColorDirt',  'uColorDirt');

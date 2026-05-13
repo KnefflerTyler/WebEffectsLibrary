@@ -5,7 +5,7 @@
  * all Y displacement (Perlin FBM + voxel quantization).
  */
 
-import { buildFlatGrid } from './voxelChunk.js';
+import { buildVoxelMesh } from './voxelChunk.js';
 
 export class Chunk {
     constructor(cx, cz, cfg, THREE, material) {
@@ -18,16 +18,15 @@ export class Chunk {
         const ox = cx * chunkSize * cellSize;
         const oz = cz * chunkSize * cellSize;
 
-        const { positions, indices } = buildFlatGrid(ox, oz, chunkSize, cellSize);
+        const { positions, normals, indices } = buildVoxelMesh(ox, oz, chunkSize, cfg);
 
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('normal',   new THREE.BufferAttribute(normals,   3));
         geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
-        // Expand bounding sphere to cover the GPU-displaced Y range so
-        // frustum culling remains correct (same technique as marching_cubes).
+        // Bounding sphere is exact — CPU mesh already has correct Y values.
         geometry.computeBoundingSphere();
-        geometry.boundingSphere.radius += cfg.heightScale;
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.frustumCulled = true;

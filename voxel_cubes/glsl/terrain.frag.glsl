@@ -13,6 +13,7 @@ uniform float uFogNear;
 uniform float uFogFar;
 uniform vec3  uLightDir;    // pre-normalised world-space
 uniform float uAmbient;
+uniform float uBrightness;  // [0..2] overall light multiplier
 uniform vec3  uCameraPos;
 
 in vec3  vNormal;
@@ -44,6 +45,7 @@ void main() {
     vec3  halfDir = normalize(uLightDir + viewDir);
     float spec    = pow(max(dot(n, halfDir), 0.0), 16.0) * 0.12 * topness;
     lit += vec3(spec);
+    lit *= uBrightness;
 
     // ── Fog ───────────────────────────────────────────────────────────────────
     float fogDist   = length(vWorldPos.xz - uCameraPos.xz);

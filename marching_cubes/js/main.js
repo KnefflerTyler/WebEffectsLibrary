@@ -62,6 +62,7 @@ const material = new THREE.ShaderMaterial({
         uFogFar:      { value: CFG.fogFar   },
         uLightDir:    { value: lightDir },
         uAmbient:     { value: CFG.ambient  },
+        uBrightness:  { value: 1.0 },
         uCameraPos:   { value: camera.position },
     },
     side: THREE.FrontSide,
@@ -149,6 +150,7 @@ document.getElementById('cfgCellSize')?.addEventListener('input', e => {
 });
 bindRange('cfgFogFar',     'valFogFar',     'uFogFar');
 bindRange('cfgAmbient',    'valAmbient',    'uAmbient', 0.01);
+bindRange('cfgBrightness', 'valBrightness', 'uBrightness', 0.01);
 bindRange('cfgNoiseScale', 'valNoiseScale', 'uNoiseScale');  // live GPU update
 bindColor('cfgColorLow',   'uColorLow');
 bindColor('cfgColorMid',   'uColorMid');

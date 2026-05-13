@@ -28,5 +28,40 @@ export function setSeed(seed) {
 }
 setSeed(0);
 
-/** Returns the 512-entry permutation table for upload as a GPU texture. */
+function fade(t)          { return t * t * t * (t * (t * 6 - 15) + 10); }
+function lerp(a, b, t)    { return a + t * (b - a); }
+function dot3(g, x, y, z) { return g[0] * x + g[1] * y + g[2] * z; }
+
+function noise3(x, y, z) {
+    const X = Math.floor(x) & 255;
+    const Y = Math.floor(y) & 255;
+    const Z = Math.floor(z) & 255;
+    x -= Math.floor(x); y -= Math.floor(y); z -= Math.floor(z);
+    const u = fade(x), v = fade(y), w = fade(z);
+    const A  = PERM[X]     + Y,  AA = PERM[A]     + Z,  AB = PERM[A + 1] + Z;
+    const B  = PERM[X + 1] + Y,  BA = PERM[B]     + Z,  BB = PERM[B + 1] + Z;
+    return lerp(
+        lerp(lerp(dot3(GRAD3[PERM_M12[AA    ]], x,   y,   z  ),
+                  dot3(GRAD3[PERM_M12[BA    ]], x-1, y,   z  ), u),
+             lerp(dot3(GRAD3[PERM_M12[AB    ]], x,   y-1, z  ),
+                  dot3(GRAD3[PERM_M12[BB    ]], x-1, y-1, z  ), u), v),
+        lerp(lerp(dot3(GRAD3[PERM_M12[AA + 1]], x,   y,   z-1),
+                  dot3(GRAD3[PERM_M12[BA + 1]], x-1, y,   z-1), u),
+             lerp(dot3(GRAD3[PERM_M12[AB + 1]], x,   y-1, z-1),
+                  dot3(GRAD3[PERM_M12[BB + 1]], x-1, y-1, z-1), u), v),
+        w);
+}
+
+export function fbm(x, z, octaves, persistence, lacunarity, scale) {
+    let value = 0, amp = 1, freq = scale, maxAmp = 0;
+    for (let i = 0; i < octaves; i++) {
+        value  += noise3(x * freq, 0, z * freq) * amp;
+        maxAmp += amp;
+        amp    *= persistence;
+        freq   *= lacunarity;
+    }
+    return value / maxAmp;
+}
+
+/** Returns the 512-entry permutation table. */
 export function getPermTable() { return PERM; }
