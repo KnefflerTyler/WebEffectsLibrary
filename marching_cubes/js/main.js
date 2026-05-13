@@ -64,7 +64,7 @@ const material = new THREE.ShaderMaterial({
         uAmbient:     { value: CFG.ambient  },
         uCameraPos:   { value: camera.position },
     },
-    side: THREE.DoubleSide,
+    side: THREE.FrontSide,
 });
 
 // ── Chunk manager ─────────────────────────────────────────────────────────────
@@ -135,6 +135,18 @@ function bindColor(id, uniform) {
 
 bindRange('cfgMoveSpeed',  'valMoveSpeed',  null);   // handled in animation loop
 bindRange('cfgFogNear',    'valFogNear',    'uFogNear');
+
+document.getElementById('cfgViewDistance')?.addEventListener('input', e => {
+    document.getElementById('valViewDistance').textContent = e.target.value;
+    CFG.viewDistance = parseInt(e.target.value);
+    chunkManager.disposeAll();
+});
+
+document.getElementById('cfgCellSize')?.addEventListener('input', e => {
+    document.getElementById('valCellSize').textContent = parseFloat(e.target.value).toFixed(1);
+    CFG.cellSize = parseFloat(e.target.value);
+    chunkManager.disposeAll();
+});
 bindRange('cfgFogFar',     'valFogFar',     'uFogFar');
 bindRange('cfgAmbient',    'valAmbient',    'uAmbient', 0.01);
 bindRange('cfgNoiseScale', 'valNoiseScale', 'uNoiseScale');  // live GPU update
@@ -157,16 +169,17 @@ document.getElementById('cfgControlMode')?.addEventListener('change', e => {
 });
 
 document.getElementById('cfgWireframe')?.addEventListener('change', e => {
-    // wireframe is per-chunk; toggling it live rebuilds all chunks
-    CFG.wireframe = e.target.checked;
-    chunkManager.disposeAll();
+    material.wireframe = e.target.checked;
 });
 
 
 // Settings panel toggle
 const btn   = document.getElementById('spBtn');
 const panel = document.getElementById('spPanel');
-btn?.addEventListener('click', () => panel.classList.toggle('sp-open'));
+btn?.addEventListener('click', () => {
+    panel.classList.toggle('sp-open');
+    btn.classList.toggle('sp-open');
+});
 
 // ── Animation loop ────────────────────────────────────────────────────────────
 let prev = performance.now();
@@ -187,8 +200,8 @@ let prev = performance.now();
 
     if (controlMode === 'auto') {
         // Auto-forward: drift in the camera's current facing direction
-        camX += sinY * speed * dt;
-        camZ += cosY * speed * dt;
+        camX -= sinY * speed * dt;
+        camZ -= cosY * speed * dt;
     } else {
         if (keys.has('KeyW') || keys.has('ArrowUp')) {
             camX += sinY * speed * dt;

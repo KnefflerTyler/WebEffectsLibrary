@@ -5,7 +5,8 @@ import { ChunkManager }                       from './ChunkManager.js';
 
 const THREE = await import(THREE_CDN);
 
-// ── Noise seed + permutation texture ─────────────────────────────────────────
+// Seed the permutation table, then upload it as a 512×1 R8 texture for the
+// GPU vertex shader (same pattern as marching_cubes / marching_hex).
 setSeed(CFG.noiseSeed);
 
 const permTex = new THREE.DataTexture(
@@ -14,8 +15,8 @@ const permTex = new THREE.DataTexture(
     THREE.RedFormat,
     THREE.UnsignedByteType,
 );
-permTex.magFilter  = THREE.NearestFilter;
-permTex.minFilter  = THREE.NearestFilter;
+permTex.magFilter   = THREE.NearestFilter;
+permTex.minFilter   = THREE.NearestFilter;
 permTex.needsUpdate = true;
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
@@ -44,21 +45,26 @@ const material = new THREE.ShaderMaterial({
     vertexShader:   TERRAIN_VERTEX,
     fragmentShader: TERRAIN_FRAGMENT,
     uniforms: {
-        uPermTex:     { value: permTex          },
-        uNoiseScale:  { value: CFG.noiseScale   },
-        uOctaves:     { value: CFG.octaves      },
-        uPersistence: { value: CFG.persistence  },
-        uLacunarity:  { value: CFG.lacunarity   },
-        uHeightScale: { value: CFG.heightScale  },
-        uColorLow:    { value: new THREE.Color(CFG.colorLow)  },
-        uColorMid:    { value: new THREE.Color(CFG.colorMid)  },
-        uColorHigh:   { value: new THREE.Color(CFG.colorHigh) },
-        uFogColor:    { value: new THREE.Color(CFG.fogColor)  },
-        uFogNear:     { value: CFG.fogNear  },
-        uFogFar:      { value: CFG.fogFar   },
-        uLightDir:    { value: lightDir },
-        uAmbient:     { value: CFG.ambient  },
-        uCameraPos:   { value: camera.position },
+        // ── Noise (GPU terrain generation + quantization) ──────────────────
+        uPermTex:     { value: permTex           },
+        uNoiseScale:  { value: CFG.noiseScale    },
+        uOctaves:     { value: CFG.octaves       },
+        uPersistence: { value: CFG.persistence   },
+        uLacunarity:  { value: CFG.lacunarity    },
+        uHeightScale: { value: CFG.heightScale   },
+        uCellSize:    { value: CFG.cellSize      },
+        // ── Rendering ─────────────────────────────────────────────────────
+        uHeightMax:  { value: CFG.heightScale   },
+        uColorGrass: { value: new THREE.Color(CFG.colorGrass) },
+        uColorPeak:  { value: new THREE.Color(CFG.colorPeak)  },
+        uColorDirt:  { value: new THREE.Color(CFG.colorDirt)  },
+        uColorRock:  { value: new THREE.Color(CFG.colorRock)  },
+        uFogColor:   { value: new THREE.Color(CFG.fogColor)   },
+        uFogNear:    { value: CFG.fogNear  },
+        uFogFar:     { value: CFG.fogFar   },
+        uLightDir:   { value: lightDir },
+        uAmbient:    { value: CFG.ambient  },
+        uCameraPos:  { value: camera.position },
     },
     side: THREE.FrontSide,
 });
@@ -71,7 +77,6 @@ let camX = 0, camZ = 0;
 let yaw   = 0;
 let pitch = -0.35;
 
-// 'auto' = forward drift, 'manual' = WASD + mouse look
 let controlMode = 'auto';
 
 const keys = new Set();
@@ -129,8 +134,8 @@ function bindColor(id, uniform) {
     });
 }
 
-bindRange('cfgMoveSpeed',  'valMoveSpeed',  null);
-bindRange('cfgFogNear',    'valFogNear',    'uFogNear');
+bindRange('cfgMoveSpeed', 'valMoveSpeed', null);
+bindRange('cfgFogNear',   'valFogNear',   'uFogNear');
 
 document.getElementById('cfgViewDistance')?.addEventListener('input', e => {
     document.getElementById('valViewDistance').textContent = e.target.value;
@@ -140,15 +145,16 @@ document.getElementById('cfgViewDistance')?.addEventListener('input', e => {
 
 document.getElementById('cfgCellSize')?.addEventListener('input', e => {
     document.getElementById('valCellSize').textContent = parseFloat(e.target.value).toFixed(1);
-    CFG.hexSize = parseFloat(e.target.value);
+    CFG.cellSize = parseFloat(e.target.value);
+    material.uniforms.uCellSize.value = CFG.cellSize;
     chunkManager.disposeAll();
 });
-bindRange('cfgFogFar',     'valFogFar',     'uFogFar');
-bindRange('cfgAmbient',    'valAmbient',    'uAmbient', 0.01);
-bindRange('cfgNoiseScale', 'valNoiseScale', 'uNoiseScale');
-bindColor('cfgColorLow',   'uColorLow');
-bindColor('cfgColorMid',   'uColorMid');
-bindColor('cfgColorHigh',  'uColorHigh');
+bindRange('cfgFogFar',    'valFogFar',    'uFogFar');
+bindRange('cfgAmbient',   'valAmbient',   'uAmbient', 0.01);
+bindColor('cfgColorGrass', 'uColorGrass');
+bindColor('cfgColorPeak',  'uColorPeak');
+bindColor('cfgColorDirt',  'uColorDirt');
+bindColor('cfgColorRock',  'uColorRock');
 
 document.getElementById('cfgControlMode')?.addEventListener('change', e => {
     controlMode = e.target.value;
@@ -168,6 +174,7 @@ document.getElementById('cfgWireframe')?.addEventListener('change', e => {
     material.wireframe = e.target.checked;
 });
 
+// Settings panel toggle
 const btn   = document.getElementById('spBtn');
 const panel = document.getElementById('spPanel');
 btn?.addEventListener('click', () => {
@@ -187,30 +194,16 @@ let prev = performance.now();
 
     const speedEl = document.getElementById('cfgMoveSpeed');
     const speed   = speedEl ? parseFloat(speedEl.value) : CFG.moveSpeed;
-
-    const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
+    const sinY    = Math.sin(yaw), cosY = Math.cos(yaw);
 
     if (controlMode === 'auto') {
-        // Auto-forward: drift in the camera's current facing direction
         camX -= sinY * speed * dt;
         camZ -= cosY * speed * dt;
     } else {
-        if (keys.has('KeyW') || keys.has('ArrowUp')) {
-            camX += sinY * speed * dt;
-            camZ += cosY * speed * dt;
-        }
-        if (keys.has('KeyS') || keys.has('ArrowDown')) {
-            camX -= sinY * speed * dt;
-            camZ -= cosY * speed * dt;
-        }
-        if (keys.has('KeyA') || keys.has('ArrowLeft')) {
-            camX -= cosY * speed * dt;
-            camZ += sinY * speed * dt;
-        }
-        if (keys.has('KeyD') || keys.has('ArrowRight')) {
-            camX += cosY * speed * dt;
-            camZ -= sinY * speed * dt;
-        }
+        if (keys.has('KeyW') || keys.has('ArrowUp'))    { camX += sinY * speed * dt; camZ += cosY * speed * dt; }
+        if (keys.has('KeyS') || keys.has('ArrowDown'))  { camX -= sinY * speed * dt; camZ -= cosY * speed * dt; }
+        if (keys.has('KeyA') || keys.has('ArrowLeft'))  { camX -= cosY * speed * dt; camZ += sinY * speed * dt; }
+        if (keys.has('KeyD') || keys.has('ArrowRight')) { camX += cosY * speed * dt; camZ -= sinY * speed * dt; }
     }
 
     camera.position.set(camX, CFG.cameraHeight, camZ);
@@ -221,6 +214,5 @@ let prev = performance.now();
     camera.rotation.x     = pitch;
 
     chunkManager.update(camX, camZ);
-
     renderer.render(scene, camera);
 })();

@@ -37,26 +37,17 @@ export class Chunk {
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setIndex(new THREE.BufferAttribute(indices, 1));
 
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.frustumCulled = false;   // chunk origin may be outside frustum
+        // Compute bounds from the flat XZ geometry, then expand the bounding
+        // sphere's radius by heightScale so the GPU-displaced Y vertices are
+        // always contained — this lets Three.js correctly frustum-cull chunks.
+        geometry.computeBoundingSphere();
+        geometry.boundingSphere.radius += cfg.heightScale;
 
-        if (cfg.wireframe) {
-            const wMat = new THREE.LineBasicMaterial({
-                color: 0xffffff,
-                transparent: true,
-                opacity: 0.08,
-            });
-            const wGeo = new THREE.WireframeGeometry(geometry);
-            this.wire  = new THREE.LineSegments(wGeo, wMat);
-            this.mesh.add(this.wire);
-        }
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.frustumCulled = true;
     }
 
     dispose() {
         this.mesh.geometry.dispose();
-        if (this.wire) {
-            this.wire.geometry.dispose();
-            this.wire.material.dispose();
-        }
     }
 }
