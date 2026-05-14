@@ -3,6 +3,7 @@ import { POINT_VERTEX, POINT_FRAGMENT } from './shaders.js';
 import { SlabManager } from './SlabManager.js';
 // import { MouseLines } from './MouseLines.js';
 import { MouseWeb } from './MouseWeb.js';
+import { initPanelToggle } from '../../shared/settings.js';
 
 /**
  * Mount an infinite 3-D point grid into a container element.
@@ -188,20 +189,8 @@ const _instance = startPointGrid('pageBackground');
     const NS = 'pg:';
     const { stop, setColor } = await _instance;
 
-    const btn   = document.getElementById('spBtn');
-    const panel = document.getElementById('spPanel');
-    if (!btn || !panel) return;
-
-    btn.addEventListener('click', () => {
-        btn.classList.toggle('sp-open');
-        panel.classList.toggle('sp-open');
-    });
-    document.addEventListener('click', (e) => {
-        if (!panel.contains(e.target) && e.target !== btn) {
-            btn.classList.remove('sp-open');
-            panel.classList.remove('sp-open');
-        }
-    });
+    if (!document.getElementById('spBtn')) return;
+    initPanelToggle();
 
     // Speed
     const speedEl  = document.getElementById('cfgSpeed');

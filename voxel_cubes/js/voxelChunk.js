@@ -17,8 +17,9 @@ import { fbm } from './perlin.js';
 
 function sampleHeight(wx, wz, cfg) {
     const { noiseScale, octaves, persistence, lacunarity, heightScale, cellSize } = cfg;
+    const cs  = (cellSize > 0 && isFinite(cellSize)) ? cellSize : 1;
     const raw = fbm(wx, wz, octaves, persistence, lacunarity, noiseScale);
-    return Math.round(raw * heightScale / cellSize) * cellSize;
+    return Math.round(raw * heightScale / cs) * cs;
 }
 
 export function buildVoxelMesh(ox, oz, chunkSize, cfg) {

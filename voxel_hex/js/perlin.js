@@ -60,7 +60,7 @@ export function fbm(x, z, octaves, persistence, lacunarity, scale) {
         amp    *= persistence;
         freq   *= lacunarity;
     }
-    return value / maxAmp;
+    return maxAmp > 0 ? value / maxAmp : 0;
 }
 
 /** Returns the 512-entry permutation table. */

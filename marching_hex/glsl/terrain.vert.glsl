@@ -79,7 +79,7 @@ float fbm(float wx, float wz) {
         amp    *= uPersistence;
         freq   *= uLacunarity;
     }
-    return value / maxAmp;
+    return maxAmp > 0.0 ? value / maxAmp : 0.0;
 }
 
 void main() {

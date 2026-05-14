@@ -19,7 +19,8 @@ export const TERRAIN_CONFIG = {
     noiseSeed:    1337,
 
     // ── View distance / chunk streaming ────────────────────────────────────────
-    viewDistance: 5,
+    viewDistance:   5,
+    chunksPerFrame: 2,
 
     // ── Camera ──────────────────────────────────────────────────────────────────
     /** Fixed camera height above y=0. Should be > heightSteps * cellSize. */

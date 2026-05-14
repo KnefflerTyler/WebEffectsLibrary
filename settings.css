@@ -115,6 +115,28 @@ input[type="range"].sp-range {
   flex-shrink: 0;
 }
 
+/* ── Number input ── */
+input[type="number"].sp-number {
+  flex: 1;
+  height: 28px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.75);
+  border-radius: 6px;
+  padding: 0 8px;
+  font-size: 12px;
+  outline: none;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+input[type="number"].sp-number:focus {
+  border-color: rgba(139,111,239,0.5);
+}
+input[type="number"].sp-number::-webkit-inner-spin-button,
+input[type="number"].sp-number::-webkit-outer-spin-button {
+  opacity: 0.4;
+}
+
 /* ── Color picker ── */
 input[type="color"].sp-color {
   width: 32px;
@@ -151,3 +173,29 @@ select.sp-select {
   min-width: 0;
 }
 select.sp-select option { background: #0f0d2a; }
+
+/* ── Apply button ── */
+.sp-apply {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  background: rgba(139,111,239,0.20);
+  border: 1px solid rgba(139,111,239,0.45);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.85);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: system-ui, -apple-system, sans-serif;
+  transition: background 0.15s, border-color 0.15s;
+}
+.sp-apply:hover {
+  background: rgba(139,111,239,0.38);
+  border-color: rgba(139,111,239,0.75);
+}
+.sp-apply:active {
+  background: rgba(139,111,239,0.55);
+}

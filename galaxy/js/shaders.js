@@ -1,13 +1,10 @@
-async function loadGLSL(filename) {
-    const url = new URL(`../glsl/${filename}`, import.meta.url);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to load shader: ${filename}`);
-    return res.text();
-}
+import { loadGLSL } from '../../shared/loadGLSL.js';
 
-export const BODY_VERT      = await loadGLSL('body.vert.glsl');
-export const BODY_FRAG      = await loadGLSL('body.frag.glsl');
-export const PLANET_FRAG    = await loadGLSL('planet.frag.glsl');
-export const MOON_FRAG      = await loadGLSL('moon.frag.glsl');
-export const STAR_FRAG      = await loadGLSL('star.frag.glsl');
-export const BLACKHOLE_FRAG = await loadGLSL('blackhole.frag.glsl');
+const base = new URL('../glsl/', import.meta.url);
+
+export const BODY_VERT      = await loadGLSL(new URL('body.vert.glsl',      base));
+export const BODY_FRAG      = await loadGLSL(new URL('body.frag.glsl',      base));
+export const PLANET_FRAG    = await loadGLSL(new URL('planet.frag.glsl',    base));
+export const MOON_FRAG      = await loadGLSL(new URL('moon.frag.glsl',      base));
+export const STAR_FRAG      = await loadGLSL(new URL('star.frag.glsl',      base));
+export const BLACKHOLE_FRAG = await loadGLSL(new URL('blackhole.frag.glsl', base));

@@ -1,5 +1,6 @@
 import { THREE_CDN, DEFAULTS } from './config.js';
 import { CUBE_VERTEX, CUBE_FRAGMENT } from './shaders.js';
+import { initPanelToggle } from '../../shared/settings.js';
 
 const THREE = await import(THREE_CDN);
 
@@ -86,18 +87,7 @@ let speedY = 0.012;
     const spBtn   = document.getElementById('spBtn');
     const spPanel = document.getElementById('spPanel');
     if (spBtn && spPanel) {
-        // toggle
-        spBtn.addEventListener('click', e => {
-            e.stopPropagation();
-            const open = spPanel.classList.toggle('sp-open');
-            spBtn.classList.toggle('sp-open', open);
-        });
-        document.addEventListener('click', e => {
-            if (!spPanel.contains(e.target) && e.target !== spBtn) {
-                spPanel.classList.remove('sp-open');
-                spBtn.classList.remove('sp-open');
-            }
-        });
+        initPanelToggle();
 
         // spinning toggle
         document.getElementById('cfgSpinning').addEventListener('change', e => {

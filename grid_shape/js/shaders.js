@@ -1,8 +1,4 @@
-async function loadGLSL(path) {
-    const res = await fetch(path);
-    if (!res.ok) throw new Error(`Failed to load shader: ${path}`);
-    return res.text();
-}
+import { loadGLSL } from '../../shared/loadGLSL.js';
 
 const base = new URL('../glsl/', import.meta.url);
 

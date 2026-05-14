@@ -2,6 +2,7 @@ import { THREE_CDN, TERRAIN_CONFIG as CFG } from './config.js';
 import { TERRAIN_VERTEX, TERRAIN_FRAGMENT }  from './shaders.js';
 import { setSeed, getPermTable }             from './perlin.js';
 import { ChunkManager }                       from './ChunkManager.js';
+import { bindDisplay, initPanelToggle, persistSettings } from '../../shared/settings.js';
 
 const THREE = await import(THREE_CDN);
 
@@ -107,73 +108,94 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ── Settings-panel live bindings ──────────────────────────────────────────────
-function bindRange(id, valId, uniform, scale = 1) {
-    const el  = document.getElementById(id);
-    const val = document.getElementById(valId);
-    if (!el) return;
-    el.addEventListener('input', () => {
-        const v = parseFloat(el.value) * scale;
-        if (valId) val.textContent = parseFloat(el.value).toFixed(
-            el.step && el.step < 1 ? 2 : 0);
-        if (uniform && material.uniforms[uniform])
-            material.uniforms[uniform].value = v;
-    });
+// ── Settings panel ────────────────────────────────────────────────────────────
+// Update slider value displays on drag (no engine effects until Apply)
+bindDisplay('cfgMoveSpeed',    'valMoveSpeed');
+bindDisplay('cfgViewDistance', 'valViewDistance');
+bindDisplay('cfgChunkBudget',  'valChunkBudget');
+bindDisplay('cfgCellSize',     'valCellSize', 1);
+bindDisplay('cfgFogNear',      'valFogNear');
+bindDisplay('cfgFogFar',       'valFogFar');
+bindDisplay('cfgAmbient',      'valAmbient');
+bindDisplay('cfgNoiseScale',   'valNoiseScale', 2);
+
+function updateCameraFar() {
+    const tileW = CFG.chunkCols * Math.sqrt(3) * CFG.hexSize;
+    const tileH = CFG.chunkRows * 1.5 * CFG.hexSize;
+    camera.far = Math.max(
+        CFG.viewDistance * Math.max(tileW, tileH) * 1.5,
+        material.uniforms.uFogFar.value * 1.1,
+    );
+    camera.updateProjectionMatrix();
 }
 
-function bindColor(id, uniform) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.addEventListener('input', () => {
-        material.uniforms[uniform].value.set(el.value);
-    });
+function applySettings() {
+    const get = id => document.getElementById(id);
+
+    const fogNearEl = get('cfgFogNear');
+    if (fogNearEl) material.uniforms.uFogNear.value = parseFloat(fogNearEl.value);
+
+    const fogFarEl = get('cfgFogFar');
+    if (fogFarEl) material.uniforms.uFogFar.value = parseFloat(fogFarEl.value);
+
+    const ambientEl = get('cfgAmbient');
+    if (ambientEl) material.uniforms.uAmbient.value = parseFloat(ambientEl.value) * 0.01;
+
+    const noiseScaleEl = get('cfgNoiseScale');
+    if (noiseScaleEl) material.uniforms.uNoiseScale.value = parseFloat(noiseScaleEl.value);
+
+    const colorLowEl = get('cfgColorLow');
+    if (colorLowEl) material.uniforms.uColorLow.value.set(colorLowEl.value);
+    const colorMidEl = get('cfgColorMid');
+    if (colorMidEl) material.uniforms.uColorMid.value.set(colorMidEl.value);
+    const colorHighEl = get('cfgColorHigh');
+    if (colorHighEl) material.uniforms.uColorHigh.value.set(colorHighEl.value);
+
+    const wireframeEl = get('cfgWireframe');
+    if (wireframeEl) material.wireframe = wireframeEl.checked;
+
+    const chunkBudgetEl = get('cfgChunkBudget');
+    if (chunkBudgetEl) CFG.chunksPerFrame = Math.max(1, parseInt(chunkBudgetEl.value) || 1);
+
+    const controlModeEl = get('cfgControlMode');
+    if (controlModeEl) {
+        controlMode = controlModeEl.value;
+        if (controlMode !== 'manual' && document.pointerLockElement) document.exitPointerLock();
+        const hud = document.getElementById('hud');
+        if (hud) {
+            hud.textContent = controlMode === 'auto'
+                ? 'AUTO MODE \u00b7 OPEN \u2699 TO ENABLE MANUAL INPUT'
+                : 'CLICK TO CAPTURE MOUSE \u00b7 WASD / ARROWS TO MOVE';
+            hud.classList.remove('hidden');
+        }
+    }
+
+    let needRebuild = false;
+    const viewDistEl = get('cfgViewDistance');
+    if (viewDistEl) {
+        const vd = parseInt(viewDistEl.value);
+        if (vd !== CFG.viewDistance) { CFG.viewDistance = vd; needRebuild = true; }
+    }
+    const cellSizeEl = get('cfgCellSize');
+    if (cellSizeEl) {
+        const hs = parseFloat(cellSizeEl.value);
+        if (hs !== CFG.hexSize) { CFG.hexSize = hs; needRebuild = true; }
+    }
+    if (needRebuild) chunkManager.disposeAll();
+
+    updateCameraFar();
 }
+document.getElementById('spApply')?.addEventListener('click', applySettings);
 
-bindRange('cfgMoveSpeed',  'valMoveSpeed',  null);
-bindRange('cfgFogNear',    'valFogNear',    'uFogNear');
+initPanelToggle();
 
-document.getElementById('cfgViewDistance')?.addEventListener('input', e => {
-    document.getElementById('valViewDistance').textContent = e.target.value;
-    CFG.viewDistance = parseInt(e.target.value);
-    chunkManager.disposeAll();
-});
-
-document.getElementById('cfgCellSize')?.addEventListener('input', e => {
-    document.getElementById('valCellSize').textContent = parseFloat(e.target.value).toFixed(1);
-    CFG.hexSize = parseFloat(e.target.value);
-    chunkManager.disposeAll();
-});
-bindRange('cfgFogFar',     'valFogFar',     'uFogFar');
-bindRange('cfgAmbient',    'valAmbient',    'uAmbient', 0.01);
-bindRange('cfgNoiseScale', 'valNoiseScale', 'uNoiseScale');
-bindColor('cfgColorLow',   'uColorLow');
-bindColor('cfgColorMid',   'uColorMid');
-bindColor('cfgColorHigh',  'uColorHigh');
-
-document.getElementById('cfgControlMode')?.addEventListener('change', e => {
-    controlMode = e.target.value;
-    if (controlMode !== 'manual' && document.pointerLockElement) {
-        document.exitPointerLock();
-    }
-    const hud = document.getElementById('hud');
-    if (hud) {
-        hud.textContent = controlMode === 'auto'
-            ? 'AUTO MODE \u00b7 OPEN \u2699 TO ENABLE MANUAL INPUT'
-            : 'CLICK TO CAPTURE MOUSE \u00b7 WASD / ARROWS TO MOVE';
-        hud.classList.remove('hidden');
-    }
-});
-
-document.getElementById('cfgWireframe')?.addEventListener('change', e => {
-    material.wireframe = e.target.checked;
-});
-
-const btn   = document.getElementById('spBtn');
-const panel = document.getElementById('spPanel');
-btn?.addEventListener('click', () => {
-    panel.classList.toggle('sp-open');
-    btn.classList.toggle('sp-open');
-});
+// ── Persist settings ──────────────────────────────────────────────────────────
+persistSettings('mh:', [
+    'cfgMoveSpeed', 'cfgViewDistance', 'cfgChunkBudget', 'cfgCellSize', 'cfgNoiseScale',
+    'cfgFogNear', 'cfgFogFar', 'cfgAmbient',
+    'cfgColorLow', 'cfgColorMid', 'cfgColorHigh',
+    'cfgControlMode', 'cfgWireframe',
+], applySettings);
 
 // ── Animation loop ────────────────────────────────────────────────────────────
 let prev = performance.now();

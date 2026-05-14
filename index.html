@@ -90,6 +90,27 @@
             color: rgba(255,255,255,0.78);
             border-top: 1px solid rgba(255,255,255,0.06);
         }
+        /* ── Heavy-preview toggle ── */
+        .preview-toggle {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            z-index: 3;
+            background: rgba(10,14,20,0.82);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            color: rgba(255,255,255,0.65);
+            font-size: 0.78rem;
+            padding: 3px 8px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            line-height: 1.5;
+        }
+        .preview-toggle:hover {
+            background: rgba(27,79,138,0.85);
+            border-color: rgba(74,158,255,0.5);
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -111,10 +132,10 @@
             { label: 'OBJ Viewer',          href: 'obj_display/index.html' },
             { label: 'Parallax Horizontal', href: 'Parallax_Horizontal/index.html' },
             { label: 'Parallax Vertical',   href: 'Parallax_Vertical/index.html' },
-            { label: 'Marching Cubes',      href: 'marching_cubes/index.html' },
-            { label: 'Hex Terrain',         href: 'marching_hex/index.html' },
-            { label: 'Cubic Voxel Terrain', href: 'voxel_cubes/index.html' },
-            { label: 'Hex Voxel Terrain',   href: 'voxel_hex/index.html' },
+            { label: 'Marching Cubes',      href: 'marching_cubes/index.html', heavy: true },
+            { label: 'Hex Terrain',         href: 'marching_hex/index.html',   heavy: true },
+            { label: 'Cubic Voxel Terrain', href: 'voxel_cubes/index.html',    heavy: true },
+            { label: 'Hex Voxel Terrain',   href: 'voxel_hex/index.html',      heavy: true },
         ];
 
         const grid = document.getElementById('grid');
@@ -124,7 +145,7 @@
             navigator.serviceWorker.register('/sw.js').catch(() => {});
         }
 
-        effects.forEach(({ label, href }) => {
+        effects.forEach(({ label, href, heavy }) => {
             // Resolve the iframe src relative to this page's directory
             const previewSrc = href + '?preview';
 
@@ -151,6 +172,44 @@
             }
 
             wrap.appendChild(iframe);
+
+            if (heavy) {
+                // Iframe auto-pauses after a few frames via preview.js.
+                // Toggle button lets the user resume / re-pause.
+                let paused = true;
+
+                const toggleBtn = document.createElement('button');
+                toggleBtn.className = 'preview-toggle';
+                toggleBtn.textContent = '\u23f8';
+                toggleBtn.title = 'Pause preview';
+
+                // preview.js notifies us when the auto-pause fires.
+                window.addEventListener('message', e => {
+                    if (e.source !== iframe.contentWindow) return;
+                    if (e.data === 'preview-auto-paused') {
+                        paused = true;
+                        toggleBtn.textContent = '\u25b6';
+                        toggleBtn.title = 'Resume preview';
+                    }
+                });
+
+                toggleBtn.addEventListener('click', e => {
+                    e.preventDefault();
+                    if (paused) {
+                        iframe.contentWindow?.postMessage('preview-resume', '*');
+                        paused = false;
+                        toggleBtn.textContent = '\u23f8';
+                        toggleBtn.title = 'Pause preview';
+                    } else {
+                        iframe.contentWindow?.postMessage('preview-pause', '*');
+                        paused = true;
+                        toggleBtn.textContent = '\u25b6';
+                        toggleBtn.title = 'Resume preview';
+                    }
+                });
+
+                wrap.appendChild(toggleBtn);
+            }
 
             const labelEl = document.createElement('div');
             labelEl.className = 'label';

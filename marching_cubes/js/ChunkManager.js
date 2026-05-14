@@ -8,6 +8,10 @@
 
 import { Chunk } from './Chunk.js';
 
+// Maximum chunks to build per animation frame.  Keeps frame time smooth
+// by spreading the geometry-build cost across multiple frames.
+const CHUNKS_PER_FRAME = 2;
+
 export class ChunkManager {
     /**
      * @param {object}   scene     Three.js Scene.
@@ -26,8 +30,9 @@ export class ChunkManager {
 
         // Track the last chunk-grid cell the camera was in so we only
         // re-evaluate the load set when it actually changes.
-        this._lastCX = null;
-        this._lastCZ = null;
+        this._lastCX    = null;
+        this._lastCZ    = null;
+        this._loadQueue = [];
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -46,41 +51,50 @@ export class ChunkManager {
         const cx = Math.floor(camX / tileW);
         const cz = Math.floor(camZ / tileW);
 
-        if (cx === this._lastCX && cz === this._lastCZ) return;
-        this._lastCX = cx;
-        this._lastCZ = cz;
+        if (!isFinite(cx) || !isFinite(cz)) return;
 
-        // ── Determine which chunks should be loaded ────────────────────────
-        const needed = new Set();
-        const r = viewDistance;
-        for (let dz = -r; dz <= r; dz++) {
-            for (let dx = -r; dx <= r; dx++) {
-                // Circular view distance (optional — comment out for square)
-                if (dx * dx + dz * dz > r * r) continue;
-                needed.add(`${cx + dx},${cz + dz}`);
+        // Rebuild the queue whenever the camera crosses a chunk boundary.
+        if (cx !== this._lastCX || cz !== this._lastCZ) {
+            this._lastCX = cx;
+            this._lastCZ = cz;
+
+            // ── Determine which chunks should be loaded ────────────────────────
+            const needed = new Set();
+            const r = viewDistance;
+            for (let dz = -r; dz <= r; dz++) {
+                for (let dx = -r; dx <= r; dx++) {
+                    // Circular view distance (optional — comment out for square)
+                    if (dx * dx + dz * dz > r * r) continue;
+                    needed.add(`${cx + dx},${cz + dz}`);
+                }
             }
+
+            // ── Unload chunks that left the view distance ──────────────────────
+            for (const [key, chunk] of this._chunks) {
+                if (!needed.has(key)) {
+                    this._scene.remove(chunk.mesh);
+                    chunk.dispose();
+                    this._chunks.delete(key);
+                }
+            }
+
+            // ── Queue new chunks sorted nearest-first ──────────────────────────
+            const toLoad = [...needed].filter(k => !this._chunks.has(k));
+            toLoad.sort((a, b) => {
+                const [ax, az] = a.split(',').map(Number);
+                const [bx, bz] = b.split(',').map(Number);
+                const da = (ax - cx) ** 2 + (az - cz) ** 2;
+                const db = (bx - cx) ** 2 + (bz - cz) ** 2;
+                return da - db;
+            });
+            this._loadQueue = toLoad;
         }
 
-        // ── Unload chunks that left the view distance ──────────────────────
-        for (const [key, chunk] of this._chunks) {
-            if (!needed.has(key)) {
-                this._scene.remove(chunk.mesh);
-                chunk.dispose();
-                this._chunks.delete(key);
-            }
-        }
-
-        // ── Load new chunks (sorted nearest-first for best perceived latency)─
-        const toLoad = [...needed].filter(k => !this._chunks.has(k));
-        toLoad.sort((a, b) => {
-            const [ax, az] = a.split(',').map(Number);
-            const [bx, bz] = b.split(',').map(Number);
-            const da = (ax - cx) ** 2 + (az - cz) ** 2;
-            const db = (bx - cx) ** 2 + (bz - cz) ** 2;
-            return da - db;
-        });
-
-        for (const key of toLoad) {
+        // Drain a small batch from the queue each frame.
+        const batch = Math.min(this._cfg.chunksPerFrame ?? CHUNKS_PER_FRAME, this._loadQueue.length);
+        for (let i = 0; i < batch; i++) {
+            const key = this._loadQueue.shift();
+            if (this._chunks.has(key)) continue;
             const [ncx, ncz] = key.split(',').map(Number);
             const chunk = new Chunk(
                 ncx, ncz,
@@ -100,8 +114,9 @@ export class ChunkManager {
             chunk.dispose();
         }
         this._chunks.clear();
-        this._lastCX = null;
-        this._lastCZ = null;
+        this._loadQueue = [];
+        this._lastCX    = null;
+        this._lastCZ    = null;
     }
 
     /** Number of currently loaded chunks (useful for debug overlay). */

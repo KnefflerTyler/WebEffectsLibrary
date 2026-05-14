@@ -28,7 +28,8 @@ export const TERRAIN_CONFIG = {
 
     // ── View distance / chunk streaming ────────────────────────────────────────
     /** How many chunks in each cardinal direction to keep loaded. */
-    viewDistance: 6,
+    viewDistance:    6,
+    chunksPerFrame:  2,
 
     // ── Camera ──────────────────────────────────────────────────────────────────
     /** Fixed camera height above y = 0 (world units). */

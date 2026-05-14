@@ -54,27 +54,28 @@
                 <div class="sp-card-title">Camera</div>
                 <div class="sp-row">
                     <span class="sp-label">Speed</span>
-                    <input type="range" class="sp-range" id="cfgMoveSpeed"
+                    <input type="number" class="sp-number" id="cfgMoveSpeed"
                            min="2" max="120" step="1" value="14">
-                    <span class="sp-val" id="valMoveSpeed">14</span>
                 </div>
                 <div class="sp-row">
                     <span class="sp-label">View Dist</span>
-                    <input type="range" class="sp-range" id="cfgViewDistance"
+                    <input type="number" class="sp-number" id="cfgViewDistance"
                            min="1" max="128" step="1" value="6">
-                    <span class="sp-val" id="valViewDistance">6</span>
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Chunk Budget</span>
+                    <input type="number" class="sp-number" id="cfgChunkBudget"
+                           min="1" max="16" step="1" value="2">
                 </div>
                 <div class="sp-row">
                     <span class="sp-label">Hex Size</span>
-                    <input type="range" class="sp-range" id="cfgHexSize"
+                    <input type="number" class="sp-number" id="cfgHexSize"
                            min="0.5" max="8" step="0.1" value="1.2">
-                    <span class="sp-val" id="valHexSize">1.2</span>
                 </div>
                 <div class="sp-row">
                     <span class="sp-label">Height Step</span>
-                    <input type="range" class="sp-range" id="cfgHeightStep"
+                    <input type="number" class="sp-number" id="cfgHeightStep"
                            min="0.5" max="8" step="0.1" value="1">
-                    <span class="sp-val" id="valHeightStep">1.0</span>
                 </div>
             </div>
 
@@ -83,32 +84,13 @@
                 <div class="sp-card-title">Fog</div>
                 <div class="sp-row">
                     <span class="sp-label">Near</span>
-                    <input type="range" class="sp-range" id="cfgFogNear"
+                    <input type="number" class="sp-number" id="cfgFogNear"
                            min="10" max="500" step="1" value="50">
-                    <span class="sp-val" id="valFogNear">50</span>
                 </div>
                 <div class="sp-row">
                     <span class="sp-label">Far</span>
-                    <input type="range" class="sp-range" id="cfgFogFar"
+                    <input type="number" class="sp-number" id="cfgFogFar"
                            min="20" max="1000" step="1" value="140">
-                    <span class="sp-val" id="valFogFar">140</span>
-                </div>
-            </div>
-
-            <!-- Lighting -->
-            <div class="sp-card">
-                <div class="sp-card-title">Lighting</div>
-                <div class="sp-row">
-                    <span class="sp-label">Ambient</span>
-                    <input type="range" class="sp-range" id="cfgAmbient"
-                           min="0" max="100" step="1" value="22">
-                    <span class="sp-val" id="valAmbient">22</span>
-                </div>
-                <div class="sp-row">
-                    <span class="sp-label">Brightness</span>
-                    <input type="range" class="sp-range" id="cfgBrightness"
-                           min="0" max="200" step="1" value="100">
-                    <span class="sp-val" id="valBrightness">100</span>
                 </div>
             </div>
 
@@ -117,9 +99,23 @@
                 <div class="sp-card-title">Noise</div>
                 <div class="sp-row">
                     <span class="sp-label">Scale</span>
-                    <input type="range" class="sp-range" id="cfgNoiseScale"
-                           min="10" max="500" step="1" value="60">
-                    <span class="sp-val" id="valNoiseScale">60</span>
+                    <input type="number" class="sp-number" id="cfgNoiseScale"
+                           min="1" max="500" step="1" value="60">
+                </div>
+            </div>
+
+            <!-- Lighting -->
+            <div class="sp-card">
+                <div class="sp-card-title">Lighting</div>
+                <div class="sp-row">
+                    <span class="sp-label">Ambient</span>
+                    <input type="number" class="sp-number" id="cfgAmbient"
+                           min="0" max="100" step="1" value="22">
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Brightness</span>
+                    <input type="number" class="sp-number" id="cfgBrightness"
+                           min="0" max="200" step="1" value="100">
                 </div>
             </div>
 
@@ -152,6 +148,7 @@
                     <input type="checkbox" class="sp-check" id="cfgWireframe">
                 </div>
             </div>
+            <button class="sp-apply" id="spApply">Apply</button>
         </div>
 
         <script type="module" src="js/main.js"></script>

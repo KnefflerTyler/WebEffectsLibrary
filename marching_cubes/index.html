@@ -67,6 +67,12 @@
                     <span class="sp-val" id="valViewDistance">6</span>
                 </div>
                 <div class="sp-row">
+                    <span class="sp-label">Chunk Budget</span>
+                    <input type="range" class="sp-range" id="cfgChunkBudget"
+                           min="1" max="16" step="1" value="2">
+                    <span class="sp-val" id="valChunkBudget">2</span>
+                </div>
+                <div class="sp-row">
                     <span class="sp-label">Cell Size</span>
                     <input type="range" class="sp-range" id="cfgCellSize"
                            min="0.5" max="8" step="0.1" value="1">
@@ -144,6 +150,7 @@
                     <input type="checkbox" class="sp-check" id="cfgWireframe">
                 </div>
             </div>
+            <button class="sp-apply" id="spApply">Apply</button>
         </div>
 
         <script type="module" src="js/main.js"></script>

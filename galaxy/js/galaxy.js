@@ -8,6 +8,7 @@ import {
     BLACKHOLE_FRAG,
 } from './shaders.js';
 import { createInputHandler } from './userinput.js';
+import { initPanelToggle, makeWirer } from '../../shared/settings.js';
 
 // ── Renderer + Scene ─────────────────────────────────────────────────────────
 
@@ -320,73 +321,27 @@ let lastTime = performance.now();
 // ── Settings panel ────────────────────────────────────────────────────────────
 
 (function initSettings() {
-    const NS    = 'gx:';
-    const btn   = document.getElementById('spBtn');
-    const panel = document.getElementById('spPanel');
-    if (!btn || !panel) return;
-
-    btn.addEventListener('click', () => {
-        btn.classList.toggle('sp-open');
-        panel.classList.toggle('sp-open');
-    });
-    document.addEventListener('click', (e) => {
-        if (!panel.contains(e.target) && e.target !== btn) {
-            btn.classList.remove('sp-open');
-            panel.classList.remove('sp-open');
-        }
-    });
-
-    const reg = [];
-    function wire(id, valId, onInput) {
-        const el  = document.getElementById(id);
-        const val = valId ? document.getElementById(valId) : null;
-        if (!el) return;
-        reg.push({ id, el, val, onInput });
-        el.addEventListener('input', () => {
-            localStorage.setItem(NS + id, el.value);
-            if (val) val.textContent = el.type === 'range' ? (+el.value).toFixed(el.step && el.step.includes('.') ? el.step.split('.')[1].length : 0) : el.value;
-            onInput(el.value, el);
-        });
-    }
-
-    // Camera distance
-    wire('cfgCamDist', 'valCamDist', v => { input.dist = +v; });
-
-    // Orbit speed
-    wire('cfgOrbitSpeed', 'valOrbitSpeed', v => {
+    const NS = 'gx:';
+    if (!document.getElementById('spBtn')) return;
+    initPanelToggle();
+    const { wire, restore } = makeWirer(NS);
+    wire('cfgCamDist',      'valCamDist',      v => { input.dist = +v; });
+    wire('cfgOrbitSpeed',   'valOrbitSpeed',   v => {
         orbitSpeedMult = +v;
         document.getElementById('valOrbitSpeed').textContent = (+v).toFixed(1) + '×';
     });
-
-    // Body colors
     wire('cfgStarColor',      null, v => starMat.color.set(v));
     wire('cfgPlanetColor',    null, v => planetMat.color.set(v));
     wire('cfgMoonColor',      null, v => moonMat.color.set(v));
     wire('cfgMeteorColor',    null, v => meteorMat.color.set(v));
     wire('cfgBlackHoleColor', null, v => blackHoleMat.color.set(v));
-
-    // Lighting colors
-    wire('cfgCoreColor', null, v => {
-        coreLight.color.set(v);
-        CORE_COLOR.set(v);
-    });
-    wire('cfgRimColor', null, v => {
-        rimLight.color.set(v);
-        RIM_COLOR.set(v);
-    });
-
-    // Restore saved settings, fall back to defaults where needed
-    const defCamDist = String(Math.round(CAM_DIST_DEFAULT));
-    reg.forEach(({ id, el, val, onInput }) => {
-        const stored = localStorage.getItem(NS + id) ?? (id === 'cfgCamDist' ? defCamDist : null);
-        if (stored === null) return;
-        el.value = stored;
-        if (val) val.textContent = id === 'cfgOrbitSpeed'
-            ? (+stored).toFixed(1) + '×'
-            : el.type === 'range' ? (+stored).toFixed(el.step && el.step.includes('.') ? el.step.split('.')[1].length : 0) : stored;
-        onInput(stored, el);
-    });
-
+    wire('cfgCoreColor', null, v => { coreLight.color.set(v); CORE_COLOR.set(v); });
+    wire('cfgRimColor',  null, v => { rimLight.color.set(v);  RIM_COLOR.set(v); });
+    if (!localStorage.getItem(NS + 'cfgCamDist')) {
+        const el = document.getElementById('cfgCamDist');
+        if (el) { el.value = String(Math.round(CAM_DIST_DEFAULT)); input.dist = CAM_DIST_DEFAULT; }
+    }
+    restore();
     if (!localStorage.getItem(NS + 'cfgOrbitSpeed')) {
         document.getElementById('valOrbitSpeed').textContent = '1.0×';
     }
