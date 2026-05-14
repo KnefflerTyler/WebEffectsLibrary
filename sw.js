@@ -20,15 +20,18 @@ self.addEventListener('fetch', (e) => {
   if (!e.request.url.startsWith(self.location.origin)) return;
 
   e.respondWith(
-    caches.open(CACHE).then(cache =>
-      cache.match(e.request).then(cached => {
-        const fresh = fetch(e.request).then(response => {
-          if (response.ok) cache.put(e.request, response.clone());
-          return response;
-        });
-        // Serve cached version immediately; update cache in background
-        return cached || fresh;
-      })
-    )
+    caches.open(CACHE).then(async cache => {
+      const cached      = await cache.match(e.request);
+      const networkFetch = fetch(e.request);
+
+      // Update cache in background — silently swallow any network errors
+      // so a failed revalidation never surfaces as an unhandled rejection.
+      networkFetch
+        .then(r => { if (r.ok) cache.put(e.request, r.clone()); })
+        .catch(() => {});
+
+      // Serve from cache immediately; fall back to live network if uncached.
+      return cached || networkFetch;
+    })
   );
 });

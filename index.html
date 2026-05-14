@@ -81,6 +81,17 @@
             pointer-events: none;
         }
 
+        /* ── Static image thumbnail (used instead of iframe when image: is set) ── */
+        .thumb-wrap img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+        }
+
         /* ── Label ── */
         .label {
             padding: 12px 14px;
@@ -133,9 +144,9 @@
             { label: 'Parallax Horizontal', href: 'Parallax_Horizontal/index.html' },
             { label: 'Parallax Vertical',   href: 'Parallax_Vertical/index.html' },
             { label: 'Marching Cubes',      href: 'marching_cubes/index.html', heavy: true },
-            { label: 'Hex Terrain',         href: 'marching_hex/index.html',   heavy: true },
-            { label: 'Cubic Voxel Terrain', href: 'voxel_cubes/index.html',    heavy: true },
-            { label: 'Hex Voxel Terrain',   href: 'voxel_hex/index.html',      heavy: true },
+            { label: 'Hex Terrain',         href: 'marching_hex/index.html', heavy: true, image: '/assets/images/image.png' },
+            { label: 'Cubic Voxel Terrain', href: 'voxel_cubes/index.html', heavy: true },
+            { label: 'Hex Voxel Terrain',   href: 'voxel_hex/index.html', heavy: true, image: '/assets/images/image.png' },
         ];
 
         const grid = document.getElementById('grid');
@@ -145,7 +156,40 @@
             navigator.serviceWorker.register('/sw.js').catch(() => {});
         }
 
-        effects.forEach(({ label, href, heavy }) => {
+        // Sequential iframe load queue — each src is set only after the
+        // previous iframe fires its load event (or times out after 15 s).
+        const loadQueue = [];
+        let queueRunning = false;
+
+        function enqueueIframe(iframe, src, label) {
+            loadQueue.push({ iframe, src, label });
+            if (!queueRunning) drainQueue();
+        }
+
+        function drainQueue() {
+            if (!loadQueue.length) { queueRunning = false; return; }
+            queueRunning = true;
+            const { iframe, src, label } = loadQueue.shift();
+            let done = false;
+            const t0 = performance.now();
+            function next(timedOut = false) {
+                if (done) return;
+                done = true;
+                const ms = (performance.now() - t0).toFixed(0);
+                if (timedOut) {
+                    console.warn(`[iframe] ${label} — timed out after ${ms} ms`);
+                } else {
+                    console.log(`[iframe] ${label} — loaded in ${ms} ms`);
+                }
+                drainQueue();
+            }
+            iframe.addEventListener('load', () => next(false), { once: true });
+            // Safety timeout in case an iframe never fires load
+            setTimeout(() => next(true), 3_000);
+            iframe.src = src;
+        }
+
+        effects.forEach(({ label, href, heavy, image }) => {
             // Resolve the iframe src relative to this page's directory
             const previewSrc = href + '?preview';
 
@@ -156,24 +200,32 @@
             const wrap = document.createElement('div');
             wrap.className = 'thumb-wrap';
 
-            const iframe = document.createElement('iframe');
-            iframe.src = previewSrc;
-            iframe.title = label + ' preview';
-            iframe.setAttribute('loading', 'lazy');
-            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
-            iframe.setAttribute('scrolling', 'no');
+            if (image) {
+                // Static image — no iframe, no load queue
+                const img = document.createElement('img');
+                img.src   = image;
+                img.alt   = label + ' preview';
+                img.loading = 'lazy';
+                img.decoding = 'async';
+                wrap.appendChild(img);
+            } else {
+                const iframe = document.createElement('iframe');
+                // src is set later via the load queue — not here
+                iframe.title = label + ' preview';
+                iframe.setAttribute('loading', 'lazy');
+                iframe.setAttribute('scrolling', 'no');
 
-            // Scale the 1280×720 iframe down to fill the container.
-            // The wrap's aspect-ratio:16/9 CSS handles its height automatically.
-            function scaleIframe() {
-                const containerW = wrap.clientWidth;
-                if (!containerW) return;
-                iframe.style.transform = `scale(${containerW / 1280})`;
-            }
+                // Scale the 1280×720 iframe down to fill the container.
+                // The wrap's aspect-ratio:16/9 CSS handles its height automatically.
+                function scaleIframe() {
+                    const containerW = wrap.clientWidth;
+                    if (!containerW) return;
+                    iframe.style.transform = `scale(${containerW / 1280})`;
+                }
 
-            wrap.appendChild(iframe);
+                wrap.appendChild(iframe);
 
-            if (heavy) {
+                if (heavy) {
                 // Iframe auto-pauses after a few frames via preview.js.
                 // Toggle button lets the user resume / re-pause.
                 let paused = true;
@@ -208,8 +260,16 @@
                     }
                 });
 
-                wrap.appendChild(toggleBtn);
-            }
+                    wrap.appendChild(toggleBtn);
+                }
+
+                // Scale after layout
+                requestAnimationFrame(scaleIframe);
+                window.addEventListener('resize', scaleIframe);
+
+                // Queue this iframe for sequential loading
+                enqueueIframe(iframe, previewSrc, label);
+            } // end else (iframe branch)
 
             const labelEl = document.createElement('div');
             labelEl.className = 'label';
@@ -218,10 +278,6 @@
             card.appendChild(wrap);
             card.appendChild(labelEl);
             grid.appendChild(card);
-
-            // Scale after layout
-            requestAnimationFrame(scaleIframe);
-            window.addEventListener('resize', scaleIframe);
         });
     </script>
 </body>
