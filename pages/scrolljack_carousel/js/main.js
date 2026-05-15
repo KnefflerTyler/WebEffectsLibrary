@@ -21,6 +21,15 @@ let cfg = {
     focusThreshold: 45,
 };
 
+// ── Debug init ───────────────────────────────────────────────────────────────
+console.log('[Carousel] init', {
+    itemCount,
+    anglePerItem,
+    cfg,
+    carouselEl: carousel,
+    items,
+});
+
 // Update carousel rotation based on scroll
 function updateCarousel() {
     const windowHeight   = window.innerHeight;
@@ -29,8 +38,21 @@ function updateCarousel() {
     const totalScroll    = documentHeight - windowHeight;
     const progress       = totalScroll <= 0 ? 0 : scrollTop / totalScroll;
 
-    const dir          = cfg.reverse ? -1 : 1;
+    const dir           = cfg.reverse ? -1 : 1;
     const totalRotation = dir * progress * 360 * cfg.rotations;
+
+    // ── Debug scroll (throttled to first call or every ~5% change) ──────────
+    if (typeof updateCarousel._lastProgress === 'undefined' ||
+        Math.abs(progress - updateCarousel._lastProgress) > 0.05) {
+        updateCarousel._lastProgress = progress;
+        console.log('[Carousel] scroll', {
+            scrollTop: scrollTop.toFixed(0),
+            totalScroll: totalScroll.toFixed(0),
+            progress: progress.toFixed(3),
+            totalRotation: totalRotation.toFixed(1),
+            radius: cfg.radius,
+        });
+    }
 
     items.forEach((item, index) => {
         const deg           = ((index * anglePerItem) + totalRotation) % 360;
@@ -50,7 +72,14 @@ function updateCarousel() {
         const opacity     = (0.3 + (1 - distanceFromTop / 180) * 0.7) / 1.2;
         const zIndex      = Math.round(100 - distanceFromTop);
 
-        item.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) scale(${scaleFactor})`;
+        // Debug: log first item every 5% scroll tick
+        if (index === 0 && typeof updateCarousel._lastProgress !== 'undefined') {
+            console.log(`[Carousel] item[0] deg=${normalizedDeg.toFixed(1)} x=${x.toFixed(1)} y=${y.toFixed(1)} scale=${scaleFactor.toFixed(2)}`);
+        }
+
+        // CSS margin already centers items (top:50%+margin:-itemSize/2),
+        // so NO -50% offset needed in the transform.
+        item.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) scale(${scaleFactor.toFixed(4)})`;
         item.style.opacity   = opacity;
         item.style.zIndex    = zIndex;
     });
