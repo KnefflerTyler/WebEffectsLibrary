@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Luminary — Scroll Effects Demo</title>
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+
+<!-- ── Cursor glow ──────────────────────────────────────────────── -->
+<div id="cursor-glow"></div>
+
+<!-- ── Navigation ──────────────────────────────────────────────── -->
+<nav id="main-nav">
+  <span class="nav-logo">LUMINARY</span>
+  <ul class="nav-links">
+    <li><a href="#word-reveal-section">Vision</a></li>
+    <li><a href="#feature-morph-section">Features</a></li>
+    <li><a href="#carousel-section">Showcase</a></li>
+    <li><a href="#depth-section">Gallery</a></li>
+  </ul>
+  <a href="#cta-section" class="nav-cta">Get Started</a>
+</nav>
+
+<!-- ── 1. HERO — scroll-driven parallax exit ───────────────────── -->
+<!-- Effect: bg layers move at different rates, content translates
+     up + fades as user begins scrolling away -->
+<section id="hero">
+  <div class="hero-layer" id="hero-l1"></div>
+  <div class="hero-layer" id="hero-l2"></div>
+  <div class="hero-layer" id="hero-l3"></div>
+  <div class="hero-content" id="hero-content">
+    <div class="hero-eyebrow">
+      Scroll Everywhere &nbsp;·&nbsp; 7 Effects
+    </div>
+    <h1 class="hero-title">
+      <span class="line"><span>Motion</span></span>
+      <span class="line"><span>as a <em class="gt">language.</em></span></span>
+    </h1>
+    <p class="hero-sub">
+      Every section of this page is scroll-jacked. Scroll down to feel each effect —
+      from word-by-word reveals to depth zoom, parallax, and horizontal carousels.
+    </p>
+    <div class="hero-actions">
+      <a href="#word-reveal-section" class="btn-primary">Begin the Journey</a>
+      <a href="#depth-section" class="btn-ghost">View Gallery</a>
+    </div>
+  </div>
+  <div class="hero-scroll-hint" id="scroll-hint">
+    <div class="scroll-mouse"></div>
+    Scroll
+  </div>
+</section>
+
+<!-- ── Marquee (dual-row, CSS-driven) ──────────────────────────── -->
+<div class="marquee-wrap">
+  <div class="marquee-row">
+    <div class="marquee-track fwd" id="marquee-fwd">
+      <span class="mi">Scroll-Jacking<span class="md"></span></span>
+      <span class="mi">Parallax Layers<span class="md"></span></span>
+      <span class="mi">Horizontal Carousel<span class="md"></span></span>
+      <span class="mi">Depth Zoom<span class="md"></span></span>
+      <span class="mi">Word Reveal<span class="md"></span></span>
+      <span class="mi">Feature Morph<span class="md"></span></span>
+      <span class="mi">60 FPS<span class="md"></span></span>
+      <span class="mi">Scroll-Jacking<span class="md"></span></span>
+      <span class="mi">Parallax Layers<span class="md"></span></span>
+      <span class="mi">Horizontal Carousel<span class="md"></span></span>
+      <span class="mi">Depth Zoom<span class="md"></span></span>
+      <span class="mi">Word Reveal<span class="md"></span></span>
+      <span class="mi">Feature Morph<span class="md"></span></span>
+      <span class="mi">60 FPS<span class="md"></span></span>
+    </div>
+  </div>
+  <div class="marquee-row rev-row">
+    <div class="marquee-track rev" id="marquee-rev">
+      <span class="mi">WebGL Shaders<span class="md"></span></span>
+      <span class="mi">GPU Particles<span class="md"></span></span>
+      <span class="mi">Procedural Terrain<span class="md"></span></span>
+      <span class="mi">Ray Marching<span class="md"></span></span>
+      <span class="mi">Fluid Simulation<span class="md"></span></span>
+      <span class="mi">Orbital Mechanics<span class="md"></span></span>
+      <span class="mi">Voxel Worlds<span class="md"></span></span>
+      <span class="mi">WebGL Shaders<span class="md"></span></span>
+      <span class="mi">GPU Particles<span class="md"></span></span>
+      <span class="mi">Procedural Terrain<span class="md"></span></span>
+      <span class="mi">Ray Marching<span class="md"></span></span>
+      <span class="mi">Fluid Simulation<span class="md"></span></span>
+      <span class="mi">Orbital Mechanics<span class="md"></span></span>
+      <span class="mi">Voxel Worlds<span class="md"></span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ── 2. WORD REVEAL — Apple-style word highlight ──────────────── -->
+<!-- Effect: each word brightens in sequence as scroll advances
+     through the 300vh pin container -->
+<div class="pin-section" id="word-reveal-section" style="--pin-h: 350vh;">
+  <div class="pin-sticky">
+    <div class="wr-bg" id="wr-bg"></div>
+    <div class="wr-label">Effect 01 — Word Reveal</div>
+    <div class="wr-progress-track">
+      <div class="wr-progress-fill" id="wr-fill"></div>
+    </div>
+    <p class="wr-text" id="wr-text">
+      <span class="wr-word">Every</span>
+      <span class="wr-word">pixel.</span>
+      <span class="wr-word">Every</span>
+      <span class="wr-word">frame.</span>
+      <span class="wr-word">Every</span>
+      <span class="wr-word">interaction —</span>
+      <span class="wr-word">crafted</span>
+      <span class="wr-word">with</span>
+      <span class="wr-word">obsessive</span>
+      <span class="wr-word">attention</span>
+      <span class="wr-word">to</span>
+      <span class="wr-word">detail,</span>
+      <span class="wr-word">built</span>
+      <span class="wr-word">to</span>
+      <span class="wr-word">move</span>
+      <span class="wr-word">the</span>
+      <span class="wr-word">human</span>
+      <span class="wr-word">soul.</span>
+    </p>
+  </div>
+</div>
+
+<!-- ── 3. FEATURE MORPH — card morphs through 3 states ─────────── -->
+<!-- Effect: one sticky card changes color/content/data at 3 scroll
+     thresholds; matching text panel crossfades beside it -->
+<div class="pin-section" id="feature-morph-section" style="--pin-h: 500vh;">
+  <div class="pin-sticky" id="fm-sticky">
+
+    <!-- Phase indicator dots (left spine) -->
+    <div class="fm-spine">
+      <div class="fm-spine-dot" data-phase="0"></div>
+      <div class="fm-spine-dot" data-phase="1"></div>
+      <div class="fm-spine-dot" data-phase="2"></div>
+    </div>
+
+    <!-- Effect label -->
+    <div class="fm-effect-label">Effect 02 — Feature Morph</div>
+
+    <!-- Visual: 3 card layers crossfaded by JS -->
+    <div class="fm-visual-col">
+      <div class="fm-card-stack">
+        <div class="fm-card" id="fm-card-0">
+          <div class="fm-card-glow" style="background:radial-gradient(#3b82f6,transparent);"></div>
+          <div class="fm-card-inner">
+            <div class="fm-icon-ring" style="border-color:rgba(59,130,246,0.4);">⚡</div>
+            <div class="fm-card-label">Render Performance</div>
+            <div class="fm-card-value" style="color:#3b82f6;">60 fps</div>
+            <div class="fm-bar-group">
+              <div class="fm-bar-row">
+                <span>Frame Budget</span><span>16.7ms</span>
+              </div>
+              <div class="fm-bar"><div class="fm-bar-fill" style="width:90%;background:#3b82f6;"></div></div>
+              <div class="fm-bar-row">
+                <span>GPU Usage</span><span>Low</span>
+              </div>
+              <div class="fm-bar"><div class="fm-bar-fill" style="width:28%;background:#60a5fa;"></div></div>
+              <div class="fm-bar-row">
+                <span>Jank Score</span><span>0.2%</span>
+              </div>
+              <div class="fm-bar"><div class="fm-bar-fill" style="width:4%;background:#93c5fd;"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="fm-card" id="fm-card-1" style="opacity:0;">
+          <div class="fm-card-glow" style="background:radial-gradient(#8b5cf6,transparent);"></div>
+          <div class="fm-card-inner">
+            <div class="fm-icon-ring" style="border-color:rgba(139,92,246,0.4);">🌊</div>
+            <div class="fm-card-label">Spring Physics</div>
+            <div class="fm-card-value" style="color:#8b5cf6;">Natural</div>
+            <div class="fm-bezier-preview">
+              <svg viewBox="0 0 160 80" fill="none">
+                <path d="M10 70 C40 70 60 10 80 10 C100 10 120 50 150 30"
+                      stroke="#8b5cf6" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="10" cy="70" r="4" fill="#8b5cf6"/>
+                <circle cx="150" cy="30" r="4" fill="#8b5cf6"/>
+                <circle cx="80" cy="10" r="3" fill="rgba(139,92,246,0.4)" stroke="#8b5cf6" stroke-width="1.5"/>
+                <line x1="10" y1="70" x2="40" y2="70" stroke="rgba(139,92,246,0.3)" stroke-width="1" stroke-dasharray="4 3"/>
+                <line x1="60" y1="10" x2="80" y2="10" stroke="rgba(139,92,246,0.3)" stroke-width="1" stroke-dasharray="4 3"/>
+              </svg>
+            </div>
+            <div class="fm-card-label" style="margin-top:8px;">Custom Easing Curves</div>
+          </div>
+        </div>
+
+        <div class="fm-card" id="fm-card-2" style="opacity:0;">
+          <div class="fm-card-glow" style="background:radial-gradient(#22d3ee,transparent);"></div>
+          <div class="fm-card-inner">
+            <div class="fm-icon-ring" style="border-color:rgba(34,211,238,0.4);">✦</div>
+            <div class="fm-card-label">Design System</div>
+            <div class="fm-card-value" style="background:linear-gradient(135deg,#3b82f6,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Tokens</div>
+            <div class="fm-token-grid">
+              <div class="fm-token" style="background:#3b82f6;"></div>
+              <div class="fm-token" style="background:#8b5cf6;"></div>
+              <div class="fm-token" style="background:#22d3ee;"></div>
+              <div class="fm-token" style="background:#f59e0b;"></div>
+              <div class="fm-token" style="background:#ec4899;"></div>
+              <div class="fm-token" style="background:#22c55e;"></div>
+              <div class="fm-token" style="background:#0d1117;border:1px solid rgba(255,255,255,0.15);"></div>
+              <div class="fm-token" style="background:#1e293b;"></div>
+              <div class="fm-token" style="background:#e2ecf8;opacity:0.12;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Text panels: 3 stacked, JS drives opacity -->
+    <div class="fm-text-col">
+      <div class="fm-panel" id="fm-panel-0">
+        <p class="fm-panel-num">01</p>
+        <h2 class="fm-panel-title">GPU-accelerated performance.</h2>
+        <p class="fm-panel-body">Every animation runs on the compositor thread, completely bypassing layout and paint. Transforms and opacity are all that moves — keeping the main thread free for your logic.</p>
+        <ul class="fm-panel-list">
+          <li><span class="fc blue"></span>Composited layers with <code>will-change</code></li>
+          <li><span class="fc blue"></span>Zero layout-thrashing scroll listeners</li>
+          <li><span class="fc blue"></span>requestAnimationFrame render loop</li>
+        </ul>
+      </div>
+      <div class="fm-panel" id="fm-panel-1" style="opacity:0;pointer-events:none;">
+        <p class="fm-panel-num">02</p>
+        <h2 class="fm-panel-title">Motion with real physics.</h2>
+        <p class="fm-panel-body">Spring-based easing, tension and friction parameters, and custom Bézier curves replace rigid linear timings. Every transition feels like it obeys the laws of the physical world.</p>
+        <ul class="fm-panel-list">
+          <li><span class="fc purple"></span>Spring solver with configurable mass</li>
+          <li><span class="fc purple"></span>Bezier curve library — 40+ presets</li>
+          <li><span class="fc purple"></span>Velocity continuity across interruptions</li>
+        </ul>
+      </div>
+      <div class="fm-panel" id="fm-panel-2" style="opacity:0;pointer-events:none;">
+        <p class="fm-panel-num">03</p>
+        <h2 class="fm-panel-title">Design tokens at every layer.</h2>
+        <p class="fm-panel-body">A single token file drives color, spacing, radius, shadow, and motion values across the entire system. Change one value, update everywhere — dark mode, brand refresh, or white-label in seconds.</p>
+        <ul class="fm-panel-list">
+          <li><span class="fc cyan"></span>CSS custom properties + JS constants</li>
+          <li><span class="fc cyan"></span>Automated dark/light theme generation</li>
+          <li><span class="fc cyan"></span>Design-to-code token sync pipeline</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── 4. HORIZONTAL CAROUSEL — vertical scroll → horizontal move ─ -->
+<!-- Effect: pin container gives extra scroll height, JS maps
+     scroll progress → translateX on the card track -->
+<div id="carousel-section">
+  <div class="carousel-pin-container" id="carousel-pin">
+    <div class="carousel-sticky" id="carousel-sticky">
+
+      <div class="carousel-header">
+        <p class="effect-label">Effect 03 — Horizontal Scroll</p>
+        <h2 class="section-title">Scroll down. Cards move sideways.</h2>
+      </div>
+
+      <div class="carousel-track-wrap">
+        <div class="carousel-track" id="carousel-track">
+
+          <div class="c-card" style="--c-grad: linear-gradient(135deg,#0d1f3c,#1e3a5f);">
+            <div class="c-card-img" style="background:var(--c-grad);">🌊<div class="c-overlay" style="background:linear-gradient(135deg,rgba(59,130,246,0.3),transparent);"></div></div>
+            <div class="c-card-body"><span class="c-tag" style="background:rgba(59,130,246,0.12);color:#3b82f6;">WebGL</span><h3>Fluid Simulations</h3><p>Real-time Navier-Stokes fluid dynamics rendered on the GPU using fragment shaders.</p></div>
+          </div>
+
+          <div class="c-card" style="--c-grad: linear-gradient(135deg,#1a0d3c,#3b1f6b);">
+            <div class="c-card-img" style="background:var(--c-grad);">✨<div class="c-overlay" style="background:linear-gradient(135deg,rgba(139,92,246,0.3),transparent);"></div></div>
+            <div class="c-card-body"><span class="c-tag" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">GPU</span><h3>Particle Systems</h3><p>Instanced particle emitters with physics attractors, forces, and GPU-side collision.</p></div>
+          </div>
+
+          <div class="c-card" style="--c-grad: linear-gradient(135deg,#0d2e2e,#0f4c4c);">
+            <div class="c-card-img" style="background:var(--c-grad);">🌌<div class="c-overlay" style="background:linear-gradient(135deg,rgba(34,211,238,0.25),transparent);"></div></div>
+            <div class="c-card-body"><span class="c-tag" style="background:rgba(34,211,238,0.12);color:#22d3ee;">3D</span><h3>Galaxy Renderer</h3><p>Procedural galaxy with orbital mechanics, star life cycles, accretion disk, and lens flare.</p></div>
+          </div>
+
+          <div class="c-card" style="--c-grad: linear-gradient(135deg,#2e1a0d,#5c3a0f);">
+            <div class="c-card-img" style="background:var(--c-grad);">🔥<div class="c-overlay" style="background:linear-gradient(135deg,rgba(245,158,11,0.25),transparent);"></div></div>
+            <div class="c-card-body"><span class="c-tag" style="background:rgba(245,158,11,0.12);color:#f59e0b;">VFX</span><h3>Fireworks Engine</h3><p>Configurable burst patterns, trail physics, bloom post-processing, and audio sync.</p></div>
+          </div>
+
+          <div class="c-card" style="--c-grad: linear-gradient(135deg,#0d2a1a,#0f4c2f);">
+            <div class="c-card-img" style="background:var(--c-grad);">🌿<div class="c-overlay" style="background:linear-gradient(135deg,rgba(34,197,94,0.25),transparent);"></div></div>
+            <div class="c-card-body"><span class="c-tag" style="background:rgba(34,197,94,0.12);color:#22c55e;">Terrain</span><h3>Marching Cubes</h3><p>Isosurface extraction from 3D scalar fields with real-time Perlin noise terrain generation.</p></div>
+          </div>
+
+          <div class="c-card" style="--c-grad: linear-gradient(135deg,#2a0d1a,#4c0f30);">
+            <div class="c-card-img" style="background:var(--c-grad);">💎<div class="c-overlay" style="background:linear-gradient(135deg,rgba(236,72,153,0.25),transparent);"></div></div>
+            <div class="c-card-body"><span class="c-tag" style="background:rgba(236,72,153,0.12);color:#ec4899;">Shader</span><h3>Perlin Noise Masks</h3><p>Animated noise fields used as displacement and masking layers in GLSL fragment shaders.</p></div>
+          </div>
+
+          <div class="c-card" style="--c-grad: linear-gradient(135deg,#1c1a0d,#3d380f);">
+            <div class="c-card-img" style="background:var(--c-grad);">🔮<div class="c-overlay" style="background:linear-gradient(135deg,rgba(234,179,8,0.25),transparent);"></div></div>
+            <div class="c-card-body"><span class="c-tag" style="background:rgba(234,179,8,0.12);color:#eab308;">Ray March</span><h3>Crystal Refraction</h3><p>Signed-distance function ray-marcher with dispersion, caustics, and interior reflections.</p></div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="carousel-progress" id="carousel-progress">
+        <div class="carousel-pip active"></div>
+        <div class="carousel-pip"></div>
+        <div class="carousel-pip"></div>
+        <div class="carousel-pip"></div>
+        <div class="carousel-pip"></div>
+        <div class="carousel-pip"></div>
+        <div class="carousel-pip"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── 5. DEPTH ZOOM — cards rush in from extreme depth ─────────── -->
+<!-- Effect: cards start at scale(0.04)/blur(40px)/opacity(0) and
+     zoom to full size with a staggered delay per card -->
+<div class="pin-section" id="depth-section" style="--pin-h: 380vh;">
+  <div class="pin-sticky">
+    <div class="depth-bg" id="depth-bg"></div>
+    <div class="depth-header">
+      <p class="effect-label">Effect 04 — Depth Zoom</p>
+      <h2 class="section-title">Watch them approach.</h2>
+    </div>
+    <div class="depth-grid" id="depth-grid">
+      <div class="depth-card" data-di="0" style="--dc-bg:linear-gradient(135deg,#07122b,#0d2150);">
+        <div class="dc-visual">🌌</div>
+        <div class="dc-info"><h3>Nebula Map</h3><p>50k stars, gravitational lensing</p></div>
+      </div>
+      <div class="depth-card" data-di="1" style="--dc-bg:linear-gradient(135deg,#180a35,#311060);">
+        <div class="dc-visual">🔮</div>
+        <div class="dc-info"><h3>Crystal Shader</h3><p>Ray-march refraction & dispersion</p></div>
+      </div>
+      <div class="depth-card" data-di="2" style="--dc-bg:linear-gradient(135deg,#0a2820,#0f4035);">
+        <div class="dc-visual">🌊</div>
+        <div class="dc-info"><h3>Ocean Surface</h3><p>Gerstner waves + subsurface scatter</p></div>
+      </div>
+      <div class="depth-card" data-di="3" style="--dc-bg:linear-gradient(135deg,#280f07,#502010);">
+        <div class="dc-visual">🔥</div>
+        <div class="dc-info"><h3>Fire Sim</h3><p>Vorticity-enhanced fluid turbulence</p></div>
+      </div>
+      <div class="depth-card" data-di="4" style="--dc-bg:linear-gradient(135deg,#081a0e,#0e3320);">
+        <div class="dc-visual">🌿</div>
+        <div class="dc-info"><h3>Growth Pattern</h3><p>Reaction-diffusion on GPU buffer</p></div>
+      </div>
+      <div class="depth-card" data-di="5" style="--dc-bg:linear-gradient(135deg,#230c1a,#40102f);">
+        <div class="dc-visual">💫</div>
+        <div class="dc-info"><h3>Synthwave City</h3><p>Procedural infinite cityscape</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 6. SCROLL STATS — numbers driven by scroll position ─────── -->
+<!-- Effect: stat values are computed directly from scroll progress
+     (not intersection observer) so they count up/down as you scroll -->
+<div class="pin-section" id="stats-section" style="--pin-h: 280vh;">
+  <div class="pin-sticky" id="stats-sticky">
+    <div class="stats-sweep" id="stats-sweep"></div>
+    <div class="stats-label-wrap">
+      <p class="effect-label">Effect 05 — Scroll Counter</p>
+      <h2 class="section-title">Scroll back up. They go backwards.</h2>
+    </div>
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-cell" data-target="60" data-suffix=" fps" data-prefix="">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-number"><span class="stat-val">0</span><span class="stat-suf"> fps</span></div>
+        <div class="stat-desc">Target framerate</div>
+      </div>
+      <div class="stat-cell" data-target="120" data-suffix="+" data-prefix="">
+        <div class="stat-icon">✦</div>
+        <div class="stat-number"><span class="stat-val">0</span><span class="stat-suf">+</span></div>
+        <div class="stat-desc">Effects & demos</div>
+      </div>
+      <div class="stat-cell" data-target="50" data-suffix="k" data-prefix="">
+        <div class="stat-icon">👥</div>
+        <div class="stat-number"><span class="stat-val">0</span><span class="stat-suf">k</span></div>
+        <div class="stat-desc">Monthly visitors</div>
+      </div>
+      <div class="stat-cell" data-target="99" data-suffix="%" data-prefix="">
+        <div class="stat-icon">💯</div>
+        <div class="stat-number"><span class="stat-val">0</span><span class="stat-suf">%</span></div>
+        <div class="stat-desc">Satisfaction rate</div>
+      </div>
+    </div>
+    <div class="stats-bar-viz" id="stats-bar-viz">
+      <div class="sbv-bar" id="sbv-0" style="--sbv-color:#3b82f6;"></div>
+      <div class="sbv-bar" id="sbv-1" style="--sbv-color:#8b5cf6;"></div>
+      <div class="sbv-bar" id="sbv-2" style="--sbv-color:#22d3ee;"></div>
+      <div class="sbv-bar" id="sbv-3" style="--sbv-color:#f59e0b;"></div>
+      <div class="sbv-bar" id="sbv-4" style="--sbv-color:#ec4899;"></div>
+      <div class="sbv-bar" id="sbv-5" style="--sbv-color:#22c55e;"></div>
+      <div class="sbv-bar" id="sbv-6" style="--sbv-color:#3b82f6;"></div>
+      <div class="sbv-bar" id="sbv-7" style="--sbv-color:#8b5cf6;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 7. PARALLAX CTA — multi-layer depth parallax + text scale ── -->
+<!-- Effect: 3 background layers translate at different rates (Y),
+     foreground text scales from 1.3→1.0 and fades in -->
+<div class="pin-section" id="cta-section" style="--pin-h: 320vh;">
+  <div class="pin-sticky" id="cta-sticky">
+    <div class="cta-layer" id="cta-l0"></div>
+    <div class="cta-layer" id="cta-l1"></div>
+    <div class="cta-layer" id="cta-l2"></div>
+    <div class="cta-rings" id="cta-rings">
+      <div class="cta-ring" id="cr-0"></div>
+      <div class="cta-ring" id="cr-1"></div>
+      <div class="cta-ring" id="cr-2"></div>
+    </div>
+    <div class="cta-content" id="cta-content">
+      <p class="effect-label" style="justify-content:center;">Effect 06 &amp; 07 — Parallax + Scale Reveal</p>
+      <h2 class="cta-title" id="cta-title">
+        Start building the <span class="gt">impossible.</span>
+      </h2>
+      <p class="cta-sub" id="cta-sub">
+        Join developers and designers pushing the limits of what a browser can do.
+        Every demo here runs at native speed, zero dependencies.
+      </p>
+      <div class="cta-buttons" id="cta-buttons">
+        <a href="#" class="btn-primary">Start for Free</a>
+        <a href="#" class="btn-ghost">Browse Source</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Footer ───────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <span class="nav-logo" style="font-size:1.3rem;display:inline-block;margin-bottom:16px;">LUMINARY</span>
+      <p>Pushing the limits of what's possible on the open web — one frame at a time.</p>
+      <div class="footer-socials">
+        <a class="fsb" href="#" aria-label="GitHub">⌥</a>
+        <a class="fsb" href="#" aria-label="Twitter">𝕏</a>
+        <a class="fsb" href="#" aria-label="Discord">◈</a>
+        <a class="fsb" href="#" aria-label="RSS">⊕</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="#">Features</a></li>
+        <li><a href="#">Showcase</a></li>
+        <li><a href="#">Changelog</a></li>
+        <li><a href="#">Roadmap</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Developers</h4>
+      <ul>
+        <li><a href="#">Documentation</a></li>
+        <li><a href="#">API Reference</a></li>
+        <li><a href="#">GitHub</a></li>
+        <li><a href="#">Examples</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Luminary. All rights reserved.</p>
+    <div class="footer-legal">
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <a href="#">Cookies</a>
+    </div>
+  </div>
+</footer>
+
+<script src="../back-button.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
