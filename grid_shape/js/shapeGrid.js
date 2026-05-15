@@ -216,7 +216,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
         const NS = 'sg:';
         if (!document.getElementById('spBtn')) return;
         initPanelToggle();
-        const { wire, restore } = makeWirer(NS);
+        const { wire, apply, restore } = makeWirer(NS);
         wire('cfgShape',      null,            v => { cfg.shape    = v; onResize(); });
         wire('cfgCellSize',   'valCellSize',   v => { cfg.cellSize = +v; onResize(); });
         wire('cfgColor',      null,            v => linesMesh && linesMesh.material.uniforms.uColor.value.set(v));
@@ -225,6 +225,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
         wire('cfgRipple',     null,            v => { cfg.ripple    = v; });
         wire('cfgSpotlight',  null,            v => { cfg.spotlight = v; });
         restore();
+        document.getElementById('spApply')?.addEventListener('click', apply);
     })();
 
     return {

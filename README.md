@@ -21,6 +21,9 @@ A collection of interactive visual effects, each self-contained in its own direc
 | [Hex Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/marching_hex/) | Same GPU-driven terrain as Marching Cubes but built from pointy-top hexagonal cells |
 | [Cubic Voxel Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/voxel_cubes/) | Blocky stepped terrain — GPU Perlin fBm quantized to discrete height steps, height/normal-based grass and dirt coloring |
 | [Hex Voxel Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/voxel_hex/) | Hexagonal cells with GPU Perlin fBm + voxel quantization — blocky stepped topology on a pointy-top hex grid |
+| [2D Particles](https://tylerkneffler.github.io/WebEffectsLibrary/2d_particals/) | GPU fireworks particle system with GLSL vertex/fragment shaders |
+| [2D Collisions](https://tylerkneffler.github.io/WebEffectsLibrary/2d_collisions/) | Real-time 2D physics collision simulation |
+| [Scroll Jacking Demo](https://tylerkneffler.github.io/WebEffectsLibrary/scrolljack_web_sample/) | Modern Apple-style scrolljacking showcase — 7 distinct effects: hero parallax exit, word reveal, feature morph, horizontal carousel, depth zoom, scroll-driven counters, and parallax CTA |
 
 ## Running Locally
 

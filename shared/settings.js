@@ -73,7 +73,19 @@ export function makeWirer(NS) {
         if (!el) return;
         const dec = decimals ?? (el.step?.includes('.') ? el.step.split('.')[1].length : 0);
         reg.push({ id, el, val, dec, onInput });
+        // Only update the display label — do NOT apply to the scene yet.
         el.addEventListener(evtFor(el), () => {
+            const v = el.type === 'checkbox' ? el.checked : el.value;
+            if (val) val.textContent = el.type === 'checkbox' ? '' : (+v).toFixed(dec);
+        });
+    }
+
+    /**
+     * Apply all current input values to the scene and persist to localStorage.
+     * Call this from the panel's Apply button click handler.
+     */
+    function apply() {
+        reg.forEach(({ id, el, val, dec, onInput }) => {
             const v = el.type === 'checkbox' ? el.checked : el.value;
             localStorage.setItem(NS + id, el.type === 'checkbox' ? String(v) : v);
             if (val) val.textContent = el.type === 'checkbox' ? '' : (+v).toFixed(dec);
@@ -81,6 +93,10 @@ export function makeWirer(NS) {
         });
     }
 
+    /**
+     * Restore saved values from localStorage and apply them immediately.
+     * Called once on page load — bypasses the Apply gate.
+     */
     function restore() {
         reg.forEach(({ id, el, val, dec, onInput }) => {
             const stored = localStorage.getItem(NS + id);
@@ -92,7 +108,7 @@ export function makeWirer(NS) {
         });
     }
 
-    return { wire, restore };
+    return { wire, apply, restore };
 }
 
 /**

@@ -313,7 +313,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
 
     // ── Settings wiring ────────────────────────────────────────────────────────
     initPanelToggle();
-    const { wire, restore } = makeWirer('fw:');
+    const { wire, apply, restore } = makeWirer('fw:');
 
     wire('cfgLaunchRate', 'valLaunchRate', v => {
         cfg.launchRateMax = +v;
@@ -327,6 +327,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
     wire('cfgSparkLife',  'valSparkLife',  v => { cfg.sparkLife  = +v; }, 1);
 
     restore();
+    document.getElementById('spApply')?.addEventListener('click', apply);
 
     // ── Stop / cleanup ─────────────────────────────────────────────────────────
     return {

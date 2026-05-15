@@ -267,7 +267,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
         const NS = 'gb:';
         if (!document.getElementById('spBtn')) return;
         initPanelToggle();
-        const { wire, restore } = makeWirer(NS);
+        const { wire, apply, restore } = makeWirer(NS);
         wire('cfgBgColor',     null,             v => { document.body.style.background = v; });
         wire('cfgColor',       null,             v => points && points.material.uniforms.uColor.value.set(v));
         wire('cfgHoverColor',  null,             v => points && points.material.uniforms.uHoverColor.value.set(v));
@@ -278,6 +278,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
         wire('cfgRipple',      null,             v => { cfg.ripple = v; });
         wire('cfgRippleSpeed', 'valRippleSpeed', v => { cfg.rippleSpeed = +v; });
         restore();
+        document.getElementById('spApply')?.addEventListener('click', apply);
     })();
 
     return {

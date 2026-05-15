@@ -324,7 +324,7 @@ let lastTime = performance.now();
     const NS = 'gx:';
     if (!document.getElementById('spBtn')) return;
     initPanelToggle();
-    const { wire, restore } = makeWirer(NS);
+    const { wire, apply, restore } = makeWirer(NS);
     wire('cfgCamDist',      'valCamDist',      v => { input.dist = +v; });
     wire('cfgOrbitSpeed',   'valOrbitSpeed',   v => {
         orbitSpeedMult = +v;
@@ -345,4 +345,5 @@ let lastTime = performance.now();
     if (!localStorage.getItem(NS + 'cfgOrbitSpeed')) {
         document.getElementById('valOrbitSpeed').textContent = '1.0×';
     }
+    document.getElementById('spApply')?.addEventListener('click', apply);
 })();

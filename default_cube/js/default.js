@@ -89,55 +89,60 @@ let speedY = 0.012;
     if (spBtn && spPanel) {
         initPanelToggle();
 
-        // spinning toggle
-        document.getElementById('cfgSpinning').addEventListener('change', e => {
-            DEFAULTS.Spinning = e.target.checked;
-            localStorage.setItem(NS + 'cfgSpinning', String(e.target.checked));
-        });
+        // Display-only listeners (no scene changes until Apply is clicked)
+        document.getElementById('cfgSpeedX').addEventListener('input', e =>
+            document.getElementById('valSpeedX').textContent = parseFloat(e.target.value).toFixed(3));
+        document.getElementById('cfgSpeedY').addEventListener('input', e =>
+            document.getElementById('valSpeedY').textContent = parseFloat(e.target.value).toFixed(3));
+        document.getElementById('cfgShiny').addEventListener('input', e =>
+            document.getElementById('valShiny').textContent = e.target.value);
 
-        // speed sliders
-        document.getElementById('cfgSpeedX').addEventListener('input', e => {
-            speedX = parseFloat(e.target.value);
+        // Apply button — reads all current input values and applies them
+        function applySettings() {
+            const solidCheck = document.getElementById('cfgSolid');
+            const solidColor = document.getElementById('cfgSolidColor');
+
+            // spinning toggle
+            DEFAULTS.Spinning = document.getElementById('cfgSpinning').checked;
+            localStorage.setItem(NS + 'cfgSpinning', String(DEFAULTS.Spinning));
+
+            // speeds
+            speedX = parseFloat(document.getElementById('cfgSpeedX').value);
+            speedY = parseFloat(document.getElementById('cfgSpeedY').value);
             document.getElementById('valSpeedX').textContent = speedX.toFixed(3);
-            localStorage.setItem(NS + 'cfgSpeedX', e.target.value);
-        });
-        document.getElementById('cfgSpeedY').addEventListener('input', e => {
-            speedY = parseFloat(e.target.value);
             document.getElementById('valSpeedY').textContent = speedY.toFixed(3);
-            localStorage.setItem(NS + 'cfgSpeedY', e.target.value);
-        });
+            localStorage.setItem(NS + 'cfgSpeedX', String(speedX));
+            localStorage.setItem(NS + 'cfgSpeedY', String(speedY));
 
-        // shininess
-        document.getElementById('cfgShiny').addEventListener('input', e => {
-            const v = parseFloat(e.target.value);
-            document.getElementById('valShiny').textContent = v;
-            faceMaterials.forEach(m => { m.uniforms.uShininess.value = v; });
-            localStorage.setItem(NS + 'cfgShiny', e.target.value);
-        });
+            // shininess
+            const shiny = parseFloat(document.getElementById('cfgShiny').value);
+            faceMaterials.forEach(m => { m.uniforms.uShininess.value = shiny; });
+            localStorage.setItem(NS + 'cfgShiny', String(shiny));
 
-        // per-face color pickers
-        document.getElementById('faceColorGrid').addEventListener('input', e => {
-            const input = e.target;
-            if (!input.dataset.face) return;
-            const idx = parseInt(input.dataset.face, 10);
-            faceMaterials[idx].uniforms.uColor.value.set(input.value);
-            localStorage.setItem(NS + 'face' + idx, input.value);
-        });
+            // per-face colors
+            document.querySelectorAll('[data-face]').forEach(input => {
+                const idx = parseInt(input.dataset.face, 10);
+                faceMaterials[idx].uniforms.uColor.value.set(input.value);
+                localStorage.setItem(NS + 'face' + idx, input.value);
+            });
 
-        // solid color mode
-        const solidCheck = document.getElementById('cfgSolid');
-        const solidColor = document.getElementById('cfgSolidColor');
-        function applySolid() {
+            // solid color mode
             if (solidCheck.checked) {
                 faceMaterials.forEach(m => m.uniforms.uColor.value.set(solidColor.value));
             }
             localStorage.setItem(NS + 'cfgSolid', String(solidCheck.checked));
             localStorage.setItem(NS + 'cfgSolidColor', solidColor.value);
         }
-        solidCheck.addEventListener('change', applySolid);
-        solidColor.addEventListener('input', applySolid);
 
-        // Restore saved settings
+        document.getElementById('spApply').addEventListener('click', applySettings);
+
+        // Color picker display updates (no scene change — just show the picked colour)
+        document.getElementById('faceColorGrid').addEventListener('input', () => {});
+        document.getElementById('cfgSolid').addEventListener('change', () => {});
+        document.getElementById('cfgSolidColor').addEventListener('input', () => {});
+        document.getElementById('cfgSpinning').addEventListener('change', () => {});
+
+        // Restore saved settings on load (bypasses Apply gate)
         const sv = key => localStorage.getItem(NS + key);
 
         const sSpin = sv('cfgSpinning');
@@ -158,6 +163,12 @@ let speedY = 0.012;
         }
 
         const sSolid = sv('cfgSolid'), sSolidColor = sv('cfgSolidColor');
-        if (sSolid !== null) { solidCheck.checked = sSolid === 'true'; if (sSolidColor !== null) solidColor.value = sSolidColor; applySolid(); }
+        if (sSolid !== null) {
+            const solidCheck = document.getElementById('cfgSolid');
+            const solidColor = document.getElementById('cfgSolidColor');
+            solidCheck.checked = sSolid === 'true';
+            if (sSolidColor !== null) solidColor.value = sSolidColor;
+            if (solidCheck.checked) faceMaterials.forEach(m => m.uniforms.uColor.value.set(solidColor.value));
+        }
     }
 }
