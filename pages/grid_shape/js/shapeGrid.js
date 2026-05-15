@@ -3,7 +3,7 @@ import { LINE_VERTEX, LINE_FRAGMENT } from './shaders.js';
 import { buildGridGeometry } from './gridGeometry.js';
 import { createSpotlightAgents, updateSpotlightAgents } from './spotlight.js';
 import { RippleSystem } from './ripple.js';
-import { initPanelToggle, makeWirer } from '../../shared/settings.js';
+import { initPanelToggle, makeWirer } from '../../../shared/settings.js';
 
 /**
  * Render a static tessellating shape grid that fills the full viewport.
@@ -17,14 +17,14 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     const THREE = await import(THREE_CDN);
     const cfg   = { ...DEFAULTS, ...options };
 
-    // ── Container ─────────────────────────────────────────────────────────────
+    // â”€â”€ Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`No element found with id "${containerId}"`);
     if (getComputedStyle(container).position === 'static') {
         container.style.position = 'relative';
     }
 
-    // ── Renderer ──────────────────────────────────────────────────────────────
+    // â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x000000, 0);
@@ -36,7 +36,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     canvas.style.zIndex   = '-1';
     container.appendChild(canvas);
 
-    // ── Scene — orthographic camera, 1 world unit = 1 pixel ──────────────────
+    // â”€â”€ Scene â€” orthographic camera, 1 world unit = 1 pixel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const scene         = new THREE.Scene();
     let camera;
     let linesMesh       = null;
@@ -45,10 +45,10 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     let spotlightAgents = null;
     let canvasW = 0, canvasH = 0;
 
-    // ── Sub-systems ───────────────────────────────────────────────────────────
+    // â”€â”€ Sub-systems â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const rippleSystem = new RippleSystem(cfg);
 
-    // ── Mouse state (world / pixel coords) ───────────────────────────────────
+    // â”€â”€ Mouse state (world / pixel coords) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const mouse     = { wx: Infinity, wy: Infinity };
     let lastClientX = Infinity;
     let lastClientY = Infinity;
@@ -76,7 +76,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     });
     window.addEventListener('scroll', updateMouseWorld, { passive: true });
 
-    // ── Build / rebuild ───────────────────────────────────────────────────────
+    // â”€â”€ Build / rebuild â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function buildGrid(w, h) {
         canvasW = w;
         canvasH = h;
@@ -124,7 +124,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
         }
     }
 
-    // ── Resize ────────────────────────────────────────────────────────────────
+    // â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function onResize() {
         buildGrid(container.clientWidth, container.clientHeight);
     }
@@ -132,7 +132,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     resizeObserver.observe(container);
     onResize();
 
-    // ── Render loop ───────────────────────────────────────────────────────────
+    // â”€â”€ Render loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     let rafId    = null;
     let running  = true;
     let lastTime = performance.now();
@@ -168,7 +168,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
                 );
             }
 
-            // Ripple × spotlight collision
+            // Ripple Ã— spotlight collision
             if (cfg.ripple && cfg.spotlight && cfg.spotlightRippleCollision && spotlightAgents) {
                 rippleSystem.checkSpotlightCollisions(spotlightAgents, dt);
             }
@@ -211,7 +211,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
 
     animate();
 
-    // ── Settings panel ────────────────────────────────────────────────────────
+    // â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     (function initSettings() {
         const NS = 'sg:';
         if (!document.getElementById('spBtn')) return;

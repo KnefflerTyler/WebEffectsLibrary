@@ -1,4 +1,4 @@
-import { loadGLSL } from '../../shared/loadGLSL.js';
+import { loadGLSL } from '../../../shared/loadGLSL.js';
 
 const base = new URL('../glsl/', import.meta.url);
 

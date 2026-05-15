@@ -2,14 +2,14 @@ import { THREE_CDN, TERRAIN_CONFIG as CFG } from './config.js';
 import { TERRAIN_VERTEX, TERRAIN_FRAGMENT }  from './shaders.js';
 import { setSeed }                            from './perlin.js';
 import { ChunkManager }                       from './ChunkManager.js';
-import { initPanelToggle, persistSettings }  from '../../shared/settings.js';
+import { initPanelToggle, persistSettings }  from '../../../shared/settings.js';
 
 const THREE = await import(THREE_CDN);
 
 // Seed the permutation table used by buildVoxelMesh on the CPU.
 setSeed(CFG.noiseSeed);
 
-// ── Renderer ──────────────────────────────────────────────────────────────────
+// â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const container = document.getElementById('pageBackground');
 const renderer  = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -17,7 +17,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(CFG.fogColor);
 container.appendChild(renderer.domElement);
 
-// ── Scene + camera ────────────────────────────────────────────────────────────
+// â”€â”€ Scene + camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const scene  = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
     CFG.fov,
@@ -27,7 +27,7 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, CFG.cameraHeight, 0);
 
-// ── Shared terrain material ───────────────────────────────────────────────────
+// â”€â”€ Shared terrain material â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const lightDir = new THREE.Vector3(...CFG.lightDir).normalize();
 
 const material = new THREE.ShaderMaterial({
@@ -35,7 +35,7 @@ const material = new THREE.ShaderMaterial({
     vertexShader:   TERRAIN_VERTEX,
     fragmentShader: TERRAIN_FRAGMENT,
     uniforms: {
-        // ── Rendering ─────────────────────────────────────────────────────
+        // â”€â”€ Rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         uHeightMax:  { value: CFG.heightScale   },
         uColorGrass: { value: new THREE.Color(CFG.colorGrass) },
         uColorPeak:  { value: new THREE.Color(CFG.colorPeak)  },
@@ -52,10 +52,10 @@ const material = new THREE.ShaderMaterial({
     side: THREE.FrontSide,
 });
 
-// ── Chunk manager ─────────────────────────────────────────────────────────────
+// â”€â”€ Chunk manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const chunkManager = new ChunkManager(scene, CFG, THREE, material);
 
-// ── Camera state ──────────────────────────────────────────────────────────────
+// â”€â”€ Camera state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let camX = 0, camZ = 0;
 let yaw   = 0;
 let pitch = -0.35;
@@ -64,11 +64,11 @@ let controlMode = 'auto';
 
 const keys = new Set();
 
-// ── Input — keyboard ─────────────────────────────────────────────────────────
+// â”€â”€ Input â€” keyboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.addEventListener('keydown', e => keys.add(e.code));
 window.addEventListener('keyup',   e => keys.delete(e.code));
 
-// ── Input — mouse look (pointer lock) ────────────────────────────────────────
+// â”€â”€ Input â€” mouse look (pointer lock) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 renderer.domElement.addEventListener('click', () => {
     if (controlMode === 'manual') renderer.domElement.requestPointerLock();
 });
@@ -88,14 +88,14 @@ function onMouseMove(e) {
     pitch  = Math.max(-1.2, Math.min(0.3, pitch));
 }
 
-// ── Resize ────────────────────────────────────────────────────────────────────
+// â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ── Settings panel ────────────────────────────────────────────────────────────
+// â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function updateCameraFar() {
     const tileSize = CFG.chunkSize * CFG.cellSize;
     camera.far = Math.max(
@@ -173,7 +173,7 @@ document.getElementById('spApply')?.addEventListener('click', applySettings);
 // Settings panel toggle
 initPanelToggle();
 
-// ── Persist settings ──────────────────────────────────────────────────────────
+// â”€â”€ Persist settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 persistSettings('vc:', [
     'cfgMoveSpeed', 'cfgViewDistance', 'cfgChunkBudget', 'cfgCellSize', 'cfgNoiseScale',
     'cfgFogNear', 'cfgFogFar', 'cfgAmbient', 'cfgBrightness',
@@ -181,7 +181,7 @@ persistSettings('vc:', [
     'cfgControlMode', 'cfgWireframe',
 ], applySettings);
 
-// ── Animation loop ────────────────────────────────────────────────────────────
+// â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let prev = performance.now();
 
 (function animate() {

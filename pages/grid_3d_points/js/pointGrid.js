@@ -3,7 +3,7 @@ import { POINT_VERTEX, POINT_FRAGMENT } from './shaders.js';
 import { SlabManager } from './SlabManager.js';
 // import { MouseLines } from './MouseLines.js';
 import { MouseWeb } from './MouseWeb.js';
-import { initPanelToggle } from '../../shared/settings.js';
+import { initPanelToggle } from '../../../shared/settings.js';
 
 /**
  * Mount an infinite 3-D point grid into a container element.
@@ -21,7 +21,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
     const THREE = await import(THREE_CDN);
     const cfg   = { ...DEFAULTS, ...options };
 
-    // ── Container ─────────────────────────────────────────────────────────────
+    // â”€â”€ Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`No element found with id "${containerId}"`);
 
@@ -30,7 +30,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
         container.style.position = 'relative';
     }
 
-    // ── Renderer ──────────────────────────────────────────────────────────────
+    // â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x000000, 0);
@@ -44,7 +44,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
 
     renderer.setSize(container.clientWidth, container.clientHeight);
 
-    // ── Scene & Camera ────────────────────────────────────────────────────────
+    // â”€â”€ Scene & Camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const scene  = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
         70,
@@ -54,7 +54,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
     );
     camera.position.set(1, 1, 0);
 
-    // ── Point material ────────────────────────────────────────────────────────
+    // â”€â”€ Point material â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const uFarDist = cfg.numSlabs * cfg.spacing;
 
     const pointMaterial = new THREE.ShaderMaterial({
@@ -69,7 +69,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
         },
     });
 
-    // ── Slab manager ──────────────────────────────────────────────────────────
+    // â”€â”€ Slab manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const pointMask   = cfg.pointMask   ?? [1];
     const dirSequence = cfg.dirSequence ?? null;
 
@@ -81,7 +81,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
         pointMask,
     });
 
-    // ── Mouse lines (commented out — swap back in to use) ────────────────────
+    // â”€â”€ Mouse lines (commented out â€” swap back in to use) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // const mouseLines = new MouseLines(
     //     THREE, scene, camera, canvas, container,
     //     slabManager.slabs,
@@ -94,7 +94,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
     //     },
     // );
 
-    // ── Mouse web ─────────────────────────────────────────────────────────────
+    // â”€â”€ Mouse web â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const mouseLines = new MouseWeb(
         THREE, scene, camera, canvas, container,
         slabManager.slabs,
@@ -111,7 +111,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
         },
     );
 
-    // ── Resize ────────────────────────────────────────────────────────────────
+    // â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function onResize() {
         camera.aspect = container.clientWidth / container.clientHeight;
         camera.updateProjectionMatrix();
@@ -121,7 +121,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
     resizeObserver.observe(container);
     onResize();
 
-    // ── Render loop ───────────────────────────────────────────────────────────
+    // â”€â”€ Render loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const clock   = new THREE.Clock();
     let rafId     = null;
     let running   = true;
@@ -149,7 +149,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
     window.__pgMouseLines = mouseLines;
     window.__pgPointMat   = pointMaterial;
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function stop() {
         running = false;
         if (rafId !== null) cancelAnimationFrame(rafId);
@@ -183,7 +183,7 @@ window.startPointGrid = startPointGrid;
 // The DOM is ready by the time module scripts execute.
 const _instance = startPointGrid('pageBackground');
 
-// ── Settings panel ────────────────────────────────────────────────────────────
+// â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 (async function initSettings() {
     const NS = 'pg:';

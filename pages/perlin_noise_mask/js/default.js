@@ -1,6 +1,6 @@
-﻿import { THREE_CDN, HTML2CANVAS_CDN, MASK_CONFIG } from './config.js';
+import { THREE_CDN, HTML2CANVAS_CDN, MASK_CONFIG } from './config.js';
 import { NOISE_VERTEX, NOISE_FRAGMENT } from './shaders.js';
-import { initPanelToggle, makeWirer } from '../../shared/settings.js';
+import { initPanelToggle, makeWirer } from '../../../shared/settings.js';
 
 const THREE      = await import(THREE_CDN);
 const { default: html2canvas } = await import(HTML2CANVAS_CDN);

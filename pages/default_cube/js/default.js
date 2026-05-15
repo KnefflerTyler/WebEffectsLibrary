@@ -1,10 +1,10 @@
 import { THREE_CDN, DEFAULTS } from './config.js';
 import { CUBE_VERTEX, CUBE_FRAGMENT } from './shaders.js';
-import { initPanelToggle } from '../../shared/settings.js';
+import { initPanelToggle } from '../../../shared/settings.js';
 
 const THREE = await import(THREE_CDN);
 
-// ── Scene setup ───────────────────────────────────────────────────────────────
+// â”€â”€ Scene setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const container = document.getElementById('pageBackground');
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -16,21 +16,21 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.z = 4;
 
-// ── Config ────────────────────────────────────────────────────────────────────
+// â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const FACE_COLORS = [
-    0xff4d6d,   // +X  — vivid pink-red
-    0x4dc8ff,   // -X  — sky blue
-    0x4dff91,   // +Y  — mint green
-    0xffd14d,   // -Y  — golden yellow
-    0xc04dff,   // +Z  — violet
-    0xff8c4d,   // -Z  — orange
+    0xff4d6d,   // +X  â€” vivid pink-red
+    0x4dc8ff,   // -X  â€” sky blue
+    0x4dff91,   // +Y  â€” mint green
+    0xffd14d,   // -Y  â€” golden yellow
+    0xc04dff,   // +Z  â€” violet
+    0xff8c4d,   // -Z  â€” orange
 ];
 
 const LIGHT_DIR   = new THREE.Vector3(5, 5, 5).normalize();
 const LIGHT_COLOR = new THREE.Color(0xffffff);
 const AMBIENT     = new THREE.Color(0x222233);
 
-// ── Build per-face shader materials ──────────────────────────────────────────
+// â”€â”€ Build per-face shader materials â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function makeFaceMaterial(hexColor) {
     const color = new THREE.Color(hexColor);
     return new THREE.ShaderMaterial({
@@ -50,25 +50,25 @@ const faceMaterials = DEFAULTS.SolidColor !== null
     ? Array(6).fill(null).map(() => makeFaceMaterial(DEFAULTS.SolidColor))
     : FACE_COLORS.map(makeFaceMaterial);
 
-// ── Cube ──────────────────────────────────────────────────────────────────────
+// â”€â”€ Cube â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const geometry = new THREE.BoxGeometry(1.6, 1.6, 1.6);
 const cube = new THREE.Mesh(geometry, faceMaterials);
 scene.add(cube);
 
-// ── Thin wireframe overlay ────────────────────────────────────────────────────
+// â”€â”€ Thin wireframe overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const wireMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 });
 const wireGeo = new THREE.EdgesGeometry(geometry);
 const wireframe = new THREE.LineSegments(wireGeo, wireMat);
 cube.add(wireframe);
 
-// ── Resize handler ────────────────────────────────────────────────────────────
+// â”€â”€ Resize handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ── Animation loop ────────────────────────────────────────────────────────────
+// â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let speedX = 0.007;
 let speedY = 0.012;
 
@@ -81,7 +81,7 @@ let speedY = 0.012;
     renderer.render(scene, camera);
 })();
 
-// ── Settings panel ───────────────────────────────────────────────────────────
+// â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 {
     const NS      = 'dc:';
     const spBtn   = document.getElementById('spBtn');
@@ -97,7 +97,7 @@ let speedY = 0.012;
         document.getElementById('cfgShiny').addEventListener('input', e =>
             document.getElementById('valShiny').textContent = e.target.value);
 
-        // Apply button — reads all current input values and applies them
+        // Apply button â€” reads all current input values and applies them
         function applySettings() {
             const solidCheck = document.getElementById('cfgSolid');
             const solidColor = document.getElementById('cfgSolidColor');
@@ -136,7 +136,7 @@ let speedY = 0.012;
 
         document.getElementById('spApply').addEventListener('click', applySettings);
 
-        // Color picker display updates (no scene change — just show the picked colour)
+        // Color picker display updates (no scene change â€” just show the picked colour)
         document.getElementById('faceColorGrid').addEventListener('input', () => {});
         document.getElementById('cfgSolid').addEventListener('change', () => {});
         document.getElementById('cfgSolidColor').addEventListener('input', () => {});

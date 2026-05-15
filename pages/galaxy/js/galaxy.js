@@ -1,4 +1,4 @@
-﻿import THREE                  from './three.js';
+import THREE                  from './three.js';
 import { GALAXY_CONFIG }      from './config.js';
 import { Galaxy }             from './GalaxySystem.js';
 import {
@@ -8,7 +8,7 @@ import {
     BLACKHOLE_FRAG,
 } from './shaders.js';
 import { createInputHandler } from './userinput.js';
-import { initPanelToggle, makeWirer } from '../../shared/settings.js';
+import { initPanelToggle, makeWirer } from '../../../shared/settings.js';
 
 // -- Renderer + Scene ---------------------------------------------------------
 

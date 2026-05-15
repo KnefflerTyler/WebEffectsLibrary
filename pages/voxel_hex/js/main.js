@@ -2,14 +2,14 @@ import { THREE_CDN, TERRAIN_CONFIG as CFG } from './config.js';
 import { TERRAIN_VERTEX, TERRAIN_FRAGMENT }   from './shaders.js';
 import { setSeed }                             from './perlin.js';
 import { ChunkManager }                        from './ChunkManager.js';
-import { initPanelToggle, persistSettings }   from '../../shared/settings.js';
+import { initPanelToggle, persistSettings }   from '../../../shared/settings.js';
 
 const THREE = await import(THREE_CDN);
 
 // Seed the permutation table used by buildHexVoxelMesh on the CPU.
 setSeed(CFG.noiseSeed);
 
-// ── Renderer ───────────────────────────────────────────────────────────────
+// â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
@@ -21,14 +21,14 @@ window.addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
 });
 
-// ── Scene / Camera ────────────────────────────────────────────────────────────
+// â”€â”€ Scene / Camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const scene  = new THREE.Scene();
 scene.background = new THREE.Color(CFG.fogColor);
 const camera = new THREE.PerspectiveCamera(CFG.fov, innerWidth / innerHeight, 0.1, 2000);
 let camX = 0, camY = CFG.cameraHeight, camZ = 0;
 camera.position.set(camX, camY, camZ);
 
-// ── Terrain material ────────────────────────────────────────────────────────────
+// â”€â”€ Terrain material â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const lightDir = new THREE.Vector3(...CFG.lightDir).normalize();
 
 const material = new THREE.ShaderMaterial({
@@ -52,11 +52,11 @@ const material = new THREE.ShaderMaterial({
     },
 });
 
-// ── Chunk streaming ───────────────────────────────────────────────────────────
+// â”€â”€ Chunk streaming â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const chunkManager = new ChunkManager(scene, CFG, THREE, material);
 chunkManager.update(camX, camZ);
 
-// ── Camera controls ───────────────────────────────────────────────────────────
+// â”€â”€ Camera controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let yaw = 0, pitch = -0.35;
 let controlMode = 'auto';
 
@@ -71,10 +71,10 @@ renderer.domElement.addEventListener('click', () => {
 document.addEventListener('pointerlockchange', () => {
     const hud = document.getElementById('hud');
     if (document.pointerLockElement === renderer.domElement) {
-        if (hud) { hud.textContent = 'WASD / ARROWS TO MOVE · ESC TO RELEASE'; hud.classList.remove('hidden'); }
+        if (hud) { hud.textContent = 'WASD / ARROWS TO MOVE Â· ESC TO RELEASE'; hud.classList.remove('hidden'); }
     } else {
         if (controlMode === 'manual' && hud) {
-            hud.textContent = 'CLICK TO CAPTURE MOUSE · WASD / ARROWS TO MOVE';
+            hud.textContent = 'CLICK TO CAPTURE MOUSE Â· WASD / ARROWS TO MOVE';
             hud.classList.remove('hidden');
         }
     }
@@ -87,7 +87,7 @@ document.addEventListener('mousemove', e => {
     pitch  = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, pitch));
 });
 
-// ── Settings panel ────────────────────────────────────────────────────────────
+// â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function updateCameraFar() {
     const tileW = CFG.chunkCols * Math.sqrt(3) * CFG.hexSize;
     const tileH = CFG.chunkRows * 1.5 * CFG.hexSize;
@@ -135,8 +135,8 @@ function applySettings() {
         const hud = document.getElementById('hud');
         if (hud) {
             hud.textContent = controlMode === 'auto'
-                ? 'AUTO MODE · OPEN ⚙ TO ENABLE MANUAL INPUT'
-                : 'CLICK TO CAPTURE MOUSE · WASD / ARROWS TO MOVE';
+                ? 'AUTO MODE Â· OPEN âš™ TO ENABLE MANUAL INPUT'
+                : 'CLICK TO CAPTURE MOUSE Â· WASD / ARROWS TO MOVE';
             hud.classList.remove('hidden');
         }
     }
@@ -171,7 +171,7 @@ document.getElementById('spApply')?.addEventListener('click', applySettings);
 // Settings panel toggle
 initPanelToggle();
 
-// ── Persist settings ──────────────────────────────────────────────────────────
+// â”€â”€ Persist settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 persistSettings('vh:', [
     'cfgMoveSpeed', 'cfgViewDistance', 'cfgChunkBudget', 'cfgHexSize', 'cfgHeightStep', 'cfgNoiseScale',
     'cfgFogNear', 'cfgFogFar', 'cfgAmbient', 'cfgBrightness',
@@ -179,7 +179,7 @@ persistSettings('vh:', [
     'cfgControlMode', 'cfgWireframe',
 ], applySettings);
 
-// ── Animation loop ────────────────────────────────────────────────────────────
+// â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let prev = performance.now();
 
 (function animate() {

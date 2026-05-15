@@ -1,17 +1,17 @@
 import { THREE_CDN, DEFAULTS } from './config.js';
 import { PARTICLE_VERTEX, PARTICLE_FRAGMENT } from './shaders.js';
-import { initPanelToggle, makeWirer } from '../../shared/settings.js';
+import { initPanelToggle, makeWirer } from '../../../shared/settings.js';
 
 // Maximum vertex-pool sizes (pre-allocated; never reallocated at runtime)
-const MAX_ROCKET_PTS = 700;   // rockets × trail_length
+const MAX_ROCKET_PTS = 700;   // rockets Ã— trail_length
 const MAX_SPARKS     = 5000;  // explosion sparks across all active rockets
 
 /**
  * Mount a GPU-driven fireworks simulation using Three.js ShaderMaterial.
  *
  * Two pre-allocated THREE.Points objects share the same vert/frag shaders:
- *   - rocket points  — rocket head + per-rocket trail
- *   - spark points   — explosion debris with shimmer and gravity
+ *   - rocket points  â€” rocket head + per-rocket trail
+ *   - spark points   â€” explosion debris with shimmer and gravity
  *
  * Simulation runs on the CPU; only the packed attribute arrays are uploaded
  * each frame.  Both layers use additive blending so overlapping glows
@@ -25,14 +25,14 @@ export async function startFireworks(containerId = 'pageBackground', options = {
     const THREE = await import(THREE_CDN);
     const cfg   = { ...DEFAULTS, ...options };
 
-    // ── Container ─────────────────────────────────────────────────────────────
+    // â”€â”€ Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`No element found with id "${containerId}"`);
     if (getComputedStyle(container).position === 'static') {
         container.style.position = 'relative';
     }
 
-    // ── Renderer ──────────────────────────────────────────────────────────────
+    // â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x000000, 0);
@@ -44,7 +44,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
     canvas.style.zIndex   = '-1';
     container.appendChild(canvas);
 
-    // ── Scene & orthographic camera ───────────────────────────────────────────
+    // â”€â”€ Scene & orthographic camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // World coords: x=0 left, x=W right, y=0 bottom, y=H top.
     // Rockets launch near y=0 and travel toward y=H.
     const scene = new THREE.Scene();
@@ -62,7 +62,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
     resizeObserver.observe(container);
     setSize(container.clientWidth, container.clientHeight);
 
-    // ── Shared ShaderMaterial ──────────────────────────────────────────────────
+    // â”€â”€ Shared ShaderMaterial â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function makeMat() {
         return new THREE.ShaderMaterial({
             transparent:    true,
@@ -76,7 +76,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
         });
     }
 
-    // ── Pre-allocated GPU buffers: rockets & trails ────────────────────────────
+    // â”€â”€ Pre-allocated GPU buffers: rockets & trails â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const rPos   = new Float32Array(MAX_ROCKET_PTS * 3);
     const rAlpha = new Float32Array(MAX_ROCKET_PTS);
     const rSize  = new Float32Array(MAX_ROCKET_PTS);
@@ -99,7 +99,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
     const rPoints = new THREE.Points(rGeo, rMat);
     scene.add(rPoints);
 
-    // ── Pre-allocated GPU buffers: sparks ──────────────────────────────────────
+    // â”€â”€ Pre-allocated GPU buffers: sparks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const sPos   = new Float32Array(MAX_SPARKS * 3);
     const sAlpha = new Float32Array(MAX_SPARKS);
     const sSize  = new Float32Array(MAX_SPARKS);
@@ -122,11 +122,11 @@ export async function startFireworks(containerId = 'pageBackground', options = {
     const sPoints = new THREE.Points(sGeo, sMat);
     scene.add(sPoints);
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
+    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const rand    = (min, max)    => Math.random() * (max - min) + min;
     const randInt = (min, max)    => Math.floor(rand(min, max + 1));
 
-    // ── Simulation: Rocket ─────────────────────────────────────────────────────
+    // â”€â”€ Simulation: Rocket â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     class Rocket {
         constructor(startX) {
             this.x    = startX ?? rand(W * 0.12, W * 0.88);
@@ -152,7 +152,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
         }
     }
 
-    // ── Simulation: Spark ──────────────────────────────────────────────────────
+    // â”€â”€ Simulation: Spark â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     class Spark {
         constructor(x, y, hue, opts = {}) {
             const angle   = rand(0, Math.PI * 2);
@@ -180,7 +180,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
         get dead() { return this.alpha <= 0; }
     }
 
-    // ── Explosion ──────────────────────────────────────────────────────────────
+    // â”€â”€ Explosion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function explode(x, y, hue) {
         // Central burst flash: a few large, very fast-fading points
         for (let i = 0; i < 6; i++) {
@@ -202,13 +202,13 @@ export async function startFireworks(containerId = 'pageBackground', options = {
         }
     }
 
-    // ── State ──────────────────────────────────────────────────────────────────
+    // â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const rockets    = [];
     const sparks     = [];
     let   lastLaunch  = 0;
     let   nextLaunch  = rand(cfg.launchRateMin, cfg.launchRateMax);
 
-    // ── Click to launch ────────────────────────────────────────────────────────
+    // â”€â”€ Click to launch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     canvas.addEventListener('click', e => {
         const rect = canvas.getBoundingClientRect();
         const cx   = e.clientX - rect.left;
@@ -219,7 +219,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
         rockets.push(r);
     });
 
-    // ── Render loop ────────────────────────────────────────────────────────────
+    // â”€â”€ Render loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     let rafId   = null;
     let running = true;
     let lastTs  = performance.now();
@@ -256,7 +256,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
             if (sparks[i].dead) sparks.splice(i, 1);
         }
 
-        // ── Pack rocket + trail buffer ─────────────────────────────────────────
+        // â”€â”€ Pack rocket + trail buffer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         let ri = 0;
         for (const rocket of rockets) {
             const trail = rocket.trail;
@@ -283,7 +283,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
         rHueAttr.needsUpdate   = true;
         rPhaseAttr.needsUpdate = true;
 
-        // ── Pack spark buffer ──────────────────────────────────────────────────
+        // â”€â”€ Pack spark buffer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         const sc = Math.min(sparks.length, MAX_SPARKS);
         for (let i = 0; i < sc; i++) {
             const s = sparks[i];
@@ -311,7 +311,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
 
     animate();
 
-    // ── Settings wiring ────────────────────────────────────────────────────────
+    // â”€â”€ Settings wiring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     initPanelToggle();
     const { wire, apply, restore } = makeWirer('fw:');
 
@@ -329,7 +329,7 @@ export async function startFireworks(containerId = 'pageBackground', options = {
     restore();
     document.getElementById('spApply')?.addEventListener('click', apply);
 
-    // ── Stop / cleanup ─────────────────────────────────────────────────────────
+    // â”€â”€ Stop / cleanup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     return {
         stop() {
             running = false;

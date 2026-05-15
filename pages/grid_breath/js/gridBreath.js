@@ -1,6 +1,6 @@
 import { THREE_CDN, DEFAULTS } from './config.js';
 import { POINT_VERTEX, POINT_FRAGMENT } from './shaders.js';
-import { initPanelToggle, makeWirer } from '../../shared/settings.js';
+import { initPanelToggle, makeWirer } from '../../../shared/settings.js';
 
 /**
  * Mount a static 2-D point grid that reacts to mouse proximity.
@@ -18,14 +18,14 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
     const THREE = await import(THREE_CDN);
     const cfg   = { ...DEFAULTS, ...options };
 
-    // ── Container ─────────────────────────────────────────────────────────────
+    // â”€â”€ Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`No element found with id "${containerId}"`);
     if (getComputedStyle(container).position === 'static') {
         container.style.position = 'relative';
     }
 
-    // ── Renderer ──────────────────────────────────────────────────────────────
+    // â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x000000, 0);
@@ -37,20 +37,20 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
     canvas.style.zIndex   = '-1';
     container.appendChild(canvas);
 
-    // ── Scene & orthographic camera ───────────────────────────────────────────
+    // â”€â”€ Scene & orthographic camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const scene  = new THREE.Scene();
 
     // The camera is rebuilt on every resize to keep 1 world unit = 1 grid step.
     let camera;
 
-    // ── Grid geometry (rebuilt on resize) ────────────────────────────────────
+    // â”€â”€ Grid geometry (rebuilt on resize) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     let points    = null; // THREE.Points
-    let alphaBuf  = null; // Float32Array — internal lerped hover alpha (NOT the GPU buffer)
+    let alphaBuf  = null; // Float32Array â€” internal lerped hover alpha (NOT the GPU buffer)
     let cols      = 0;
     let rows      = 0;
     let totalPts  = 0;
 
-    // ── Mouse state (in world units) ─────────────────────────────────────────
+    // â”€â”€ Mouse state (in world units) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const mouse     = { wx: Infinity, wy: Infinity };
     let lastClientX = Infinity;
     let lastClientY = Infinity;
@@ -87,7 +87,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
     window.addEventListener('scroll', updateMouseWorld, { passive: true });
     container.addEventListener('scroll', updateMouseWorld, { passive: true });
 
-    // ── Ripple state ──────────────────────────────────────────────────────────
+    // â”€â”€ Ripple state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const ripples = []; // { x, y, age }
     let mouseMoving   = false;
     let stopTimer     = null;
@@ -97,7 +97,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
         ripples.push({ x: mouse.wx, y: mouse.wy, age: 0 });
     }
 
-    // ── Build / rebuild grid ──────────────────────────────────────────────────
+    // â”€â”€ Build / rebuild grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function buildGrid(w, h) {
         const { spacing, gridDensity, color, hoverColor, pointSize } = cfg;
 
@@ -170,7 +170,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
         renderer.setSize(w, h);
     }
 
-    // ── Resize ────────────────────────────────────────────────────────────────
+    // â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function onResize() {
         buildGrid(container.clientWidth, container.clientHeight);
     }
@@ -178,7 +178,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
     resizeObserver.observe(container);
     onResize();
 
-    // ── Render loop ───────────────────────────────────────────────────────────
+    // â”€â”€ Render loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     let rafId   = null;
     let running = true;
     let lastTime = performance.now();
@@ -262,7 +262,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
 
     animate();
 
-    // ── Settings panel ────────────────────────────────────────────────────────
+    // â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     (function initSettings() {
         const NS = 'gb:';
         if (!document.getElementById('spBtn')) return;

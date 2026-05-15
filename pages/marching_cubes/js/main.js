@@ -2,17 +2,17 @@ import { THREE_CDN, TERRAIN_CONFIG as CFG } from './config.js';
 import { TERRAIN_VERTEX, TERRAIN_FRAGMENT }  from './shaders.js';
 import { setSeed, getPermTable }             from './perlin.js';
 import { ChunkManager }                       from './ChunkManager.js';
-import { bindDisplay, initPanelToggle, persistSettings } from '../../shared/settings.js';
+import { bindDisplay, initPanelToggle, persistSettings } from '../../../shared/settings.js';
 
 const THREE = await import(THREE_CDN);
 
-// ── Noise seed + permutation texture ─────────────────────────────────────────
+// â”€â”€ Noise seed + permutation texture â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 setSeed(CFG.noiseSeed);
 
-// Upload the 512-entry permutation table as a 512×1 R8 texture so the vertex
+// Upload the 512-entry permutation table as a 512Ã—1 R8 texture so the vertex
 // shader can evaluate the same seeded Perlin noise entirely on the GPU.
 const permTex = new THREE.DataTexture(
-    getPermTable().slice(),   // Uint8Array copy — safe after future setSeed calls
+    getPermTable().slice(),   // Uint8Array copy â€” safe after future setSeed calls
     512, 1,
     THREE.RedFormat,
     THREE.UnsignedByteType,
@@ -21,7 +21,7 @@ permTex.magFilter  = THREE.NearestFilter;
 permTex.minFilter  = THREE.NearestFilter;
 permTex.needsUpdate = true;
 
-// ── Renderer ──────────────────────────────────────────────────────────────────
+// â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const container = document.getElementById('pageBackground');
 const renderer  = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -29,7 +29,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(CFG.fogColor);
 container.appendChild(renderer.domElement);
 
-// ── Scene + camera ────────────────────────────────────────────────────────────
+// â”€â”€ Scene + camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const scene  = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
     CFG.fov,
@@ -39,7 +39,7 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, CFG.cameraHeight, 0);
 
-// ── Shared terrain material ───────────────────────────────────────────────────
+// â”€â”€ Shared terrain material â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const lightDir = new THREE.Vector3(...CFG.lightDir).normalize();
 
 const material = new THREE.ShaderMaterial({
@@ -47,13 +47,13 @@ const material = new THREE.ShaderMaterial({
     vertexShader:   TERRAIN_VERTEX,
     fragmentShader: TERRAIN_FRAGMENT,
     uniforms: {
-        // ── Noise (GPU mesh generation) ────────────────────────────────────
+        // â”€â”€ Noise (GPU mesh generation) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         uPermTex:     { value: permTex          },
         uNoiseScale:  { value: CFG.noiseScale   },
         uOctaves:     { value: CFG.octaves      },
         uPersistence: { value: CFG.persistence  },
         uLacunarity:  { value: CFG.lacunarity   },
-        // ── Rendering ─────────────────────────────────────────────────────
+        // â”€â”€ Rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         uHeightScale: { value: CFG.heightScale },
         uColorLow:    { value: new THREE.Color(CFG.colorLow)  },
         uColorMid:    { value: new THREE.Color(CFG.colorMid)  },
@@ -69,10 +69,10 @@ const material = new THREE.ShaderMaterial({
     side: THREE.FrontSide,
 });
 
-// ── Chunk manager ─────────────────────────────────────────────────────────────
+// â”€â”€ Chunk manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const chunkManager = new ChunkManager(scene, CFG, THREE, material);
 
-// ── Camera state ──────────────────────────────────────────────────────────────
+// â”€â”€ Camera state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let camX = 0, camZ = 0;
 let yaw   = 0;          // horizontal rotation (radians)
 let pitch = -0.35;      // vertical tilt (radians, negative = looking slightly down)
@@ -82,11 +82,11 @@ let controlMode = 'auto';
 
 const keys = new Set();
 
-// ── Input — keyboard ─────────────────────────────────────────────────────────
+// â”€â”€ Input â€” keyboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.addEventListener('keydown', e => keys.add(e.code));
 window.addEventListener('keyup',   e => keys.delete(e.code));
 
-// ── Input — mouse look (pointer lock) ────────────────────────────────────────
+// â”€â”€ Input â€” mouse look (pointer lock) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 renderer.domElement.addEventListener('click', () => {
     if (controlMode === 'manual') renderer.domElement.requestPointerLock();
 });
@@ -106,14 +106,14 @@ function onMouseMove(e) {
     pitch  = Math.max(-1.2, Math.min(0.3, pitch));  // clamp vertical look
 }
 
-// ── Resize ────────────────────────────────────────────────────────────────────
+// â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ── Settings panel ────────────────────────────────────────────────────────────
+// â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Update slider value displays on drag (no engine effects until Apply)
 bindDisplay('cfgMoveSpeed',    'valMoveSpeed');
 bindDisplay('cfgViewDistance', 'valViewDistance');
@@ -198,7 +198,7 @@ document.getElementById('spApply')?.addEventListener('click', applySettings);
 // Settings panel toggle
 initPanelToggle();
 
-// ── Persist settings ──────────────────────────────────────────────────────────
+// â”€â”€ Persist settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 persistSettings('mc:', [
     'cfgMoveSpeed', 'cfgViewDistance', 'cfgChunkBudget', 'cfgCellSize', 'cfgNoiseScale',
     'cfgFogNear', 'cfgFogFar', 'cfgAmbient', 'cfgBrightness',
@@ -206,7 +206,7 @@ persistSettings('mc:', [
     'cfgControlMode', 'cfgWireframe',
 ], applySettings);
 
-// ── Animation loop ────────────────────────────────────────────────────────────
+// â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let prev = performance.now();
 
 (function animate() {
@@ -220,7 +220,7 @@ let prev = performance.now();
     const speedEl = document.getElementById('cfgMoveSpeed');
     const speed   = speedEl ? parseFloat(speedEl.value) : CFG.moveSpeed;
 
-    // ── Movement ──────────────────────────────────────────────────────────────
+    // â”€â”€ Movement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const sinY = Math.sin(yaw), cosY = Math.cos(yaw);
 
     if (controlMode === 'auto') {
@@ -246,7 +246,7 @@ let prev = performance.now();
         }
     }
 
-    // ── Camera position ───────────────────────────────────────────────────────
+    // â”€â”€ Camera position â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     camera.position.set(camX, CFG.cameraHeight, camZ);
     material.uniforms.uCameraPos.value.set(camX, CFG.cameraHeight, camZ);
 
@@ -255,7 +255,7 @@ let prev = performance.now();
     camera.rotation.y     = yaw;
     camera.rotation.x     = pitch;
 
-    // ── Chunk streaming ───────────────────────────────────────────────────────
+    // â”€â”€ Chunk streaming â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     chunkManager.update(camX, camZ);
 
     renderer.render(scene, camera);
