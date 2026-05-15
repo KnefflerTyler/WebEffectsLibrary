@@ -1,5 +1,15 @@
 const CACHE = 'web-effects-v5';
 
+// Check if caching is disabled via client message
+let cachingEnabled = false;
+
+self.addEventListener('message', (e) => {
+  if (e.data.type === 'TOGGLE_CACHE') {
+    cachingEnabled = e.data.enabled;
+    console.log(`[Service Worker] Caching ${cachingEnabled ? 'enabled' : 'disabled'}`);
+  }
+});
+
 // ── Install: nothing to pre-cache — assets are cached on first fetch ─────────
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -15,9 +25,15 @@ self.addEventListener('activate', (e) => {
 
 // ── Fetch: stale-while-revalidate for all same-origin GET requests ───────────
 // Every file is cached automatically on first visit — no list to maintain.
+// Caching can be disabled via message: navigator.serviceWorker.controller.postMessage({ type: 'TOGGLE_CACHE', enabled: false })
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   if (!e.request.url.startsWith(self.location.origin)) return;
+
+  // If caching is disabled, always fetch from network
+  if (!cachingEnabled) {
+    return e.respondWith(fetch(e.request));
+  }
 
   e.respondWith(
     caches.open(CACHE).then(async cache => {

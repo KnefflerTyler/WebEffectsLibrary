@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrolljack Progress Bar</title>
+    <script src="../../shared/preview.js"></script>
+    <script src="../../shared/back-button.js"></script>
+    <link rel="stylesheet" href="../../shared/settings.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- Progress bar fixed at top -->
+    <div id="progressBar" class="progress-container">
+        <div id="progressFill" class="progress-fill"></div>
+    </div>
+
+    <!-- Long scrollable content -->
+    <main class="content">
+        <section class="hero">
+            <h1>Scroll Progress Bar</h1>
+            <p>Scroll down to fill the progress bar. The text stays fixed while the progress bar tracks your scroll position.</p>
+        </section>
+
+        <div class="scroll-spacer"></div>
+    </main>
+
+    <!-- Settings panel -->
+    <button class="sp-btn" id="spBtn" title="Settings" aria-label="Open settings">&#9881;</button>
+    <div class="sp-panel" id="spPanel" role="dialog" aria-label="Progress bar settings">
+        <h2>Progress Bar Settings</h2>
+
+        <div class="sp-card">
+            <div class="sp-card-title">Bar</div>
+            <div class="sp-row">
+                <span class="sp-label">Height</span>
+                <input type="range" class="sp-range" id="cfgHeight" min="2" max="24" step="1" value="8">
+                <span class="sp-val" id="valHeight">8</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Color</span>
+                <input type="color" class="sp-color" id="cfgColor" value="#8b6fef">
+            </div>
+        </div>
+
+        <div class="sp-card">
+            <div class="sp-card-title">Scroll</div>
+            <div class="sp-row">
+                <span class="sp-label">Length</span>
+                <input type="range" class="sp-range" id="cfgScrollLen" min="100" max="1000" step="50" value="400">
+                <span class="sp-val" id="valScrollLen">400</span>
+            </div>
+        </div>
+
+        <button class="sp-apply" id="spApply">Apply</button>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

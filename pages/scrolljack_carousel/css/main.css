@@ -1,0 +1,150 @@
+/* ── Root styles ── */
+:root {
+    --item-count: 8;
+    --item-size: 180px;
+    --circle-radius: 300px;
+    --bg-color: #0a0e14;
+    --text-color: #c8d6e8;
+    --accent-color: #135fbb;
+    --card-bg: rgba(19, 95, 187, 0.1);
+    --card-border: rgba(19, 95, 187, 0.3);
+    --card-text: rgba(255, 255, 255, 0.8);
+    --card-text-active: rgba(255, 255, 255, 1);
+    --card-bg-active: rgba(19, 95, 187, 0.25);
+    --card-border-active: rgba(19, 95, 187, 0.6);
+    --card-shadow-glow: rgba(19, 95, 187, 0.5);
+    --card-shadow-inset: rgba(19, 95, 187, 0.1);
+    --text-shadow: rgba(0, 0, 0, 0.5);
+}
+
+/* ── Global styles ── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+}
+
+/* ── Sticky viewport for carousel ── */
+.viewport {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    pointer-events: none;
+}
+
+/* ── Carousel container ── */
+.carousel {
+    position: relative;
+    width: var(--item-size);
+    height: var(--item-size);
+    pointer-events: auto;
+}
+
+/* ── Individual carousel items arranged in circle ── */
+.carousel-item {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--item-size);
+    height: var(--item-size);
+    margin-top: calc(var(--item-size) / -2);
+    margin-left: calc(var(--item-size) / -2);
+    
+    /* Initial circle layout */
+    transform-origin: center;
+    transform: translate(0, 0) scale(0.6) rotateY(0deg);
+    
+    opacity: 0.3;
+    z-index: 10;
+    transition: opacity 0.3s ease, transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+/* ── Active item (top/center) styling ── */
+.carousel-item.active {
+    z-index: 50;
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotateY(0deg);
+}
+
+/* ── Card styling ── */
+.card {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-bg);
+    border: 2px solid var(--card-border);
+    border-radius: 16px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    color: var(--card-text);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    text-shadow: 0 2px 8px var(--text-shadow);
+}
+
+.carousel-item.active .card {
+    background: var(--card-bg-active);
+    border-color: var(--card-border-active);
+    box-shadow: 0 0 20px var(--card-shadow-glow), inset 0 0 20px var(--card-shadow-inset);
+    color: var(--card-text-active);
+}
+
+/* ── Invisible scroll spacer to enable scrolling ── */
+.scroll-spacer {
+    position: relative;
+    width: 100%;
+    height: 600vh;
+    background: transparent;
+    pointer-events: none;
+}
+
+/* ── Responsive design ── */
+@media (max-width: 1024px) {
+    :root {
+        --item-size: 140px;
+        --circle-radius: 240px;
+    }
+}
+
+@media (max-width: 768px) {
+    :root {
+        --item-size: 100px;
+        --circle-radius: 180px;
+    }
+
+    .card {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --item-size: 80px;
+        --circle-radius: 140px;
+    }
+
+    .card {
+        font-size: 0.75rem;
+        border-radius: 12px;
+    }
+}

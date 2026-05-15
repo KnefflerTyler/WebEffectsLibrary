@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrolljack Carousel</title>
+    <script src="../../shared/preview.js"></script>
+    <script src="../../shared/back-button.js"></script>
+    <link rel="stylesheet" href="../../shared/settings.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <!-- Sticky carousel viewport -->
+    <div class="viewport">
+        <!-- Carousel container with rotating items -->
+        <div class="carousel">
+            <div class="carousel-item" data-index="0">
+                <div class="card">Frame 01</div>
+            </div>
+            <div class="carousel-item" data-index="1">
+                <div class="card">Frame 02</div>
+            </div>
+            <div class="carousel-item" data-index="2">
+                <div class="card">Frame 03</div>
+            </div>
+            <div class="carousel-item" data-index="3">
+                <div class="card">Frame 04</div>
+            </div>
+            <div class="carousel-item" data-index="4">
+                <div class="card">Frame 05</div>
+            </div>
+            <div class="carousel-item" data-index="5">
+                <div class="card">Frame 06</div>
+            </div>
+            <div class="carousel-item" data-index="7">
+                <div class="card">Frame 07</div>
+            </div>
+            <div class="carousel-item" data-index="8">
+                <div class="card">Frame 08</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invisible scroll spacer -->
+    <div class="scroll-spacer"></div>
+
+    <!-- Settings panel -->
+    <button class="sp-btn" id="spBtn" title="Settings" aria-label="Open settings">&#9881;</button>
+    <div class="sp-panel" id="spPanel" role="dialog" aria-label="Carousel settings">
+        <h2>Carousel Settings</h2>
+
+        <div class="sp-card">
+            <div class="sp-card-title">Rotation</div>
+            <div class="sp-row">
+                <span class="sp-label">Cycles</span>
+                <input type="range" class="sp-range" id="cfgRotations" min="1" max="10" step="1" value="3">
+                <span class="sp-val" id="valRotations">3</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Direction</span>
+                <input type="checkbox" class="sp-check" id="cfgReverse">
+                <span class="sp-label" style="min-width:0">Reverse</span>
+            </div>
+        </div>
+
+        <div class="sp-card">
+            <div class="sp-card-title">Layout</div>
+            <div class="sp-row">
+                <span class="sp-label">Radius</span>
+                <input type="range" class="sp-range" id="cfgRadius" min="100" max="500" step="10" value="300">
+                <span class="sp-val" id="valRadius">300</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Item Size</span>
+                <input type="range" class="sp-range" id="cfgItemSize" min="80" max="300" step="10" value="180">
+                <span class="sp-val" id="valItemSize">180</span>
+            </div>
+        </div>
+
+        <div class="sp-card">
+            <div class="sp-card-title">Focus</div>
+            <div class="sp-row">
+                <span class="sp-label">Zone</span>
+                <input type="range" class="sp-range" id="cfgFocus" min="10" max="90" step="5" value="45">
+                <span class="sp-val" id="valFocus">45</span>
+            </div>
+        </div>
+
+        <button class="sp-apply" id="spApply">Apply</button>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

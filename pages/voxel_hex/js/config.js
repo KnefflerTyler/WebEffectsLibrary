@@ -40,8 +40,8 @@ export const TERRAIN_CONFIG = {
     colorDirt:   0x4a3020,
     colorRock:   0x756050,
     fogColor:    0x0a0e14,
-    fogNear:     50,
-    fogFar:      140,
+    fogNear:     10,
+    fogFar:      200,
     lightDir:    [1.2, 2.0, 0.8],
     ambient:     0.22,
 };
