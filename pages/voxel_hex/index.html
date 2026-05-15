@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Hex Voxel Terrain</title>
+        <script src="../../shared/preview.js"></script>
+        <script defer src="../../shared/back-button.js"></script>
+        <link rel="stylesheet" href="../../shared/settings.css">
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0e14; }
+            #pageBackground { position: fixed; inset: 0; overflow: hidden; }
+
+            #hud {
+                position: fixed;
+                bottom: 18px;
+                left: 50%;
+                transform: translateX(-50%);
+                color: rgba(255,255,255,0.35);
+                font-family: 'Segoe UI', system-ui, sans-serif;
+                font-size: 0.78rem;
+                letter-spacing: 0.06em;
+                pointer-events: none;
+                user-select: none;
+                transition: opacity 0.6s;
+            }
+            #hud.hidden { opacity: 0; }
+        </style>
+    </head>
+    <body>
+
+        <div id="pageBackground"></div>
+
+        <div id="hud">AUTO MODE &nbsp;·&nbsp; OPEN ⚙ TO ENABLE MANUAL INPUT</div>
+
+        <button class="sp-btn" id="spBtn" title="Settings" aria-label="Open settings">⚙</button>
+
+        <div class="sp-panel" id="spPanel" role="dialog" aria-label="Terrain settings">
+            <h2>Hex Voxel Terrain Settings</h2>
+
+            <!-- Controls -->
+            <div class="sp-card">
+                <div class="sp-card-title">Controls</div>
+                <div class="sp-row">
+                    <span class="sp-label">Mode</span>
+                    <select class="sp-select" id="cfgControlMode">
+                        <option value="auto" selected>Auto (forward)</option>
+                        <option value="manual">Manual (WASD + mouse)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Camera -->
+            <div class="sp-card">
+                <div class="sp-card-title">Camera</div>
+                <div class="sp-row">
+                    <span class="sp-label">Speed</span>
+                    <input type="number" class="sp-number" id="cfgMoveSpeed"
+                           min="2" max="120" step="1" value="14">
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">View Dist</span>
+                    <input type="number" class="sp-number" id="cfgViewDistance"
+                           min="1" max="128" step="1" value="6">
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Chunk Budget</span>
+                    <input type="number" class="sp-number" id="cfgChunkBudget"
+                           min="1" max="16" step="1" value="2">
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Hex Size</span>
+                    <input type="number" class="sp-number" id="cfgHexSize"
+                           min="0.5" max="8" step="0.1" value="1.2">
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Height Step</span>
+                    <input type="number" class="sp-number" id="cfgHeightStep"
+                           min="0.5" max="8" step="0.1" value="1">
+                </div>
+            </div>
+
+            <!-- Fog -->
+            <div class="sp-card">
+                <div class="sp-card-title">Fog</div>
+                <div class="sp-row">
+                    <span class="sp-label">Near</span>
+                    <input type="number" class="sp-number" id="cfgFogNear"
+                           min="10" max="500" step="1" value="50">
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Far</span>
+                    <input type="number" class="sp-number" id="cfgFogFar"
+                           min="20" max="1000" step="1" value="140">
+                </div>
+            </div>
+
+            <!-- Noise -->
+            <div class="sp-card">
+                <div class="sp-card-title">Noise</div>
+                <div class="sp-row">
+                    <span class="sp-label">Scale</span>
+                    <input type="number" class="sp-number" id="cfgNoiseScale"
+                           min="1" max="500" step="1" value="60">
+                </div>
+            </div>
+
+            <!-- Lighting -->
+            <div class="sp-card">
+                <div class="sp-card-title">Lighting</div>
+                <div class="sp-row">
+                    <span class="sp-label">Ambient</span>
+                    <input type="number" class="sp-number" id="cfgAmbient"
+                           min="0" max="100" step="1" value="22">
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Brightness</span>
+                    <input type="number" class="sp-number" id="cfgBrightness"
+                           min="0" max="200" step="1" value="100">
+                </div>
+            </div>
+
+            <!-- Colors -->
+            <div class="sp-card">
+                <div class="sp-card-title">Colors</div>
+                <div class="sp-row">
+                    <span class="sp-label">Grass Lo</span>
+                    <input type="color" class="sp-color" id="cfgColorGrass" value="#2d5a1f">
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Grass Hi</span>
+                    <input type="color" class="sp-color" id="cfgColorPeak"  value="#6b8f5a">
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Dirt Lo</span>
+                    <input type="color" class="sp-color" id="cfgColorDirt"  value="#4a3020">
+                </div>
+                <div class="sp-row">
+                    <span class="sp-label">Rock Hi</span>
+                    <input type="color" class="sp-color" id="cfgColorRock"  value="#756050">
+                </div>
+            </div>
+
+            <!-- Debug -->
+            <div class="sp-card">
+                <div class="sp-card-title">Debug</div>
+                <div class="sp-row">
+                    <span class="sp-label">Wireframe</span>
+                    <input type="checkbox" class="sp-check" id="cfgWireframe">
+                </div>
+            </div>
+            <button class="sp-apply" id="spApply">Apply</button>
+        </div>
+
+        <script type="module" src="js/main.js"></script>
+
+        <script>
+            document.addEventListener('pointerlockchange', () => {
+                const hud = document.getElementById('hud');
+                if (document.pointerLockElement) {
+                    hud.classList.add('hidden');
+                } else {
+                    hud.classList.remove('hidden');
+                }
+            });
+        </script>
+    </body>
+</html>
