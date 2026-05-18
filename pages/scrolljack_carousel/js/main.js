@@ -14,11 +14,12 @@ const anglePerItem = 360 / itemCount;
 
 // Mutable config — updated by settings Apply
 let cfg = {
-    rotations:      3,
+    rotations:      1,
     reverse:        false,
     radius:         parseInt(getComputedStyle(document.documentElement).getPropertyValue('--circle-radius')) || 300,
     itemSize:       parseInt(getComputedStyle(document.documentElement).getPropertyValue('--item-size'))    || 180,
-    focusThreshold: 45,
+    focusThreshold: 45,  // degrees — outer edge of transition zone
+    lockZone:       10,  // degrees — inner dead-zone where item is fully locked to center
 };
 
 // ── Debug init ───────────────────────────────────────────────────────────────
@@ -38,8 +39,11 @@ function updateCarousel() {
     const totalScroll    = documentHeight - windowHeight;
     const progress       = totalScroll <= 0 ? 0 : scrollTop / totalScroll;
 
-    const dir           = cfg.reverse ? -1 : 1;
-    const totalRotation = dir * progress * 360 * cfg.rotations;
+    const dir = cfg.reverse ? -1 : 1;
+    // One "lap" = rotate until the last frame reaches its lock zone.
+    // Beyond that, cfg.rotations acts as a lap multiplier.
+    const oneLap       = (itemCount - 1) * anglePerItem + cfg.lockZone;
+    const totalRotation = dir * progress * oneLap * cfg.rotations;
 
     // ── Debug scroll (throttled to first call or every ~5% change) ──────────
     if (typeof updateCarousel._lastProgress === 'undefined' ||
@@ -63,13 +67,28 @@ function updateCarousel() {
         const circleY = -Math.cos(rad) * cfg.radius;
 
         const distanceFromTop = Math.min(normalizedDeg, 360 - normalizedDeg);
-        const interpolation   = Math.max(0, 1 - distanceFromTop / cfg.focusThreshold);
+
+        // Interpolation: 3-zone model
+        //   > focusThreshold  → 0 (on circle)
+        //   lockZone..focusThreshold → 0..1 (easing in)
+        //   < lockZone        → 1 (fully locked to center)
+        let interpolation;
+        if (distanceFromTop <= cfg.lockZone) {
+            interpolation = 1;
+        } else if (distanceFromTop <= cfg.focusThreshold) {
+            const range = cfg.focusThreshold - cfg.lockZone;
+            const t = 1 - (distanceFromTop - cfg.lockZone) / range;
+            interpolation = t * t * (3 - 2 * t); // smoothstep
+        } else {
+            interpolation = 0;
+        }
 
         const x = circleX * (1 - interpolation);
         const y = circleY * (1 - interpolation);
 
-        const scaleFactor = 1 - (distanceFromTop / 180) * 0.4;
-        const opacity     = (0.3 + (1 - distanceFromTop / 180) * 0.7) / 1.2;
+        const scaleFactor = 1.35 - (distanceFromTop / 180) * 0.9;   // 1.35 focused → 0.45 opposite
+        const opacity     = 0.12 + (1 - distanceFromTop / 180) * 0.88; // 1.0 focused → 0.12 opposite
+        const blurPx      = (distanceFromTop / 180) * 7;               // 0px focused → 7px opposite
         const zIndex      = Math.round(100 - distanceFromTop);
 
         // Debug: log first item every 5% scroll tick
@@ -81,6 +100,7 @@ function updateCarousel() {
         // so NO -50% offset needed in the transform.
         item.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) scale(${scaleFactor.toFixed(4)})`;
         item.style.opacity   = opacity;
+        item.style.filter    = blurPx > 0.1 ? `blur(${blurPx.toFixed(2)}px)` : '';
         item.style.zIndex    = zIndex;
     });
 }
@@ -113,7 +133,8 @@ updateCarousel();
         document.documentElement.style.setProperty('--item-size', v + 'px');
         updateCarousel();
     });
-    wire('cfgFocus',     'valFocus',     v => { cfg.focusThreshold = +v;          updateCarousel(); });
+    wire('cfgFocus',     'valFocus',     v => { cfg.focusThreshold = Math.max(+v, cfg.lockZone + 1); updateCarousel(); });
+    wire('cfgLock',      'valLock',      v => { cfg.lockZone      = Math.min(+v, cfg.focusThreshold - 1); updateCarousel(); });
 
     restore();
     document.getElementById('spApply')?.addEventListener('click', apply);

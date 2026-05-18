@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Tunnel Simulation</title>
+
+    <script src="../../shared/preview.js"></script>
+    <script src="../../shared/back-button.js"></script>
+    <link rel="stylesheet" href="../../shared/settings.css">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #040810;
+            color: #c8d8f0;
+            font-family: system-ui, -apple-system, sans-serif;
+            font-size: 13px;
+            overflow: hidden;
+        }
+
+        #pageBackground {
+            position: fixed;
+            inset: 0;
+        }
+
+        /* ── Presets bar ─────────────────────────────────────────────────── */
+        #presets {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            background: rgba(4, 8, 20, 0.82);
+            border: 1px solid rgba(80,120,200,0.25);
+            border-radius: 10px;
+            padding: 6px 10px;
+            backdrop-filter: blur(12px);
+            z-index: 20;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .preset-btn, #importBtn {
+            padding: 5px 13px;
+            border-radius: 6px;
+            border: 1px solid rgba(80,140,220,0.35);
+            background: rgba(20,40,90,0.6);
+            color: #aac4f0;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+
+        .preset-btn:hover, #importBtn:hover {
+            background: rgba(30,60,140,0.8);
+            border-color: rgba(100,180,255,0.6);
+            color: #e0f0ff;
+        }
+
+        .preset-btn.active {
+            background: rgba(30,80,200,0.75);
+            border-color: #4499ee;
+            color: #e8f4ff;
+        }
+
+        #importBtn {
+            background: rgba(20,60,40,0.6);
+            border-color: rgba(60,180,100,0.35);
+            color: #88dda8;
+        }
+        #importBtn:hover {
+            background: rgba(30,90,55,0.8);
+            border-color: rgba(80,220,120,0.6);
+            color: #bbffcc;
+        }
+
+        /* ── Aerodynamic stats (bottom-left) ─────────────────────────────── */
+        #stats {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(4, 8, 22, 0.88);
+            border: 1px solid rgba(60,110,200,0.3);
+            border-radius: 12px;
+            padding: 14px 18px;
+            min-width: 230px;
+            z-index: 20;
+            backdrop-filter: blur(14px);
+            line-height: 1;
+        }
+
+        .stats-title {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #6699cc;
+            margin-bottom: 10px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 14px;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(50,80,150,0.18);
+        }
+        .stats-row:last-of-type { border-bottom: none; }
+
+        .stats-row span:first-child {
+            color: #7890b0;
+            font-size: 11.5px;
+        }
+        .stats-row span:last-child {
+            color: #d8eaff;
+            font-weight: 600;
+            font-size: 13px;
+            min-width: 64px;
+            text-align: right;
+        }
+
+        .stats-eff-label {
+            color: #7890b0;
+            font-size: 11px;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        .stats-bar-wrap {
+            position: relative;
+            height: 16px;
+            background: rgba(20,30,60,0.8);
+            border-radius: 4px;
+            border: 1px solid rgba(50,80,150,0.3);
+            overflow: hidden;
+        }
+
+        #stat-eff-bar {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 0%;
+            background: #22cc66;
+            border-radius: 4px 0 0 4px;
+            transition: width 0.4s ease, background 0.4s ease;
+        }
+
+        #stat-eff {
+            position: absolute;
+            right: 6px; top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            font-weight: 700;
+            color: #ddf;
+            z-index: 1;
+        }
+
+        /* ── Legend (top-right) ──────────────────────────────────────────── */
+        #legend {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            background: rgba(4, 8, 22, 0.82);
+            border: 1px solid rgba(60,110,200,0.25);
+            border-radius: 10px;
+            padding: 10px 14px;
+            z-index: 20;
+            backdrop-filter: blur(12px);
+            min-width: 180px;
+        }
+
+        .legend-title {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #6699cc;
+            margin-bottom: 6px;
+        }
+
+        #legend-canvas {
+            display: block;
+            width: 100%;
+            height: 14px;
+            border-radius: 4px;
+        }
+
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 4px;
+            font-size: 10px;
+            color: #8aaccc;
+        }
+
+        /* ── Settings panel (sp-*) ────────────────────────────────────────── */
+        /* Uses shared settings.css; only custom overrides needed */
+        .sp-card label {
+            min-width: 110px;
+        }
+
+        /* Range value badges */
+        .val-badge {
+            display: inline-block;
+            min-width: 38px;
+            text-align: right;
+            font-weight: 600;
+            color: #aad4ff;
+            font-size: 12px;
+        }
+
+        /* Pause checkbox */
+        .pause-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0 0;
+            font-size: 12px;
+            color: #8aaabb;
+        }
+        .pause-row input[type=checkbox] {
+            width: 14px; height: 14px;
+            accent-color: #4488ff;
+        }
+
+        /* Object info in stats */
+        #stat-object-label {
+            font-size: 11px;
+            color: #88aacc;
+            margin-bottom: 8px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Canvas container -->
+    <div id="pageBackground"></div>
+
+    <!-- Preset shape selector -->
+    <div id="presets">
+        <button class="preset-btn" data-shape="none">✕ Clear</button>
+        <button class="preset-btn active" data-shape="sphere">⬤ Sphere</button>
+        <button class="preset-btn" data-shape="cube">⬛ Cube</button>
+        <button class="preset-btn" data-shape="cylinder">⬭ Cylinder</button>
+        <button class="preset-btn" data-shape="cone">▶ Cone</button>
+        <button class="preset-btn" data-shape="car">🚗 Car Body</button>
+        <button id="importBtn">📂 Import OBJ</button>
+        <input type="file" id="fileInput" accept=".obj" style="display:none">
+    </div>
+
+    <!-- Aerodynamic analysis panel -->
+    <div id="stats">
+        <div class="stats-title">Aerodynamic Analysis</div>
+        <div id="stat-object-label">Sphere</div>
+
+        <div class="stats-row">
+            <span>Drag Coefficient (C<sub>d</sub>)</span>
+            <span id="stat-cd">—</span>
+        </div>
+        <div class="stats-row">
+            <span>Drag Force</span>
+            <span id="stat-fd">—</span>
+        </div>
+        <div class="stats-row">
+            <span>Reynolds Number</span>
+            <span id="stat-re">—</span>
+        </div>
+        <div class="stats-row">
+            <span>Frontal Area</span>
+            <span id="stat-area">—</span>
+        </div>
+        <div class="stats-row">
+            <span>Power Loss</span>
+            <span id="stat-pow">—</span>
+        </div>
+        <div class="stats-row">
+            <span>Wake Length</span>
+            <span id="stat-wake">—</span>
+        </div>
+
+        <div class="stats-eff-label">Aerodynamic Efficiency</div>
+        <div class="stats-bar-wrap">
+            <div id="stat-eff-bar"></div>
+            <span id="stat-eff">—</span>
+        </div>
+    </div>
+
+    <!-- Velocity colour legend -->
+    <div id="legend">
+        <div class="legend-title">Flow Velocity</div>
+        <canvas id="legend-canvas" width="180" height="14"></canvas>
+        <div class="legend-labels">
+            <span>0</span>
+            <span>1× U</span>
+            <span>2× U</span>
+        </div>
+    </div>
+
+    <!-- ⚙ Settings panel -->
+    <button class="sp-btn" id="spBtn">⚙</button>
+
+    <div class="sp-panel" id="spPanel">
+        <!-- Wind -->
+        <div class="sp-card">
+            <div class="sp-card-title">Wind</div>
+
+            <label class="sp-label" for="cfgWindSpeed">
+                Physical speed (m/s)
+                <span class="val-badge" id="valWindSpeed">50</span>
+            </label>
+            <input class="sp-range" id="cfgWindSpeed" type="range"
+                   min="5" max="200" step="1" value="50">
+
+            <label class="sp-label" for="cfgWindMult">
+                Visual speed ×
+                <span class="val-badge" id="valWindMult">1.0</span>
+            </label>
+            <input class="sp-range" id="cfgWindMult" type="range"
+                   min="0.2" max="3.0" step="0.1" value="1.0">
+        </div>
+
+        <!-- Display -->
+        <div class="sp-card">
+            <div class="sp-card-title">Display</div>
+
+            <label class="sp-label" for="cfgStreamerX">
+                Columns (X)
+                <span class="val-badge" id="valStreamerX">8</span>
+            </label>
+            <input class="sp-range" id="cfgStreamerX" type="range"
+                   min="2" max="24" step="1" value="8">
+
+            <label class="sp-label" for="cfgStreamerY">
+                Rows (Y)
+                <span class="val-badge" id="valStreamerY">8</span>
+            </label>
+            <input class="sp-range" id="cfgStreamerY" type="range"
+                   min="2" max="24" step="1" value="8">
+
+            <label class="sp-label" for="cfgVisRange">
+                Visibility range ×
+                <span class="val-badge" id="valVisRange">3.0</span>
+            </label>
+            <input class="sp-range" id="cfgVisRange" type="range"
+                   min="1" max="10" step="0.5" value="3">
+        </div>
+
+        <!-- Simulation -->
+        <div class="sp-card">
+            <div class="sp-card-title">Simulation</div>
+            <div class="pause-row">
+                <input type="checkbox" id="cfgPause">
+                <label for="cfgPause">Pause streamers</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js module map -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three"         : "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+            "three/addons/" : "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>
