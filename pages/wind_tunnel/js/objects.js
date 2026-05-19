@@ -24,11 +24,31 @@ export const objectMat = new THREE.ShaderMaterial({
         uRimColor  : { value: new THREE.Color(0x44aaff) },   // cyan Fresnel rim
         uLightDir  : { value: new THREE.Vector3(5, 12, -6).normalize() },
         uObjCenter : { value: new THREE.Vector3(0, 0, 0) },  // for Cp surface map
+        uSimDone   : { value: 0.0 },  // 0 = plain metallic; 1 = Cp pressure colours
+        uCpMap     : { value: null },  // sim-derived Cp texture (128×64 equirectangular)
+        uUseCpMap  : { value: 0.0 },   // 0 = analytical formula, 1 = sim texture
     },
     transparent: true,
     depthWrite : true,
     side: THREE.DoubleSide,
 });
+
+/**
+ * Enable Cp pressure coloring on the object surface.
+ * Call after simulation completes. Pass false to revert to plain metallic.
+ */
+export function enableCpColoring(on = true) {
+    objectMat.uniforms.uSimDone.value = on ? 1.0 : 0.0;
+}
+
+/**
+ * Upload the simulation-derived pressure texture.
+ * Pass null to fall back to the analytical formula.
+ */
+export function setCpTexture(tex) {
+    objectMat.uniforms.uCpMap.value    = tex;
+    objectMat.uniforms.uUseCpMap.value = tex ? 1.0 : 0.0;
+}
 
 // ── Internal module state ─────────────────────────────────────────────────────
 let _currentMesh  = null;

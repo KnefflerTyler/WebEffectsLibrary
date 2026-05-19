@@ -17,11 +17,22 @@
 import { TW, TH, TL, VSIM } from './config.js';
 import { getVelocity }       from './physics.js';
 
-// ── Simulation constants ───────────────────────────────────────────────────────
-export const SIM_N_PARTICLES = 12000;   // streamlines to integrate
-const N_STEPS    = 260;                 // max Euler steps per particle
-const DT         = 0.030;              // timestep (seconds)
-const BATCH_SIZE = 300;                 // particles computed per setTimeout tick
+// ── Simulation constants ──────────────────────────────────────────────────────
+export const SIM_N_PARTICLES = 12000;   // particles PER PASS (× N_PASSES total integrations)
+const N_PASSES     = 3;                 // passes; each samples a different vortex-shedding phase
+const N_STEPS      = 480;               // Euler steps per particle
+const DT           = 0.022;             // timestep (seconds)
+const BATCH_SIZE   = 200;               // particles per setTimeout tick
+
+// Influence grid — XZ plane; each pass builds an average velocity field
+// that nudges subsequent particles along already-discovered flow paths.
+const GRID_NX     = 18;                 // cells along X (tunnel width)
+const GRID_NZ     = 25;                 // cells along Z (flow direction)
+const INFLUENCE_W = 0.12;               // weight of accumulated field vs analytical
+
+// Near-object filter: only paths that come within this many radii are kept
+// in allPaths.  Far straight-line paths still build the influence grid.
+const NEAR_THRESH = 4.5;
 
 // ── Output canvas dimensions ──────────────────────────────────────────────────
 const CW  = 1400;
@@ -51,10 +62,100 @@ const BUCKETS = [
     { sMin: 1.55, sMax: 99.0, rgba: speedRGBA(1.82, 0.58) },   // red-orange  (suction peak)
 ];
 
+// ── Multi-pass helpers ────────────────────────────────────────────────────────
+
+/** Uniform random starting positions at the inlet face. */
+function generateUniformStarts(n) {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push({
+        x: (Math.random() - 0.5) * TW * 0.92,
+        y: (Math.random() - 0.5) * TH * 0.90,
+    });
+    return out;
+}
+
+/**
+ * Adaptive starts for passes 2+:
+ *   50 % — jittered versions of near-object starts from the previous pass
+ *   50 % — fresh random for broad coverage
+ */
+function generateAdaptiveStarts(lastPaths, objSphere, n) {
+    const cx = objSphere?.cx ?? 0, cy = objSphere?.cy ?? 0, cz = objSphere?.cz ?? 0;
+    const thresh = (objSphere?.r ?? 1.0) * NEAR_THRESH;
+    const jitter = 0.28;
+    const near = [];
+    for (const { xs, ys, zs } of lastPaths) {
+        for (let j = 0; j < xs.length; j++) {
+            const dx = xs[j]-cx, dy = ys[j]-cy, dz = zs[j]-cz;
+            if (Math.sqrt(dx*dx + dy*dy + dz*dz) < thresh) { near.push({ x: xs[0], y: ys[0] }); break; }
+        }
+    }
+    const out = [];
+    for (let i = 0; i < n; i++) {
+        if (near.length > 0 && Math.random() < 0.5) {
+            const b = near[Math.floor(Math.random() * near.length)];
+            out.push({ x: b.x + (Math.random()-0.5)*jitter*TW, y: b.y + (Math.random()-0.5)*jitter*TH });
+        } else {
+            out.push({ x: (Math.random()-0.5)*TW*0.92, y: (Math.random()-0.5)*TH*0.90 });
+        }
+    }
+    return out;
+}
+
+/** Blank XZ velocity influence grid. */
+function makeGrid() {
+    return { vx: new Float32Array(GRID_NX*GRID_NZ), vz: new Float32Array(GRID_NX*GRID_NZ), cnt: new Float32Array(GRID_NX*GRID_NZ) };
+}
+
+/** Accumulate a single path's flow direction into the grid. */
+function addToGrid(g, xs, zs) {
+    for (let j = 1; j < xs.length; j++) {
+        const dx = xs[j]-xs[j-1], dz = zs[j]-zs[j-1];
+        const len = Math.sqrt(dx*dx+dz*dz);
+        if (len < 1e-6) continue;
+        const gi = Math.floor((xs[j-1]+TW*0.5)/TW*GRID_NX);
+        const gk = Math.floor((zs[j-1]+TL*0.5)/TL*GRID_NZ);
+        if (gi<0||gi>=GRID_NX||gk<0||gk>=GRID_NZ) continue;
+        const idx = gk*GRID_NX+gi;
+        g.vx[idx] += dx/len;  g.vz[idx] += dz/len;  g.cnt[idx]++;
+    }
+}
+
+/** Normalise accumulated sums to unit-ish direction vectors. */
+function normaliseGrid(g) {
+    for (let i = 0; i < g.cnt.length; i++) {
+        if (g.cnt[i] > 0) { g.vx[i] /= g.cnt[i]; g.vz[i] /= g.cnt[i]; }
+    }
+}
+
+/** Nearest-cell lookup — returns {vx, vz} influence at world position (x, z). */
+function sampleGrid(g, x, z) {
+    const gi = Math.max(0, Math.min(GRID_NX-1, Math.floor((x+TW*0.5)/TW*GRID_NX)));
+    const gk = Math.max(0, Math.min(GRID_NZ-1, Math.floor((z+TL*0.5)/TL*GRID_NZ)));
+    const idx = gk*GRID_NX+gi;
+    return { vx: g.vx[idx], vz: g.vz[idx] };
+}
+
+/** Returns true if any path point is within NEAR_THRESH radii of the object. */
+function isNearObject(xs, ys, zs, obj) {
+    if (!obj) return true;
+    const th2 = (obj.r * NEAR_THRESH) ** 2;
+    for (let j = 0; j < xs.length; j++) {
+        const dx=xs[j]-obj.cx, dy=ys[j]-obj.cy, dz=zs[j]-obj.cz;
+        if (dx*dx+dy*dy+dz*dz < th2) return true;
+    }
+    return false;
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 /**
- * Run the batch simulation then render to an offscreen canvas.
+ * Run the multi-pass batch simulation.
+ * Each pass uses a different vortex-shedding phase and adaptive starting
+ * positions informed by the previous pass.  The velocity field for each
+ * pass is also nudged by an accumulated influence grid built from the
+ * paths already computed, so later particles follow previously-discovered
+ * flow corridors while fresh random starts fill unexplored regions.
  *
  * @param {{ windMult, objSphere, onProgress, onComplete, onCancel }} opts
  *   windMult   – visual speed multiplier (from UI slider)
@@ -66,79 +167,135 @@ const BUCKETS = [
  * @returns {{ cancel: function }}
  */
 export function runBatchSimulation({ windMult = 1.0, objSphere = null,
-                                     onProgress, onComplete, onCancel } = {}) {
-    // All computed paths.  Each entry: { xs, zs, ss } — Float32Array sub-views.
+                                     onProgress, onComplete, onCancel,
+                                     nPasses          = N_PASSES,
+                                     particlesPerPass  = SIM_N_PARTICLES,
+                                     nSteps            = N_STEPS,
+                                     influenceWeight   = INFLUENCE_W,
+                                     nearThresh        = NEAR_THRESH } = {}) {
+    // Near-object paths from all passes (the final output).
     const allPaths = [];
+    const U = VSIM * (windMult || 1);
 
+    // Shedding period — used to space phase offsets evenly across passes.
+    const St     = 0.21;
+    const R      = objSphere?.r ?? 1.0;
+    const T_shed = (2 * Math.PI * R) / (Math.PI * St * U / R * R);  // 2π/ω
+
+    // Influence grid built from the previous pass.
+    let prevGrid      = null;
+    let currGrid      = makeGrid();
+
+    // Starting positions for the current pass; paths of the just-finished pass
+    // (used to generate adaptive starts for the next pass).
+    let startPositions = generateUniformStarts(particlesPerPass);
+    let lastPassPaths  = [];
+
+    let passIndex     = 0;
     let particleIndex = 0;
     let cancelled     = false;
     let timer         = null;
 
-    // ── Phase 1: compute paths in batches ─────────────────────────────────────
+    const totalParticles = nPasses * particlesPerPass;
+
     function computeBatch() {
         if (cancelled) return;
 
-        const end = Math.min(particleIndex + BATCH_SIZE, SIM_N_PARTICLES);
+        const end = Math.min(particleIndex + BATCH_SIZE, particlesPerPass);
 
         for (let i = particleIndex; i < end; i++) {
-            // Start position: random XY spread across inlet face (Z = −TL/2)
-            let x = (Math.random() - 0.5) * TW * 0.92;
-            let y = (Math.random() - 0.5) * TH * 0.90;
-            let z = -TL / 2;
+            const { x: x0, y: y0 } = startPositions[i];
+            let x = x0, y = y0, z = -TL / 2;
 
-            // Pre-allocate max-length buffers; slice after integration
-            const xs = new Float32Array(N_STEPS + 1);
-            const ys = new Float32Array(N_STEPS + 1);
-            const zs = new Float32Array(N_STEPS + 1);
-            const ss = new Float32Array(N_STEPS + 1);
-            xs[0] = x;  ys[0] = y;  zs[0] = z;  ss[0] = 1.0;
+            // Phase offset: each pass samples a different instant of the
+            // von Kármán shedding cycle for ensemble-averaged coverage.
+            const t0 = passIndex * (T_shed / nPasses);
+
+            const xs = new Float32Array(nSteps + 1);
+            const ys = new Float32Array(nSteps + 1);
+            const zs = new Float32Array(nSteps + 1);
+            const ss = new Float32Array(nSteps + 1);
+            xs[0] = x; ys[0] = y; zs[0] = z; ss[0] = 1.0;
             let len = 1;
 
-            const U = VSIM * (windMult || 1);
+            for (let s = 0; s < nSteps; s++) {
+                const t = t0 + s * DT;
+                const v = getVelocity(x, y, z, t, windMult, objSphere);
 
-            for (let s = 0; s < N_STEPS; s++) {
-                const v    = getVelocity(x, y, z, 0, windMult, objSphere);
-                const vmag = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+                // Blend in the accumulated path field from the previous pass:
+                // particles are nudged along flow corridors already discovered.
+                if (prevGrid) {
+                    const inf = sampleGrid(prevGrid, x, z);
+                    v.x += inf.vx * U * influenceWeight;
+                    v.z += inf.vz * U * influenceWeight;
+                }
 
+                const vmag = Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
                 x += v.x * DT;
                 y += v.y * DT;
                 z += v.z * DT;
 
-                // Exit if particle leaves tunnel bounds
-                if (z >  TL / 2 + 0.3 ||
-                    Math.abs(x) > TW / 2 + 0.4 ||
-                    Math.abs(y) > TH / 2 + 0.4) break;
+                if (z > TL/2+0.3 || Math.abs(x) > TW/2+0.4 || Math.abs(y) > TH/2+0.4) break;
 
-                xs[len] = x;
-                ys[len] = y;
-                zs[len] = z;
+                xs[len] = x; ys[len] = y; zs[len] = z;
                 ss[len] = vmag / U;
                 len++;
             }
 
             if (len >= 3) {
-                // subarray() is a zero-copy view — safe since each particle
-                // has its own underlying ArrayBuffer.
-                allPaths.push({
-                    xs: xs.subarray(0, len),
-                    ys: ys.subarray(0, len),
-                    zs: zs.subarray(0, len),
-                    ss: ss.subarray(0, len),
-                });
+                // Always contribute to the influence grid (all paths, not just near-object).
+                addToGrid(currGrid, xs.subarray(0, len), zs.subarray(0, len));
+
+                // Only keep near-object paths in allPaths to save memory.
+                // Far straight-line freestream paths add no visual information.
+                const nearTh2 = objSphere ? (objSphere.r * nearThresh) ** 2 : Infinity;
+                let near = !objSphere;
+                if (!near) {
+                    for (let j = 0; j < len && !near; j++) {
+                        const dx=xs[j]-objSphere.cx, dy=ys[j]-objSphere.cy, dz=zs[j]-objSphere.cz;
+                        if (dx*dx+dy*dy+dz*dz < nearTh2) near = true;
+                    }
+                }
+                if (near) {
+                    const path = {
+                        xs: xs.slice(0, len),
+                        ys: ys.slice(0, len),
+                        zs: zs.slice(0, len),
+                        ss: ss.slice(0, len),
+                    };
+                    allPaths.push(path);
+                    lastPassPaths.push(path);
+                }
             }
         }
 
         particleIndex = end;
-        onProgress?.(particleIndex / SIM_N_PARTICLES);
+        onProgress?.((passIndex * particlesPerPass + particleIndex) / totalParticles);
 
-        if (particleIndex < SIM_N_PARTICLES) {
+        if (particleIndex < particlesPerPass) {
             timer = setTimeout(computeBatch, 0);
         } else {
-            renderPaths();   // Phase 2
+            // End of this pass — lock in the influence grid for the next pass.
+            normaliseGrid(currGrid);
+            prevGrid = currGrid;
+            currGrid = makeGrid();
+
+            // Prepare adaptive starts for next pass from the paths we just found.
+            const passedPaths = lastPassPaths.splice(0);
+            passIndex++;
+
+            if (passIndex < nPasses) {
+                startPositions = generateAdaptiveStarts(passedPaths, objSphere, particlesPerPass);
+                particleIndex  = 0;
+                timer = setTimeout(computeBatch, 0);
+            } else {
+                // All passes done — deliver results directly (no 2-D canvas needed).
+                timer = setTimeout(() => onComplete?.(null, allPaths), 0);
+            }
         }
     }
 
-    // ── Phase 2: render computed paths to an offscreen canvas ─────────────────
+    // ── Legacy 2-D canvas render (kept for reference; not called by default) ──
     function renderPaths() {
         const canvas  = document.createElement('canvas');
         canvas.width  = CW;
@@ -277,6 +434,7 @@ export function runBatchSimulation({ windMult = 1.0, objSphere = null,
         },
     };
 }
+
 
 // ── Legend ─────────────────────────────────────────────────────────────────────
 function _drawLegend(ctx, W, H, PAD) {

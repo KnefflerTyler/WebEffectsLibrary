@@ -1,19 +1,25 @@
 // ── Object fragment shader ────────────────────────────────────────────────────
 // Metallic appearance with:
 //   • Blinn-Phong diffuse + specular
-//   • Fresnel rim glow (highlights silhouette against flow)
-//   • Pressure coefficient (Cp) surface map — computed from potential-flow theory
-//     using the fragment's world position relative to the object centre.
-//     Cp = +1 at the upstream stagnation point (red)
-//     Cp = −1.25 at the equator suction peak (blue)
-//     This matches the CFD-standard cool-warm pressure colour convention.
+//   • Fresnel rim glow
+//   • Pressure coefficient (Cp) surface map, sourced from whichever is available:
+//       uUseCpMap = 1  — simulation-derived 128×64 equirectangular texture
+//                        built by pressureMap.js after multi-pass integration
+//       uUseCpMap = 0  — analytical potential-flow formula (fallback / pre-sim)
+//
+// Texture UV convention (must match pressureMap.js):
+//   u = atan(dir.x, dir.z) / (2π) + 0.5    (longitude, wraps at seam)
+//   v = acos(dir.y) / π                     (colatitude, 0=+Y top 1=−Y bottom)
 
 precision highp float;
 
-uniform vec3  uBaseColor;  // main albedo
-uniform vec3  uRimColor;   // Fresnel rim glow colour
-uniform vec3  uLightDir;   // world-space normalised key light direction
-uniform vec3  uObjCenter;  // world-space object centroid (for Cp computation)
+uniform vec3      uBaseColor;  // main albedo
+uniform vec3      uRimColor;   // Fresnel rim glow colour
+uniform vec3      uLightDir;   // world-space normalised key light direction
+uniform vec3      uObjCenter;  // world-space object centroid
+uniform float     uSimDone;    // 0 = plain metallic, 1 = Cp pressure colours
+uniform sampler2D uCpMap;      // sim-derived Cp texture (R channel, normalised)
+uniform float     uUseCpMap;   // 0 = analytical formula, 1 = sim texture
 
 varying vec3 vNormal;
 varying vec3 vViewDir;
@@ -43,21 +49,25 @@ void main() {
     // ── Fresnel rim (highlights edges facing away from camera) ────────────────
     float rim = pow(1.0 - max(dot(n, v), 0.0), 3.5);
 
-    // ── Pressure coefficient (Cp) surface map ────────────────────────────────
-    // Use the direction from the object centre to this surface fragment to
-    // compute the "effective θ" in potential-flow terms (valid for any convex
-    // body since the physics model uses a sphere doublet for all shapes).
-    //
-    //   Cp(θ) = 1 − (9/4)·sin²θ = (9/4)·cos²θ − 5/4
-    //   cosθ  = dot( normalize(worldPos − centre), −Z_flow )
-    //         = −dir.z       (flow is +Z)
-    //
+    // ── Pressure coefficient (Cp) surface map ────────────────────────────────────
+    // Direction from object centre to this surface fragment.
     vec3  dir  = normalize(vWorldPos - uObjCenter);
-    float cosT = -dir.z;                               // cosine of stagnation angle
-    float Cp   = 2.25 * cosT * cosT - 1.25;           // ∈ [−1.25, +1.0]
 
-    // Map Cp → t ∈ [0,1]: −1.25 → 0 (blue), 0 → ~0.56 (white), +1.0 → 1 (red)
-    float t_cp = (Cp + 1.25) / 2.25;
+    // ---- Analytical fallback: Cp(θ) = (9/4)cos²θ − 5/4, flow is +Z ----
+    float cosT      = -dir.z;                            // θ measured from upstream stagnation
+    float Cp_analyt = 2.25 * cosT * cosT - 1.25;        // ∈ [−1.25, +1.0]
+    float t_analyt  = (Cp_analyt + 1.25) / 2.25;
+
+    // ---- Simulation-derived Cp: spherical UV lookup into pressureMap texture ----
+    // u = longitude  = atan2(dir.x, dir.z) / 2π + 0.5
+    // v = colatitude = acos(dir.y) / π
+    const float PI = 3.14159265;
+    float phi   = atan(dir.x, dir.z) / (2.0 * PI) + 0.5;
+    float theta = acos(clamp(dir.y, -1.0, 1.0)) / PI;
+    float t_sim = texture2D(uCpMap, vec2(phi, theta)).r;
+
+    // Blend: analytical when no texture, sim-derived when texture is ready.
+    float t_cp = mix(t_analyt, t_sim, uUseCpMap);
     vec3  cpCol = cpRamp(t_cp);
 
     // ── Final colour: blend Blinn-Phong metallic look with Cp map ────────────
@@ -65,8 +75,9 @@ void main() {
                + vec3(0.75, 0.85, 1.0) * spec * 0.55
                + uRimColor * rim * 1.8;
 
-    // 50% Cp colouring + 50% lighting — preserves 3D form while showing pressure
-    vec3 col = mix(base, cpCol * (0.35 + 0.65 * diff), 0.52);
+    // Cp colouring is only active after a simulation has been run.
+    // uSimDone: 0 = plain metallic, 1 = full Cp blend (50% Cp + 50% lighting).
+    vec3 col = mix(base, mix(base, cpCol * (0.35 + 0.65 * diff), 0.52), uSimDone);
 
     gl_FragColor = vec4(col, 0.90);
 }

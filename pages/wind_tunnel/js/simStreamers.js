@@ -1,41 +1,46 @@
 /**
  * simStreamers.js — inject batch-simulated streamlines into the 3-D scene.
  *
- * Takes the `allPaths` array produced by simulate.js (each entry: Float32Array
- * sub-views xs, ys, zs, ss) and builds a single THREE.LineSegments object so
- * all 12 000 paths are drawn in one GPU draw call.
- *
- * The same STREAMER_VERT / STREAMER_FRAG shaders are reused.  Setting
- * uObjRadius = 0 activates the "no-object" branch in the vertex shader, which
- * renders the full extent of every line at uniform opacity — exactly what we
- * want for the frozen simulation snapshot.
+ * Samples MAX_DISPLAY evenly-spaced paths from the full simulation set and
+ * builds a single THREE.LineSegments for one GPU draw call.  Using a fraction
+ * of the raw paths keeps the geometry light while still conveying the full
+ * flow pattern.
  */
 import * as THREE from 'three';
 import { STREAMER_VERT, STREAMER_FRAG } from './shaders.js';
 import { scene }                        from './scene.js';
 
+// Maximum number of paths rendered — keeps vertex count manageable.
+const MAX_DISPLAY = 500;
+// Step stride along each path — skip every other point to halve segment count.
+const STRIDE = 2;
+
 let _group = null;
 
 /**
- * Build a LineSegments group from 3-D paths and add it to the scene.
- * Any previously built group is removed first.
+ * Build a LineSegments group from a sampled subset of 3-D paths and add it to the scene.
+ * Paths that never come close to the object are already filtered by simulate.js;
+ * here we sample evenly and set up proximity fade so distant segments are transparent.
  *
  * @param {Array<{xs,ys,zs,ss}>} paths3d
- * @returns {THREE.LineSegments}
+ * @param {{ cx,cy,cz,r }|null}  objSphere
  */
-export function buildSimGroup(paths3d) {
+export function buildSimGroup(paths3d, objSphere) {
     clearSimGroup();
+
+    const total = paths3d.length;
+    const step  = total <= MAX_DISPLAY ? 1 : Math.floor(total / MAX_DISPLAY);
 
     const posArr = [];
     const spdArr = [];
 
-    for (const { xs, ys, zs, ss } of paths3d) {
+    for (let p = 0; p < total; p += step) {
+        const { xs, ys, zs, ss } = paths3d[p];
         const n = xs.length;
-        for (let i = 0; i < n - 1; i++) {
-            // Each segment = two vertices (GL_LINES / LineSegments)
-            posArr.push(xs[i],     ys[i],     zs[i]);
-            posArr.push(xs[i + 1], ys[i + 1], zs[i + 1]);
-            const s = (ss[i] + ss[i + 1]) * 0.5;
+        for (let i = 0; i < n - STRIDE; i += STRIDE) {
+            posArr.push(xs[i],        ys[i],        zs[i]);
+            posArr.push(xs[i+STRIDE], ys[i+STRIDE], zs[i+STRIDE]);
+            const s = (ss[i] + ss[i+STRIDE]) * 0.5;
             spdArr.push(s, s);
         }
     }
@@ -50,11 +55,12 @@ export function buildSimGroup(paths3d) {
         vertexShader  : STREAMER_VERT,
         fragmentShader: STREAMER_FRAG,
         uniforms: {
-            uObjCenter: { value: new THREE.Vector3() },
-            uObjRadius: { value: 0.0 },
-            uFadeMult : { value: 3.0 },
+            uObjCenter: { value: new THREE.Vector3(objSphere?.cx ?? 0, objSphere?.cy ?? 0, objSphere?.cz ?? 0) },
+            uObjRadius: { value: objSphere?.r ?? 0.0 },  // >0 enables proximity fade
+            uFadeMult : { value: 5.0 },                  // paths taper out 5× radii from surface
         },
         transparent: true,
+        opacity    : 0.72,
         blending   : THREE.AdditiveBlending,
         depthWrite : false,
     });

@@ -15,12 +15,14 @@
 import { renderer, scene, camera, controls } from './scene.js';
 import { floorMat, buildRoom }               from './room.js';
 import { buildStreamers, advanceStreamers, setVisibilityRange, setStreamersVisible } from './streamers.js';
-import { loadPreset, importOBJ, getObjSphere, getCurrentStats, setObjectChangeCallback } from './objects.js';
+import { loadPreset, importOBJ, getObjSphere, getCurrentStats, setObjectChangeCallback, enableCpColoring, setCpTexture } from './objects.js';
 import { updateStats, drawLegend }           from './stats.js';
-import { setPressurePlaneVisible, updatePressurePlane } from './pressurePlane.js';
+import { setPressurePlaneVisible, updatePressurePlane, setPlaneCpTexture } from './pressurePlane.js';
+import { buildPressureVolume, clearPressureVolume, setPressureVolumeVisible, isPressureVolumeActive } from './pressureVolume.js';
 import { advanceSmoke, setSmokeVisible, setSmokeVisibilityRange, setSmokeCount, setSmokeSizeScale, setSmokeOpacity, setSmokeDotsOnly } from './smoke.js';
-import { runBatchSimulation, SIM_N_PARTICLES } from './simulate.js';
+import { runBatchSimulation } from './simulate.js';
 import { buildSimGroup, clearSimGroup, isSimGroupActive } from './simStreamers.js';
+import { buildPressureMap, disposePressureMap } from './pressureMap.js';
 import { setVectorFieldVisible, updateVectorField } from './vectorField.js';
 import { N_SX, N_SY, VSIM }                 from './config.js';
 import { initPanelToggle }                   from '../../../shared/settings.js';
@@ -58,7 +60,7 @@ function animate(ms) {
         advanceSmoke(dt, _getWindMult(), getObjSphere());
     }
 
-    updatePressurePlane(getObjSphere());
+    updatePressurePlane(getObjSphere());   // keep analytical plane in sync (pre-sim fallback)
     updateVectorField(_totalTime, _getWindMult(), getObjSphere());
     floorMat.uniforms.uTime.value = _totalTime;
     renderer.render(scene, camera);
@@ -107,7 +109,8 @@ document.getElementById('cfgVisRange')?.addEventListener('input', e => {
 
 // ── Checkbox: Pressure Cp plane ───────────────────────────────────────────────
 document.getElementById('cfgPressurePlane')?.addEventListener('change', e => {
-    setPressurePlaneVisible(e.target.checked);
+    setPressurePlaneVisible(e.target.checked && !isPressureVolumeActive());
+    setPressureVolumeVisible(e.target.checked);
 });
 
 // ── Checkbox: Smoke particles ─────────────────────────────────────────────────
@@ -176,19 +179,24 @@ document.getElementById('fileInput')?.addEventListener('change', e => {
 
 // ── Simulate button ───────────────────────────────────────────────────────────
 let _simHandle = null;
-let _simCanvas = null;   // store latest 2D canvas for Save PNG
 
 const _simOverlay    = document.getElementById('simOverlay');
 const _simBar        = document.getElementById('simBar');
 const _simStatus     = document.getElementById('simStatus');
 const _simProgressEl = document.getElementById('simProgressPhase');
-const _simResultEl   = document.getElementById('simResultPhase');
 const _simBtn        = document.getElementById('simBtn');
 
 _simBtn?.addEventListener('click', () => {
     // Toggle: if 3-D sim lines are already in the scene, clear them
     if (isSimGroupActive()) {
         clearSimGroup();
+        clearPressureVolume();
+        disposePressureMap();
+        setCpTexture(null);
+        setPlaneCpTexture(null);
+        // Restore analytical plane if checkbox is on
+        setPressurePlaneVisible(!!document.getElementById('cfgPressurePlane')?.checked);
+        enableCpColoring(false);   // revert object to plain metallic
         _simBtn.textContent = '⟳ Simulate';
         return;
     }
@@ -196,34 +204,53 @@ _simBtn?.addEventListener('click', () => {
     // Show overlay in progress state
     _simOverlay.style.display    = 'flex';
     _simProgressEl.style.display = '';
-    _simResultEl.style.display   = 'none';
     _simBar.style.width          = '0%';
     _simStatus.textContent       = 'Preparing\u2026';
     _simBtn.disabled             = true;
 
+    // Read simulation parameters from the settings panel (fall back to defaults).
+    const _int  = (id, def) => { const v = parseInt(document.getElementById(id)?.value, 10);   return (isFinite(v) && v > 0) ? v   : def; };
+    const _flt  = (id, def) => { const v = parseFloat(document.getElementById(id)?.value);      return (isFinite(v) && v > 0) ? v   : def; };
+    const simPasses    = _int('cfgSimPasses',    3);
+    const simParticles = _int('cfgSimParticles', 12000);
+    const simSteps     = _int('cfgSimSteps',     480);
+    const simInfluence = _flt('cfgSimInfluence', 0.12);
+    const simNearThresh= _flt('cfgSimNearThresh',4.5);
+    const simTotal     = simPasses * simParticles;
+
     _simHandle = runBatchSimulation({
-        windMult : _getWindMult(),
-        objSphere: getObjSphere(),
+        windMult        : _getWindMult(),
+        objSphere       : getObjSphere(),
+        nPasses         : simPasses,
+        particlesPerPass: simParticles,
+        nSteps          : simSteps,
+        influenceWeight : simInfluence,
+        nearThresh      : simNearThresh,
 
         onProgress(p) {
             _simBar.style.width    = `${(p * 100).toFixed(1)}%`;
+            const done = Math.round(p * simTotal);
             _simStatus.textContent =
-                `${Math.round(p * SIM_N_PARTICLES).toLocaleString()} \u00a0/\u00a0 ${SIM_N_PARTICLES.toLocaleString()} particles`;
+                `Pass ${Math.min(simPasses, Math.floor(p * simPasses) + 1)} / ${simPasses}\u2002\u00b7\u2002${done.toLocaleString()} / ${simTotal.toLocaleString()} particles`;
         },
 
         onComplete(canvas, paths3d) {
             _simHandle = null;
-            _simCanvas = canvas;    // keep for Save PNG
-
-            // Inject frozen 3-D streamlines into the scene
-            buildSimGroup(paths3d);
-
-            // Switch overlay to result phase
-            _simProgressEl.style.display = 'none';
-            _simResultEl.style.display   = '';
-            document.getElementById('simResultStats').textContent =
-                `${paths3d.length.toLocaleString()} streamlines injected into 3D view.`;
-
+            const obj = getObjSphere();
+            buildSimGroup(paths3d, obj);
+            // Sim-derived surface Cp texture
+            const cpTex = buildPressureMap(paths3d, obj);
+            setCpTexture(cpTex);
+            enableCpColoring(true);
+            // 3-D volumetric pressure field (replaces flat plane post-sim)
+            buildPressureVolume(paths3d);
+            const showPressure = document.getElementById('cfgPressurePlane')?.checked;
+            setPressureVolumeVisible(!!showPressure);
+            // Hide flat analytical plane — volume supersedes it
+            setPressurePlaneVisible(false);
+            const planeTex = null;  // plane texture no longer needed
+            setPlaneCpTexture(planeTex);
+            _simOverlay.style.display = 'none';
             _simBtn.disabled    = false;
             _simBtn.textContent = '✕ Clear Sim';
         },
@@ -238,16 +265,4 @@ _simBtn?.addEventListener('click', () => {
 
 document.getElementById('simCancelBtn')?.addEventListener('click', () => {
     _simHandle?.cancel();
-});
-
-document.getElementById('simViewBtn')?.addEventListener('click', () => {
-    _simOverlay.style.display = 'none';
-});
-
-document.getElementById('simSaveBtn')?.addEventListener('click', () => {
-    if (!_simCanvas) return;
-    const a    = document.createElement('a');
-    a.href     = _simCanvas.toDataURL('image/png');
-    a.download = 'wind-tunnel-simulation.png';
-    a.click();
 });

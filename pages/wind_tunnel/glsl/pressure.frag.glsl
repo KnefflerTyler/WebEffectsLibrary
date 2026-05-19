@@ -63,11 +63,16 @@ void main() {
     float vx_n =           -B * d.z * d.x;
     float vy_n =           -B * d.z * d.y;
 
-    float v2_n = vx_n * vx_n + vy_n * vy_n + vz_n * vz_n;
-    float Cp   = 1.0 - v2_n;
+    float v2_n    = vx_n * vx_n + vy_n * vy_n + vz_n * vz_n;
+    float Cp_anal = 1.0 - v2_n;
+    float t_anal  = (Cp_anal + 1.25) / 2.25;
 
-    // Map Cp ∈ [−1.25, +1.0] → t ∈ [0, 1]
-    float t = (Cp + 1.25) / 2.25;
+    // ── Sim-derived texture lookup ────────────────────────────────────────────
+    float pu    = (vWorldPos.x + uTunnelHalfExtent.x) / (uTunnelHalfExtent.x * 2.0);
+    float pv    = (vWorldPos.z + uTunnelHalfExtent.y) / (uTunnelHalfExtent.y * 2.0);
+    float t_sim = texture2D(uCpPlane, vec2(pu, pv)).r;
+
+    float t = mix(t_anal, t_sim, uUseCpPlane);
 
     // Opacity: stronger near object, fades far away
     float distFade = 1.0 - smoothstep(R * 1.5, R * 6.0, r);
