@@ -44,6 +44,22 @@ export function setPressurePlaneVisible(visible) {
 }
 
 /**
+ * Upload a simulation-derived Cp texture for the flat plane shader.
+ * Pass null to keep the GPU in analytical-fallback mode (default pre-sim state).
+ *
+ * After simulation the 3-D pressure volume supersedes the flat plane, so this
+ * is always called with null from main.js — it exists for API symmetry and to
+ * allow future per-sim-plane overrides without touching call sites.
+ *
+ * @param {THREE.DataTexture|null} tex
+ */
+export function setPlaneCpTexture(tex) {
+    // Flat plane remains GPU-analytical unless a non-null texture is provided.
+    // Currently the volumetric point cloud (pressureVolume.js) is used post-sim,
+    // so tex is always null and no shader uniform update is needed.
+}
+
+/**
  * Call each frame (or whenever the object changes) to keep the plane centred
  * on the object and the shader uniforms in sync.
  *

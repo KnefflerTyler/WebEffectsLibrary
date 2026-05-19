@@ -17,7 +17,7 @@
  * value so there are no holes.
  */
 import * as THREE from 'three';
-import { TW, TH, TL } from './config.js';
+import { TW, TL } from './config.js';
 
 const MAP_W      = 128;   // longitude cells
 const MAP_H      = 64;    // colatitude cells
@@ -128,116 +128,4 @@ export function getPressureTexture() {
 /** Dispose and clear the texture. */
 export function disposePressureMap() {
     if (_texture) { _texture.dispose(); _texture = null; }
-}
-
-// ── Pressure plane map (flat XZ grid) ────────────────────────────────────────
-// Resolution proportional to tunnel footprint (TW × TL).
-const PLANE_W = 128;   // cells along X  (maps world -TW/2 … +TW/2)
-const PLANE_Z = 180;   // cells along Z  (maps world -TL/2 … +TL/2)
-
-// Y tolerance: include path points within this fraction of TH of the plane Y.
-const SLICE_HALF = TH * 0.35;
-
-let _planeTexture = null;
-
-/**
- * Build a flat XZ Cp texture from simulation paths, for the pressure plane.
- *
- * UV convention (must match pressure.frag.glsl):
- *   u = (worldX + TW/2) / TW   →  0 = left wall,  1 = right wall
- *   v = (worldZ + TL/2) / TL   →  0 = inlet face,  1 = outlet face
- *
- * @param {Array<{xs,ys,zs,ss}>} paths3d
- * @param {{ cx, cy, cz, r }}    objSphere
- * @returns {THREE.DataTexture}
- */
-export function buildPressurePlaneMap(paths3d, objSphere) {
-    if (!paths3d?.length) return null;
-
-    const planeY = objSphere?.cy ?? 0;
-
-    const cpSum = new Float32Array(PLANE_W * PLANE_Z);
-    const cpCnt = new Float32Array(PLANE_W * PLANE_Z);
-
-    for (const { xs, ys, zs, ss } of paths3d) {
-        for (let j = 0; j < xs.length; j++) {
-            if (Math.abs(ys[j] - planeY) > SLICE_HALF) continue;
-
-            const u   = (xs[j] + TW * 0.5) / TW;
-            const v   = (zs[j] + TL * 0.5) / TL;
-            const pu  = Math.floor(u * PLANE_W);
-            const pv  = Math.floor(v * PLANE_Z);
-            if (pu < 0 || pu >= PLANE_W || pv < 0 || pv >= PLANE_Z) continue;
-
-            const idx = pv * PLANE_W + pu;
-            const s   = ss[j];
-            cpSum[idx] += 1.0 - s * s;   // Cp = 1 − (|v|/U)²
-            cpCnt[idx]++;
-        }
-    }
-
-    const data = new Uint8Array(PLANE_W * PLANE_Z * 4);
-
-    for (let pv = 0; pv < PLANE_Z; pv++) {
-        for (let pu = 0; pu < PLANE_W; pu++) {
-            const idx = pv * PLANE_W + pu;
-            let cp;
-
-            if (cpCnt[idx] > 0) {
-                cp = cpSum[idx] / cpCnt[idx];
-            } else {
-                // Analytical fallback: potential-flow Cp at this XZ cell, Y = planeY
-                const wx = (pu / PLANE_W) * TW - TW * 0.5;
-                const wz = (pv / PLANE_Z) * TL - TL * 0.5;
-                if (objSphere) {
-                    const dx = wx - objSphere.cx;
-                    const dy = planeY - objSphere.cy;
-                    const dz = wz - objSphere.cz;
-                    const r2 = dx*dx + dy*dy + dz*dz;
-                    if (r2 < objSphere.r * objSphere.r) {
-                        cp = 0;  // inside object — neutral
-                    } else {
-                        const r  = Math.sqrt(r2);
-                        const R3 = objSphere.r ** 3;
-                        const A  = R3 / (2 * r ** 3);
-                        const B  = 3 * R3 / (2 * r ** 5);
-                        const vz_n = 1 + A - B * dz * dz;
-                        const vx_n =       -B * dz * dx;
-                        const vy_n =       -B * dz * dy;
-                        cp = 1 - (vx_n*vx_n + vy_n*vy_n + vz_n*vz_n);
-                    }
-                } else {
-                    cp = 0;  // no object — neutral freestream
-                }
-            }
-
-            const t    = Math.max(0, Math.min(1, (cp + 1.25) / 2.25));
-            const byte = Math.round(t * 255);
-            data[idx * 4 + 0] = byte;
-            data[idx * 4 + 1] = byte;
-            data[idx * 4 + 2] = byte;
-            data[idx * 4 + 3] = 255;
-        }
-    }
-
-    if (_planeTexture) _planeTexture.dispose();
-
-    _planeTexture = new THREE.DataTexture(data, PLANE_W, PLANE_Z);
-    _planeTexture.minFilter   = THREE.LinearFilter;
-    _planeTexture.magFilter   = THREE.LinearFilter;
-    _planeTexture.wrapS       = THREE.ClampToEdgeWrapping;
-    _planeTexture.wrapT       = THREE.ClampToEdgeWrapping;
-    _planeTexture.needsUpdate = true;
-
-    return _planeTexture;
-}
-
-/** Returns the current pressure plane texture, or null. */
-export function getPlaneCpTexture() {
-    return _planeTexture;
-}
-
-/** Dispose and clear the plane texture. */
-export function disposePressurePlaneMap() {
-    if (_planeTexture) { _planeTexture.dispose(); _planeTexture = null; }
 }

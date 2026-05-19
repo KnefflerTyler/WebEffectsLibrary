@@ -78,6 +78,23 @@ function _getWindMs() {
     return parseFloat(document.getElementById('cfgWindSpeed')?.value ?? '50') * _getWindMult();
 }
 
+/**
+ * Read the five simulation-parameter inputs from the settings panel.
+ * Falls back to the module-level defaults when an input is missing or invalid.
+ * @returns {{ passes, particles, steps, influence, nearThresh }}
+ */
+function _readSimParams() {
+    const _int = (id, def) => { const v = parseInt(document.getElementById(id)?.value, 10); return (isFinite(v) && v > 0) ? v : def; };
+    const _flt = (id, def) => { const v = parseFloat(document.getElementById(id)?.value);   return (isFinite(v) && v > 0) ? v : def; };
+    return {
+        passes    : _int('cfgSimPasses',     3),
+        particles : _int('cfgSimParticles',  12000),
+        steps     : _int('cfgSimSteps',      480),
+        influence : _flt('cfgSimInfluence',  0.12),
+        nearThresh: _flt('cfgSimNearThresh', 4.5),
+    };
+}
+
 // ── Input: Physical wind speed ────────────────────────────────────────────────
 document.getElementById('cfgWindSpeed')?.addEventListener('input', e => {
     updateStats(getCurrentStats(), parseFloat(e.target.value) * _getWindMult());
@@ -209,14 +226,9 @@ _simBtn?.addEventListener('click', () => {
     _simBtn.disabled             = true;
 
     // Read simulation parameters from the settings panel (fall back to defaults).
-    const _int  = (id, def) => { const v = parseInt(document.getElementById(id)?.value, 10);   return (isFinite(v) && v > 0) ? v   : def; };
-    const _flt  = (id, def) => { const v = parseFloat(document.getElementById(id)?.value);      return (isFinite(v) && v > 0) ? v   : def; };
-    const simPasses    = _int('cfgSimPasses',    3);
-    const simParticles = _int('cfgSimParticles', 12000);
-    const simSteps     = _int('cfgSimSteps',     480);
-    const simInfluence = _flt('cfgSimInfluence', 0.12);
-    const simNearThresh= _flt('cfgSimNearThresh',4.5);
-    const simTotal     = simPasses * simParticles;
+    const { passes: simPasses, particles: simParticles, steps: simSteps,
+            influence: simInfluence, nearThresh: simNearThresh } = _readSimParams();
+    const simTotal = simPasses * simParticles;
 
     _simHandle = runBatchSimulation({
         windMult        : _getWindMult(),
@@ -237,19 +249,22 @@ _simBtn?.addEventListener('click', () => {
         onComplete(canvas, paths3d) {
             _simHandle = null;
             const obj = getObjSphere();
+
+            // 1. Sim-coloured streamlines in the 3-D scene
             buildSimGroup(paths3d, obj);
-            // Sim-derived surface Cp texture
-            const cpTex = buildPressureMap(paths3d, obj);
-            setCpTexture(cpTex);
+
+            // 2. Spherical-UV Cp texture → object surface pressure tint
+            setCpTexture(buildPressureMap(paths3d, obj));
             enableCpColoring(true);
-            // 3-D volumetric pressure field (replaces flat plane post-sim)
+
+            // 3. Volumetric pressure point cloud (replaces flat analytical plane post-sim)
             buildPressureVolume(paths3d);
-            const showPressure = document.getElementById('cfgPressurePlane')?.checked;
-            setPressureVolumeVisible(!!showPressure);
-            // Hide flat analytical plane — volume supersedes it
+            setPressureVolumeVisible(!!document.getElementById('cfgPressurePlane')?.checked);
+
+            // 4. Hide flat analytical plane — volume supersedes it; null disables plane shader
             setPressurePlaneVisible(false);
-            const planeTex = null;  // plane texture no longer needed
-            setPlaneCpTexture(planeTex);
+            setPlaneCpTexture(null);
+
             _simOverlay.style.display = 'none';
             _simBtn.disabled    = false;
             _simBtn.textContent = '✕ Clear Sim';

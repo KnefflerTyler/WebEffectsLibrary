@@ -136,13 +136,23 @@ function sampleGrid(g, x, z) {
     return { vx: g.vx[idx], vz: g.vz[idx] };
 }
 
-/** Returns true if any path point is within NEAR_THRESH radii of the object. */
-function isNearObject(xs, ys, zs, obj) {
+/**
+ * Returns true if any of the first `len` path points falls within
+ * `thresh` radii of the object centre.  No object → always true.
+ *
+ * @param {Float32Array} xs, ys, zs - path position arrays
+ * @param {number}       len        - number of valid samples in those arrays
+ * @param {{ cx,cy,cz,r }|null} obj
+ * @param {number}       thresh     - proximity multiplier in radii
+ */
+function isNearObject(xs, ys, zs, len, obj, thresh = NEAR_THRESH) {
     if (!obj) return true;
-    const th2 = (obj.r * NEAR_THRESH) ** 2;
-    for (let j = 0; j < xs.length; j++) {
-        const dx=xs[j]-obj.cx, dy=ys[j]-obj.cy, dz=zs[j]-obj.cz;
-        if (dx*dx+dy*dy+dz*dz < th2) return true;
+    const th2 = (obj.r * thresh) ** 2;
+    for (let j = 0; j < len; j++) {
+        const dx = xs[j] - obj.cx;
+        const dy = ys[j] - obj.cy;
+        const dz = zs[j] - obj.cz;
+        if (dx*dx + dy*dy + dz*dz < th2) return true;
     }
     return false;
 }
@@ -177,10 +187,13 @@ export function runBatchSimulation({ windMult = 1.0, objSphere = null,
     const allPaths = [];
     const U = VSIM * (windMult || 1);
 
-    // Shedding period — used to space phase offsets evenly across passes.
-    const St     = 0.21;
+    // Shedding period T = 2π/ω, where ω = π·St·U/R (angular frequency).
+    // Simplifies to:  T = 2R / (St·U)
+    // Spreading N passes evenly across T_shed gives each pass a unique
+    // vortex-shedding snapshot, improving ensemble coverage.
+    const St     = 0.21;                           // Strouhal number (subcritical sphere)
     const R      = objSphere?.r ?? 1.0;
-    const T_shed = (2 * Math.PI * R) / (Math.PI * St * U / R * R);  // 2π/ω
+    const T_shed = (2 * R) / (St * U);             // one full shedding period
 
     // Influence grid built from the previous pass.
     let prevGrid      = null;
@@ -222,8 +235,9 @@ export function runBatchSimulation({ windMult = 1.0, objSphere = null,
                 const t = t0 + s * DT;
                 const v = getVelocity(x, y, z, t, windMult, objSphere);
 
-                // Blend in the accumulated path field from the previous pass:
-                // particles are nudged along flow corridors already discovered.
+                // Ensemble influence: blend the previous-pass direction grid into
+                // the analytical velocity so later particles preferentially follow
+                // already-discovered flow corridors (reduces redundant far-field paths).
                 if (prevGrid) {
                     const inf = sampleGrid(prevGrid, x, z);
                     v.x += inf.vx * U * influenceWeight;
@@ -243,20 +257,14 @@ export function runBatchSimulation({ windMult = 1.0, objSphere = null,
             }
 
             if (len >= 3) {
-                // Always contribute to the influence grid (all paths, not just near-object).
+                // All paths (near and far) feed the influence grid so subsequent
+                // passes can route particles along established flow corridors.
                 addToGrid(currGrid, xs.subarray(0, len), zs.subarray(0, len));
 
-                // Only keep near-object paths in allPaths to save memory.
-                // Far straight-line freestream paths add no visual information.
-                const nearTh2 = objSphere ? (objSphere.r * nearThresh) ** 2 : Infinity;
-                let near = !objSphere;
-                if (!near) {
-                    for (let j = 0; j < len && !near; j++) {
-                        const dx=xs[j]-objSphere.cx, dy=ys[j]-objSphere.cy, dz=zs[j]-objSphere.cz;
-                        if (dx*dx+dy*dy+dz*dz < nearTh2) near = true;
-                    }
-                }
-                if (near) {
+                // Only paths that pass within nearThresh radii of the object are
+                // stored in allPaths — far freestream paths carry no useful visual
+                // data and would inflate memory usage significantly.
+                if (isNearObject(xs, ys, zs, len, objSphere, nearThresh)) {
                     const path = {
                         xs: xs.slice(0, len),
                         ys: ys.slice(0, len),

@@ -122,10 +122,13 @@ export function updateVectorField(t, windMult, objSphere) {
             const vmag = Math.sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z);
             const speed = U > 0 ? vmag / U : 1.0;
 
-            // Arrow length proportional to speed, capped at MAX_LEN
+            // Arrow length proportional to speed, capped at MAX_LEN.
+            // Dividing by 1.5 instead of 2.0 makes freestream arrows fill ~67 %
+            // of MAX_LEN, leaving visible headroom for accelerated regions.
             const len = MAX_LEN * Math.min(speed / 1.5, 1.0);
 
-            // Unit direction vector — use a tiny forward nudge if stagnation
+            // Unit direction vector along the velocity — scale to arrow length.
+            // Fall back to a tiny +Z stub at stagnation points to mark their location.
             let ex, ey, ez;
             if (vmag > 1e-5) {
                 const inv = len / vmag;
@@ -141,15 +144,22 @@ export function updateVectorField(t, windMult, objSphere) {
             const tipY = Y_PLANE + ey;
             const tipZ = gz  + ez;
 
-            // Arrowhead barbs — perpendicular in the XZ plane
+            // ── Arrowhead barbs ───────────────────────────────────────────────
+            // The barbs are two line-segments that meet at the tip.  Each barb
+            // root lies BARB_T of the arrow length back from the tip, and the
+            // roots are displaced ±BARB_W laterally in the XZ plane (perpendicular
+            // to the horizontal projection of the arrow direction).
+            //
+            //   bRootX/Z = tip − stem * BARB_T       (offset back along stem)
+            //   bx/bz    = perpendicular unit ± scaled by BARB_W × len
             const hLen = Math.sqrt(ex * ex + ez * ez);
             let bx, bz;
             if (hLen > 1e-4) {
                 const bScale = len * BARB_W / hLen;
-                bx = -ez * bScale;
+                bx = -ez * bScale;   // rotate 90° in XZ plane
                 bz =  ex * bScale;
             } else {
-                bx = len * BARB_W; bz = 0;
+                bx = len * BARB_W; bz = 0;  // vertical arrow: barb along X
             }
 
             // Barb root (along the stem, offset back from tip)

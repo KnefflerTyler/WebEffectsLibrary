@@ -19,6 +19,12 @@ export function updateStats(stats, windMs) {
 
     const { label, cd, physLenM, physAreaM2 } = stats;
 
+    // ── Aerodynamic force / flow metrics ──────────────────────────────────────
+    // Fd  = ½ρU²·Cd·A    Aerodynamic drag force (Newtons)
+    // Re  = ρUL/μ         Reynolds number (dimensionless; turbulent above ~5×10⁵)
+    // Pw  = Fd·U          Mechanical power consumed by drag (Watts)
+    // Wl  = Cd·L          "Aerodynamic waste length" — lower = more streamlined
+    // eff = 1 − Cd/1.17   Efficiency vs. a flat plate (Cd = 1.17), clamped 0–100 %
     const Fd  = 0.5 * AIR_RHO * windMs * windMs * cd * physAreaM2;
     const Re  = AIR_RHO * windMs * physLenM / AIR_MU;
     const Pw  = Fd * windMs;

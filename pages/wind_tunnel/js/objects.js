@@ -150,28 +150,32 @@ function _clearObject() {
 function _setObject(mesh, label, knownCd, physLenM, physAreaM2) {
     _clearObject();
 
-    // Centre and scale to fit within the tunnel cross-section
+    // ── 1. Uniform scale: fit the largest dimension within the tunnel's
+    //       cross-section while leaving clearance for airflow around it.
     mesh.geometry.computeBoundingBox();
     const bb   = mesh.geometry.boundingBox;
     const size = new THREE.Vector3();
     bb.getSize(size);
-    const maxExtent = Math.max(size.x, size.y, size.z);
-    const maxAllowed = Math.min(TH * 0.55, TW * 0.30);
+    const maxExtent  = Math.max(size.x, size.y, size.z);
+    const maxAllowed = Math.min(TH * 0.55, TW * 0.30);  // tighter of height/width limits
     const scaleFactor = maxAllowed / maxExtent;
     mesh.scale.setScalar(scaleFactor);
 
-    // Centre on bounding box midpoint
+    // ── 2. Centre: translate geometry so the bounding-box midpoint is at origin.
+    //       This ensures mesh.position always refers to the object's geometric centre.
     const centre = new THREE.Vector3();
     bb.getCenter(centre);
     mesh.geometry.translate(-centre.x, -centre.y, -centre.z);
 
-    // Sit on floor
+    // ── 3. Floor placement: lift the object so its bottom face rests on the floor.
     mesh.position.set(0, -TH / 2 + size.y * scaleFactor * 0.5, 0);
 
     scene.add(mesh);
     _currentMesh = mesh;
 
-    // Bounding sphere used by physics (unscaled; apply scale manually)
+    // ── 4. Bounding sphere for physics lookups (getVelocity, isNearObject, etc.).
+    //       Computed on the un-scaled geometry; apply scaleFactor manually because
+    //       THREE does not auto-scale bounding spheres with mesh.scale.
     mesh.geometry.computeBoundingSphere();
     const bs = mesh.geometry.boundingSphere;
     _objSphere = {
@@ -181,12 +185,14 @@ function _setObject(mesh, label, knownCd, physLenM, physAreaM2) {
         r : bs.radius * scaleFactor,
     };
 
-    // Keep object shader's Cp centre in sync with placement
+    // Keep the object shader's Cp-map centre uniform in sync with world placement.
     objectMat.uniforms.uObjCenter.value.set(
         mesh.position.x, mesh.position.y, mesh.position.z
     );
 
-    // ── Drag / efficiency metrics ─────────────────────────────────────────────
+    // ── 5. Drag / efficiency metrics ──────────────────────────────────────────
+    // Fineness ratio f = L / √A  (streamwise length over root frontal area).
+    // Used to estimate Cd from empirical smooth-body data when knownCd is null.
     const scaledLen  = physLenM  * scaleFactor;
     const scaledArea = physAreaM2 * scaleFactor * scaleFactor;
     const fineness   = scaledLen / Math.sqrt(scaledArea);
