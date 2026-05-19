@@ -14,15 +14,21 @@
  */
 import { renderer, scene, camera, controls } from './scene.js';
 import { floorMat, buildRoom }               from './room.js';
-import { buildStreamers, advanceStreamers, setVisibilityRange } from './streamers.js';
+import { buildStreamers, advanceStreamers, setVisibilityRange, setStreamersVisible } from './streamers.js';
 import { loadPreset, importOBJ, getObjSphere, getCurrentStats, setObjectChangeCallback } from './objects.js';
 import { updateStats, drawLegend }           from './stats.js';
+import { setPressurePlaneVisible, updatePressurePlane } from './pressurePlane.js';
+import { advanceSmoke, setSmokeVisible, setSmokeVisibilityRange, setSmokeCount, setSmokeSizeScale, setSmokeOpacity, setSmokeDotsOnly } from './smoke.js';
+import { runBatchSimulation, SIM_N_PARTICLES } from './simulate.js';
+import { buildSimGroup, clearSimGroup, isSimGroupActive } from './simStreamers.js';
+import { setVectorFieldVisible, updateVectorField } from './vectorField.js';
 import { N_SX, N_SY, VSIM }                 from './config.js';
 import { initPanelToggle }                   from '../../../shared/settings.js';
 
 // ── One-time setup ────────────────────────────────────────────────────────────
 buildRoom();
 buildStreamers(N_SX, N_SY);
+setStreamersVisible(false);   // hidden until user enables via checkbox
 drawLegend('legend-canvas');
 
 // Register callback so objects.js can trigger stats refresh after a shape change
@@ -49,8 +55,11 @@ function animate(ms) {
 
     if (!document.getElementById('cfgPause')?.checked) {
         advanceStreamers(dt, _getWindMult(), getObjSphere());
+        advanceSmoke(dt, _getWindMult(), getObjSphere());
     }
 
+    updatePressurePlane(getObjSphere());
+    updateVectorField(_totalTime, _getWindMult(), getObjSphere());
     floorMat.uniforms.uTime.value = _totalTime;
     renderer.render(scene, camera);
 }
@@ -67,41 +76,73 @@ function _getWindMs() {
     return parseFloat(document.getElementById('cfgWindSpeed')?.value ?? '50') * _getWindMult();
 }
 
-// ── Slider: Physical wind speed ───────────────────────────────────────────────
+// ── Input: Physical wind speed ────────────────────────────────────────────────
 document.getElementById('cfgWindSpeed')?.addEventListener('input', e => {
-    const v = parseFloat(e.target.value);
-    document.getElementById('valWindSpeed').textContent = v;
-    updateStats(getCurrentStats(), v * _getWindMult());
+    updateStats(getCurrentStats(), parseFloat(e.target.value) * _getWindMult());
 });
 
-// ── Slider: Visual speed multiplier ──────────────────────────────────────────
-document.getElementById('cfgWindMult')?.addEventListener('input', e => {
-    const v = parseFloat(e.target.value);
-    document.getElementById('valWindMult').textContent = v.toFixed(1);
+// ── Input: Visual speed multiplier ───────────────────────────────────────────
+document.getElementById('cfgWindMult')?.addEventListener('input', () => {
     updateStats(getCurrentStats(), _getWindMs());
 });
 
-// ── Slider: Streamer columns ──────────────────────────────────────────────────
+// ── Input: Streamer columns ───────────────────────────────────────────────────
 document.getElementById('cfgStreamerX')?.addEventListener('input', e => {
-    const v = parseInt(e.target.value, 10);
-    document.getElementById('valStreamerX').textContent = v;
     const nY = parseInt(document.getElementById('cfgStreamerY')?.value ?? N_SY, 10);
-    buildStreamers(v, nY);
+    buildStreamers(parseInt(e.target.value, 10), nY);
 });
 
-// ── Slider: Streamer rows ─────────────────────────────────────────────────────
+// ── Input: Streamer rows ──────────────────────────────────────────────────────
 document.getElementById('cfgStreamerY')?.addEventListener('input', e => {
-    const v = parseInt(e.target.value, 10);
-    document.getElementById('valStreamerY').textContent = v;
     const nX = parseInt(document.getElementById('cfgStreamerX')?.value ?? N_SX, 10);
-    buildStreamers(nX, v);
+    buildStreamers(nX, parseInt(e.target.value, 10));
 });
 
-// ── Slider: Visibility range ──────────────────────────────────────────────────
+// ── Input: Visibility range ───────────────────────────────────────────────────
 document.getElementById('cfgVisRange')?.addEventListener('input', e => {
     const v = parseFloat(e.target.value);
-    document.getElementById('valVisRange').textContent = v.toFixed(1);
     setVisibilityRange(v);
+    setSmokeVisibilityRange(v);
+});
+
+// ── Checkbox: Pressure Cp plane ───────────────────────────────────────────────
+document.getElementById('cfgPressurePlane')?.addEventListener('change', e => {
+    setPressurePlaneVisible(e.target.checked);
+});
+
+// ── Checkbox: Smoke particles ─────────────────────────────────────────────────
+document.getElementById('cfgSmoke')?.addEventListener('change', e => {
+    setSmokeVisible(e.target.checked);
+});
+
+// ── Checkbox: Live streamers ──────────────────────────────────────────────────
+document.getElementById('cfgStreamers')?.addEventListener('change', e => {
+    setStreamersVisible(e.target.checked);
+});
+
+// ── Checkbox: Velocity vector field ──────────────────────────────────────────
+document.getElementById('cfgVectorField')?.addEventListener('change', e => {
+    setVectorFieldVisible(e.target.checked);
+});
+
+// ── Input: Smoke particle count ───────────────────────────────────────────────
+document.getElementById('cfgSmokeCount')?.addEventListener('input', e => {
+    setSmokeCount(parseInt(e.target.value, 10));
+});
+
+// ── Input: Smoke puff size ────────────────────────────────────────────────────
+document.getElementById('cfgSmokeSizeScale')?.addEventListener('input', e => {
+    setSmokeSizeScale(parseFloat(e.target.value));
+});
+
+// ── Input: Smoke opacity ──────────────────────────────────────────────────────
+document.getElementById('cfgSmokeOpacity')?.addEventListener('input', e => {
+    setSmokeOpacity(parseFloat(e.target.value));
+});
+
+// ── Checkbox: Smoke dots mode ─────────────────────────────────────────────────
+document.getElementById('cfgSmokeDots')?.addEventListener('change', e => {
+    setSmokeDotsOnly(e.target.checked);
 });
 
 // ── Preset buttons ────────────────────────────────────────────────────────────
@@ -131,4 +172,82 @@ document.getElementById('fileInput')?.addEventListener('change', e => {
     reader.readAsText(file);
     // Reset so the same file can be re-imported
     e.target.value = '';
+});
+
+// ── Simulate button ───────────────────────────────────────────────────────────
+let _simHandle = null;
+let _simCanvas = null;   // store latest 2D canvas for Save PNG
+
+const _simOverlay    = document.getElementById('simOverlay');
+const _simBar        = document.getElementById('simBar');
+const _simStatus     = document.getElementById('simStatus');
+const _simProgressEl = document.getElementById('simProgressPhase');
+const _simResultEl   = document.getElementById('simResultPhase');
+const _simBtn        = document.getElementById('simBtn');
+
+_simBtn?.addEventListener('click', () => {
+    // Toggle: if 3-D sim lines are already in the scene, clear them
+    if (isSimGroupActive()) {
+        clearSimGroup();
+        _simBtn.textContent = '⟳ Simulate';
+        return;
+    }
+
+    // Show overlay in progress state
+    _simOverlay.style.display    = 'flex';
+    _simProgressEl.style.display = '';
+    _simResultEl.style.display   = 'none';
+    _simBar.style.width          = '0%';
+    _simStatus.textContent       = 'Preparing\u2026';
+    _simBtn.disabled             = true;
+
+    _simHandle = runBatchSimulation({
+        windMult : _getWindMult(),
+        objSphere: getObjSphere(),
+
+        onProgress(p) {
+            _simBar.style.width    = `${(p * 100).toFixed(1)}%`;
+            _simStatus.textContent =
+                `${Math.round(p * SIM_N_PARTICLES).toLocaleString()} \u00a0/\u00a0 ${SIM_N_PARTICLES.toLocaleString()} particles`;
+        },
+
+        onComplete(canvas, paths3d) {
+            _simHandle = null;
+            _simCanvas = canvas;    // keep for Save PNG
+
+            // Inject frozen 3-D streamlines into the scene
+            buildSimGroup(paths3d);
+
+            // Switch overlay to result phase
+            _simProgressEl.style.display = 'none';
+            _simResultEl.style.display   = '';
+            document.getElementById('simResultStats').textContent =
+                `${paths3d.length.toLocaleString()} streamlines injected into 3D view.`;
+
+            _simBtn.disabled    = false;
+            _simBtn.textContent = '✕ Clear Sim';
+        },
+
+        onCancel() {
+            _simHandle                = null;
+            _simOverlay.style.display = 'none';
+            _simBtn.disabled          = false;
+        },
+    });
+});
+
+document.getElementById('simCancelBtn')?.addEventListener('click', () => {
+    _simHandle?.cancel();
+});
+
+document.getElementById('simViewBtn')?.addEventListener('click', () => {
+    _simOverlay.style.display = 'none';
+});
+
+document.getElementById('simSaveBtn')?.addEventListener('click', () => {
+    if (!_simCanvas) return;
+    const a    = document.createElement('a');
+    a.href     = _simCanvas.toDataURL('image/png');
+    a.download = 'wind-tunnel-simulation.png';
+    a.click();
 });

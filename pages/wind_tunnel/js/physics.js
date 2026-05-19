@@ -57,10 +57,26 @@ export function getVelocity(px, py, pz, t, windMult, objSphere) {
             const fRadial = Math.exp(-2.0 * wR * wR / (wWidth * wWidth));
             vz -= U * 0.50 * fDecay * fRadial;
 
-            // Unsteady turbulent cross-velocity fluctuations
-            const turb = U * 0.09 * fDecay * fRadial;
-            vx += turb * Math.sin(t * 2.3 + dx * 1.7 + dz * 0.9);
-            vy += turb * Math.cos(t * 1.9 + dy * 2.1 + dz * 1.1);
+            // ── Von Kármán vortex shedding ────────────────────────────────────
+            // Strouhal number St ≈ 0.21 for a sphere in the subcritical regime.
+            // Shedding frequency: f = St·U / D,  ω = π·St·U / R
+            // Vortices convect downstream at ~0.85·U, giving wavenumber k = ω/(0.85·U)
+            //
+            // The alternating helical pattern creates the characteristic vortex
+            // street visible in smoke-wire and dye-injection wind tunnel experiments.
+            const St     = 0.21;
+            const omega  = Math.PI * St * U / R;          // angular shedding freq
+            const k_z    = omega / (0.85 * U);            // axial wavenumber
+            const phase  = omega * t - k_z * dz;          // convecting wave phase
+
+            const shedAmp = U * 0.13 * fDecay * fRadial;
+            vy += shedAmp * Math.sin(phase);               // primary alternation
+            vx += shedAmp * 0.40 * Math.cos(phase);       // helical component
+
+            // Small residual turbulent fluctuations (broadband spectral content)
+            const turb = U * 0.025 * fDecay * fRadial;
+            vx += turb * Math.sin(t * 7.1 + dx * 4.3 + dz * 2.9);
+            vy += turb * Math.cos(t * 6.3 + dy * 5.1 + dz * 3.3);
         }
     }
 

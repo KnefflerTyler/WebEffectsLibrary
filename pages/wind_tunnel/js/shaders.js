@@ -15,3 +15,9 @@ export const OBJECT_FRAG   = await loadGLSL(new URL('object.frag.glsl',   base))
 
 export const FLOOR_VERT    = await loadGLSL(new URL('floor.vert.glsl',    base));
 export const FLOOR_FRAG    = await loadGLSL(new URL('floor.frag.glsl',    base));
+
+export const PRESSURE_VERT = await loadGLSL(new URL('pressure.vert.glsl', base));
+export const PRESSURE_FRAG = await loadGLSL(new URL('pressure.frag.glsl', base));
+
+export const SMOKE_VERT    = await loadGLSL(new URL('smoke.vert.glsl',    base));
+export const SMOKE_FRAG    = await loadGLSL(new URL('smoke.frag.glsl',    base));

@@ -159,6 +159,11 @@ export function setVisibilityRange(mult) {
     streamerMat.uniforms.uFadeMult.value = mult;
 }
 
+/** Show or hide the live streamer lines. */
+export function setStreamersVisible(visible) {
+    streamerGroup.visible = visible;
+}
+
 // ── Utility ───────────────────────────────────────────────────────────────────
 const lerp = (a, b, t) => a + (b - a) * t;
 

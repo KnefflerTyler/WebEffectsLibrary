@@ -20,9 +20,10 @@ export const objectMat = new THREE.ShaderMaterial({
     vertexShader  : OBJECT_VERT,
     fragmentShader: OBJECT_FRAG,
     uniforms: {
-        uBaseColor: { value: new THREE.Color(0x8899cc) },   // metallic blue-grey
-        uRimColor : { value: new THREE.Color(0x44aaff) },   // cyan Fresnel rim
-        uLightDir : { value: new THREE.Vector3(5, 12, -6).normalize() },
+        uBaseColor : { value: new THREE.Color(0x8899cc) },   // metallic blue-grey
+        uRimColor  : { value: new THREE.Color(0x44aaff) },   // cyan Fresnel rim
+        uLightDir  : { value: new THREE.Vector3(5, 12, -6).normalize() },
+        uObjCenter : { value: new THREE.Vector3(0, 0, 0) },  // for Cp surface map
     },
     transparent: true,
     depthWrite : true,
@@ -159,6 +160,11 @@ function _setObject(mesh, label, knownCd, physLenM, physAreaM2) {
         cz: mesh.position.z,
         r : bs.radius * scaleFactor,
     };
+
+    // Keep object shader's Cp centre in sync with placement
+    objectMat.uniforms.uObjCenter.value.set(
+        mesh.position.x, mesh.position.y, mesh.position.z
+    );
 
     // ── Drag / efficiency metrics ─────────────────────────────────────────────
     const scaledLen  = physLenM  * scaleFactor;
