@@ -87,7 +87,7 @@ export function loadPreset(type) {
             break;
         case 'cylinder':
             geo        = new THREE.CylinderGeometry(R, R, R*2, 36);
-            geo.rotateX(Math.PI / 2);   // orient along flow axis
+            geo.rotateZ(Math.PI / 2);   // orient axis along X (cross-flow; Cd=0.82 is cross-flow value)
             label      = 'Cylinder';
             knownCd    = PRESET_CD.cylinder;
             physLenM   = R * 2;
@@ -95,7 +95,7 @@ export function loadPreset(type) {
             break;
         case 'cone':
             geo        = new THREE.ConeGeometry(R, R*2.5, 36);
-            geo.rotateX(Math.PI / 2);
+            geo.rotateX(-Math.PI / 2);  // tip at -Z (upstream, into wind); base at +Z (downstream)
             label      = 'Cone';
             knownCd    = PRESET_CD.cone;
             physLenM   = R * 2.5;
@@ -173,9 +173,12 @@ function _setObject(mesh, label, knownCd, physLenM, physAreaM2) {
     scene.add(mesh);
     _currentMesh = mesh;
 
-    // ── 4. Bounding sphere for physics lookups (getVelocity, isNearObject, etc.).
-    //       Computed on the un-scaled geometry; apply scaleFactor manually because
-    //       THREE does not auto-scale bounding spheres with mesh.scale.
+    // ── 4. Bounding sphere + AABB half-extents for physics lookups.
+    //       The sphere (r) drives the doublet velocity field (sphere approximation).
+    //       The half-extents (hx/hy/hz) give physics.js an accurate solid interior
+    //       check so particles cannot pass through flat faces or corners of non-
+    //       spherical shapes.  Both are computed on the centred un-scaled geometry
+    //       and then manually scaled because THREE doesn't auto-scale these with mesh.scale.
     mesh.geometry.computeBoundingSphere();
     const bs = mesh.geometry.boundingSphere;
     _objSphere = {
@@ -183,6 +186,10 @@ function _setObject(mesh, label, knownCd, physLenM, physAreaM2) {
         cy: mesh.position.y,
         cz: mesh.position.z,
         r : bs.radius * scaleFactor,
+        // AABB half-extents in world space (geometry was centred at step 2)
+        hx: size.x * scaleFactor * 0.5,
+        hy: size.y * scaleFactor * 0.5,
+        hz: size.z * scaleFactor * 0.5,
     };
 
     // Keep the object shader's Cp-map centre uniform in sync with world placement.

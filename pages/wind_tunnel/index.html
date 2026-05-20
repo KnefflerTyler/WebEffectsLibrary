@@ -178,7 +178,7 @@
         /* ── Legend (top-right) ──────────────────────────────────────────── */
         #legend {
             position: fixed;
-            top: 14px;
+            bottom: 20px;
             right: 14px;
             background: rgba(4, 8, 22, 0.82);
             border: 1px solid rgba(60,110,200,0.25);
@@ -289,6 +289,13 @@
             <span>1× U</span>
             <span>2× U</span>
         </div>
+        <div class="legend-title" style="margin-top:10px">Pressure (Cp)</div>
+        <canvas id="legend-cp-canvas" width="180" height="14"></canvas>
+        <div class="legend-labels">
+            <span>−1.25</span>
+            <span>0</span>
+            <span>+1</span>
+        </div>
     </div>
 
     <!-- ⚙ Settings panel -->
@@ -310,27 +317,7 @@
             </div>
         </div>
 
-        <!-- Display -->
-        <div class="sp-card">
-            <div class="sp-card-title">Display</div>
-            <div class="sp-row">
-                <label class="sp-label" for="cfgStreamerX">Columns</label>
-                <input class="sp-number" id="cfgStreamerX" type="number"
-                       step="1" value="8">
-            </div>
-            <div class="sp-row">
-                <label class="sp-label" for="cfgStreamerY">Rows</label>
-                <input class="sp-number" id="cfgStreamerY" type="number"
-                       step="1" value="8">
-            </div>
-            <div class="sp-row">
-                <label class="sp-label" for="cfgVisRange">Vis range ×</label>
-                <input class="sp-number" id="cfgVisRange" type="number"
-                       step="0.5" value="3">
-            </div>
-        </div>
-
-        <!-- Simulation -->
+        <!-- Visualisation -->
         <div class="sp-card">
             <div class="sp-card-title">Visualisation</div>
             <div class="sp-row">
@@ -338,20 +325,51 @@
                 <label class="sp-label" for="cfgPause" style="text-transform:none">Pause animation</label>
             </div>
             <div class="sp-row">
-                <input type="checkbox" class="sp-check" id="cfgPressurePlane">
-                <label class="sp-label" for="cfgPressurePlane" style="text-transform:none">Pressure field (3D)</label>
+                <input type="checkbox" class="sp-check" id="cfgPressureVolume">
+                <label class="sp-label" for="cfgPressureVolume" style="text-transform:none">Pressure volume</label>
             </div>
             <div class="sp-row">
-                <input type="checkbox" class="sp-check" id="cfgSmoke">
-                <label class="sp-label" for="cfgSmoke" style="text-transform:none">Smoke rake</label>
+                <input type="checkbox" class="sp-check" id="cfgFlowLines" checked>
+                <label class="sp-label" for="cfgFlowLines" style="text-transform:none">Flow lines</label>
+            </div>
+        </div>
+
+        <!-- Flow Lines appearance -->
+        <div class="sp-card">
+            <div class="sp-card-title">Flow Lines</div>
+            <div class="sp-row">
+                <input type="checkbox" class="sp-check" id="cfgFlowLinesAnimate" checked>
+                <label class="sp-label" for="cfgFlowLinesAnimate" style="text-transform:none">Animate</label>
             </div>
             <div class="sp-row">
-                <input type="checkbox" class="sp-check" id="cfgStreamers">
-                <label class="sp-label" for="cfgStreamers" style="text-transform:none">Live streamers</label>
+                <label class="sp-label" for="cfgFLBeadWidth">Tail length</label>
+                <input class="sp-number" id="cfgFLBeadWidth" type="number"
+                       step="0.02" min="0.02" max="0.60" value="0.18">
+            </div>
+        </div>
+
+        <!-- Pressure Volume appearance -->
+        <div class="sp-card">
+            <div class="sp-card-title">Pressure Volume</div>
+            <div class="sp-row">
+                <label class="sp-label" for="cfgPVSize">Point size</label>
+                <input class="sp-number" id="cfgPVSize" type="number"
+                       step="10" min="10" value="140">
             </div>
             <div class="sp-row">
-                <input type="checkbox" class="sp-check" id="cfgVectorField">
-                <label class="sp-label" for="cfgVectorField" style="text-transform:none">Velocity vectors (PIV)</label>
+                <label class="sp-label" for="cfgPVJitter">Jitter</label>
+                <input class="sp-number" id="cfgPVJitter" type="number"
+                       step="0.05" min="0" value="0.30">
+            </div>
+            <div class="sp-row">
+                <label class="sp-label" for="cfgPVOpacity">Opacity</label>
+                <input class="sp-number" id="cfgPVOpacity" type="number"
+                       step="0.01" min="0.01" max="1.0" value="0.20">
+            </div>
+            <div class="sp-row">
+                <label class="sp-label" for="cfgPVCpThreshold">Cp threshold</label>
+                <input class="sp-number" id="cfgPVCpThreshold" type="number"
+                       step="0.01" min="0" max="1.0" value="0.00">
             </div>
         </div>
 
@@ -385,29 +403,12 @@
             </div>
         </div>
 
-        <!-- Smoke -->
-        <div class="sp-card">
-            <div class="sp-card-title">Smoke Particles</div>
-            <div class="sp-row">
-                <label class="sp-label" for="cfgSmokeCount">Count</label>
-                <input class="sp-number" id="cfgSmokeCount" type="number"
-                       step="100" value="3000">
-            </div>
-            <div class="sp-row">
-                <label class="sp-label" for="cfgSmokeSizeScale">Size ×</label>
-                <input class="sp-number" id="cfgSmokeSizeScale" type="number"
-                       step="0.1" value="1.0">
-            </div>
-            <div class="sp-row">
-                <label class="sp-label" for="cfgSmokeOpacity">Opacity</label>
-                <input class="sp-number" id="cfgSmokeOpacity" type="number"
-                       step="0.05" value="0.35">
-            </div>
-            <div class="sp-row">
-                <input type="checkbox" class="sp-check" id="cfgSmokeDots">
-                <label class="sp-label" for="cfgSmokeDots" style="text-transform:none">Show as dots</label>
-            </div>
-        </div>
+        <button id="spApplyBtn" style="
+            width:100%; margin-top:8px; padding:10px 0;
+            background:rgba(60,100,220,0.18); border:1px solid rgba(80,130,255,0.35);
+            border-radius:8px; color:rgba(160,190,255,0.9);
+            font-size:13px; font-weight:600; letter-spacing:.06em;
+            cursor:pointer; transition:background .18s,border-color .18s;">Apply</button>
     </div>
 
     <!-- Simulation modal overlay -->

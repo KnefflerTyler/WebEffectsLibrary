@@ -21,3 +21,7 @@ export const PRESSURE_FRAG = await loadGLSL(new URL('pressure.frag.glsl', base))
 
 export const SMOKE_VERT    = await loadGLSL(new URL('smoke.vert.glsl',    base));
 export const SMOKE_FRAG    = await loadGLSL(new URL('smoke.frag.glsl',    base));
+
+export const SMOKE_SIM_FRAG = await loadGLSL(new URL('smoke.sim.frag.glsl', base));
+
+export const VF_VERT       = await loadGLSL(new URL('vectorfield.vert.glsl', base));

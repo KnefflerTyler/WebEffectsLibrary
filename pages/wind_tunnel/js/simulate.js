@@ -245,11 +245,29 @@ export function runBatchSimulation({ windMult = 1.0, objSphere = null,
                 }
 
                 const vmag = Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-                x += v.x * DT;
-                y += v.y * DT;
-                z += v.z * DT;
+                const nx = x + v.x * DT;
+                const ny = y + v.y * DT;
+                const nz = z + v.z * DT;
 
-                if (z > TL/2+0.3 || Math.abs(x) > TW/2+0.4 || Math.abs(y) > TH/2+0.4) break;
+                // Stop if the Euler step would carry the particle into the object.
+                // Without this guard the particle gets stuck at an interior point and
+                // all remaining path segments draw as a straight line into the solid.
+                if (objSphere) {
+                    const dox = nx - objSphere.cx;
+                    const doy = ny - objSphere.cy;
+                    const doz = nz - objSphere.cz;
+                    const wouldEnter = (objSphere.hx !== undefined)
+                        ? (Math.abs(dox) <= objSphere.hx && Math.abs(doy) <= objSphere.hy && Math.abs(doz) <= objSphere.hz)
+                        : (dox*dox + doy*doy + doz*doz < objSphere.r * objSphere.r);
+                    if (wouldEnter) break;
+                }
+
+                // Floor is an infinite solid plane at y = -TH/2.
+                // Clamp here (not via a side-bounds break) so streamlines
+                // slide along it rather than being discarded.
+                x = nx; y = Math.max(ny, -TH * 0.5); z = nz;
+
+                if (z > TL/2+0.3 || Math.abs(x) > TW/2+0.4 || y > TH/2+0.4) break;
 
                 xs[len] = x; ys[len] = y; zs[len] = z;
                 ss[len] = vmag / U;

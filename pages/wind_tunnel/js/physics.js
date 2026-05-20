@@ -29,8 +29,14 @@ export function getVelocity(px, py, pz, t, windMult, objSphere) {
     const dx = px - cx, dy = py - cy, dz = pz - cz;
     const r2 = dx*dx + dy*dy + dz*dz;
 
-    // Inside the effective sphere → zero (particle trapped)
-    if (r2 < R * R * 0.96) return { x: 0, y: 0, z: 0 };
+    // Inside the object: use the tight AABB when half-extents are available
+    // (non-sphere presets and imported OBJs), otherwise fall back to the
+    // bounding-sphere check.  The AABB prevents particles from passing through
+    // flat faces or corners that lie outside the inscribed sphere.
+    const insideSolid = (objSphere.hx !== undefined)
+        ? (Math.abs(dx) <= objSphere.hx && Math.abs(dy) <= objSphere.hy && Math.abs(dz) <= objSphere.hz)
+        : (r2 < R * R * 0.96);
+    if (insideSolid) return { x: 0, y: 0, z: 0 };
 
     const dist  = Math.sqrt(r2);
     const R3    = R * R * R;

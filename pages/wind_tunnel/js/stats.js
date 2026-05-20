@@ -88,3 +88,35 @@ export function drawLegend(canvasId) {
     ctx.fillText('U',   W / 2 - 4, H / 2);
     ctx.fillText('2U',  W - 16, H / 2);
 }
+
+/**
+ * Draw the Cp → colour legend on the given canvas element.
+ * Gradient matches the cpColor() ramp in pressureVolume.js:
+ *   blue (Cp ≈ −1.25, suction) → cyan → green (Cp = 0) → yellow → red (Cp ≈ +1, stagnation)
+ * @param {string} canvasId
+ */
+export function drawCpLegend(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+
+    const W = canvas.width  || 200;
+    const H = canvas.height || 18;
+    const ctx = canvas.getContext('2d');
+
+    const grad = ctx.createLinearGradient(0, 0, W, 0);
+    grad.addColorStop(0.00, '#0026FF');  // Cp ≈ −1.25  blue   (strong suction)
+    grad.addColorStop(0.25, '#00FFFF');  // Cp ≈ −0.69  cyan
+    grad.addColorStop(0.50, '#00FF00');  // Cp =  0      green  (freestream)
+    grad.addColorStop(0.75, '#FFFF00');  // Cp ≈ +0.44  yellow
+    grad.addColorStop(1.00, '#FF1A00');  // Cp ≈ +1.00  red    (stagnation)
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle    = '#111';
+    ctx.font         = '9px monospace';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u22121.25', 2,       H / 2);
+    ctx.fillText('0',     W / 2 - 3, H / 2);
+    ctx.fillText('+1',    W - 14,    H / 2);
+}

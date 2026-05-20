@@ -34,16 +34,9 @@ vec3 speedRamp(float s) {
 void main() {
     vColor = speedRamp(aSpeed);
 
-    if (uObjRadius < 0.01) {
-        // ── No object present: show the whole streamline at low opacity ───────
-        vAlpha = 0.55;
-    } else {
-        // ── Proximity fade: bright near surface, invisible far away ───────────
-        float dist    = length(position - uObjCenter);
-        float inner   = uObjRadius * 1.1;                        // full-bright shell
-        float outer   = max(uObjRadius * uFadeMult, inner + 0.001);
-        vAlpha = 1.0 - smoothstep(inner, outer, dist);
-    }
+    // Streamers are shown at consistent opacity — per-streamer selection is
+    // handled in JS (streamers outside the vis range are parked off-screen).
+    vAlpha = uObjRadius < 0.01 ? 0.55 : 0.80;
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
