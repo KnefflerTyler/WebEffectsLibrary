@@ -1,0 +1,8 @@
+# Wind-tunnel preset material
+newmtl preset
+Ka 0.10 0.10 0.12
+Kd 0.53 0.60 0.80
+Ks 0.85 0.90 1.00
+Ns 96.0
+d 1.0
+illum 2

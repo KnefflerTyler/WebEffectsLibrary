@@ -28,7 +28,6 @@ export const objectMat = new THREE.ShaderMaterial({
         uCpMap     : { value: null },  // sim-derived Cp texture (128×64 equirectangular)
         uUseCpMap  : { value: 0.0 },   // 0 = analytical formula, 1 = sim texture
     },
-    transparent: true,
     depthWrite : true,
     side: THREE.DoubleSide,
 });
@@ -59,61 +58,60 @@ let _currentStats = null;    // forwarded to stats.js
 export const getObjSphere    = () => _objSphere;
 export const getCurrentStats = () => _currentStats;
 
+// ── Preset metadata (physical dimensions for drag / Cd stats) ────────────────
+const PRESET_META = {
+    sphere:   { label: 'Sphere',           knownCd: null,             physLenM: 2.0, physAreaM2: Math.PI       },
+    cube:     { label: 'Cube',             knownCd: null,             physLenM: 2.0, physAreaM2: 4.0           },
+    cylinder: { label: 'Cylinder',         knownCd: null,             physLenM: 2.0, physAreaM2: 4.0           },
+    cone:     { label: 'Cone',             knownCd: null,             physLenM: 2.5, physAreaM2: Math.PI       },
+    car:      { label: 'Car (simplified)', knownCd: null,             physLenM: 4.0, physAreaM2: 2.2          },
+};
+// Back-fill knownCd from config (kept separate so PRESET_META stays readable)
+Object.keys(PRESET_META).forEach(k => {
+    if (PRESET_CD[k] != null) PRESET_META[k].knownCd = PRESET_CD[k];
+});
+
 // ── Preset loader ─────────────────────────────────────────────────────────────
 /**
- * Replace the current object with a named preset shape.
+ * Replace the current object with a named preset shape loaded from an OBJ file.
+ * Returns a Promise so callers that need to await geometry placement can do so.
+ *
  * @param {'none'|'sphere'|'cube'|'cylinder'|'cone'|'car'} type
+ * @returns {Promise<void>}
  */
-export function loadPreset(type) {
+export async function loadPreset(type) {
     if (type === 'none') { _clearObject(); return; }
 
-    let geo, label, knownCd, physLenM, physAreaM2;
-    const R = 1.0;   // 1-world-unit radius for all presets
+    const meta = PRESET_META[type];
+    if (!meta) return;
 
-    switch (type) {
-        case 'sphere':
-            geo        = new THREE.SphereGeometry(R, 40, 30);
-            label      = 'Sphere';
-            knownCd    = PRESET_CD.sphere;
-            physLenM   = 2 * R;
-            physAreaM2 = Math.PI * R * R;
-            break;
-        case 'cube':
-            geo        = new THREE.BoxGeometry(R*2, R*2, R*2);
-            label      = 'Cube';
-            knownCd    = PRESET_CD.cube;
-            physLenM   = R * 2;
-            physAreaM2 = (R*2) * (R*2);
-            break;
-        case 'cylinder':
-            geo        = new THREE.CylinderGeometry(R, R, R*2, 36);
-            geo.rotateZ(Math.PI / 2);   // orient axis along X (cross-flow; Cd=0.82 is cross-flow value)
-            label      = 'Cylinder';
-            knownCd    = PRESET_CD.cylinder;
-            physLenM   = R * 2;
-            physAreaM2 = R * 2 * R * 2;
-            break;
-        case 'cone':
-            geo        = new THREE.ConeGeometry(R, R*2.5, 36);
-            geo.rotateX(-Math.PI / 2);  // tip at -Z (upstream, into wind); base at +Z (downstream)
-            label      = 'Cone';
-            knownCd    = PRESET_CD.cone;
-            physLenM   = R * 2.5;
-            physAreaM2 = Math.PI * R * R;
-            break;
-        case 'car':
-            geo        = _buildCarGeo();
-            label      = 'Car (simplified)';
-            knownCd    = PRESET_CD.car;
-            physLenM   = 4;
-            physAreaM2 = 2.2;
-            break;
-        default:
-            return;
-    }
+    // Resolve URL relative to this module file (obj/ lives next to js/)
+    const url = new URL(`../obj/${type}.obj`, import.meta.url).href;
+    const text = await fetch(url).then(r => {
+        if (!r.ok) throw new Error(`Failed to load ${url}: ${r.status}`);
+        return r.text();
+    });
 
-    const mesh = new THREE.Mesh(geo, objectMat);
-    _setObject(mesh, label, knownCd, physLenM, physAreaM2);
+    const loader = new OBJLoader();
+    const group  = loader.parse(text);
+
+    // Collect per-component geometries (one per OBJ group/object)
+    const geos = [];
+    const compBoxes = [];
+    group.traverse(child => {
+        if (!child.isMesh) return;
+        const g = child.geometry.clone();
+        g.computeBoundingBox();
+        compBoxes.push(g.boundingBox.clone());
+        geos.push(g);
+    });
+    if (!geos.length) return;
+
+    // Per-component boxes are only meaningful when there are multiple parts
+    const merged = _mergeGeometries(geos);
+    const mesh   = new THREE.Mesh(merged, objectMat);
+    _setObject(mesh, meta.label, meta.knownCd, meta.physLenM, meta.physAreaM2,
+               compBoxes.length > 1 ? compBoxes : null);
 }
 
 /**
@@ -147,7 +145,7 @@ function _clearObject() {
     _currentStats = null;
 }
 
-function _setObject(mesh, label, knownCd, physLenM, physAreaM2) {
+function _setObject(mesh, label, knownCd, physLenM, physAreaM2, rawCompBoxes = null) {
     _clearObject();
 
     // ── 1. Uniform scale: fit the largest dimension within the tunnel's
@@ -181,15 +179,41 @@ function _setObject(mesh, label, knownCd, physLenM, physAreaM2) {
     //       and then manually scaled because THREE doesn't auto-scale these with mesh.scale.
     mesh.geometry.computeBoundingSphere();
     const bs = mesh.geometry.boundingSphere;
+
+    // Per-component world-space AABBs (only when multiple OBJ groups present, e.g. car).
+    // Each raw Box3 is in original geometry space; apply same centre-offset + scale + position.
+    let boxes = null;
+    if (rawCompBoxes) {
+        boxes = rawCompBoxes.map(bb => {
+            const minW = bb.min.clone().sub(centre).multiplyScalar(scaleFactor).add(mesh.position);
+            const maxW = bb.max.clone().sub(centre).multiplyScalar(scaleFactor).add(mesh.position);
+            return {
+                cx: (minW.x + maxW.x) * 0.5,
+                cy: (minW.y + maxW.y) * 0.5,
+                cz: (minW.z + maxW.z) * 0.5,
+                hx: (maxW.x - minW.x) * 0.5,
+                hy: (maxW.y - minW.y) * 0.5,
+                hz: (maxW.z - minW.z) * 0.5,
+            };
+        });
+    }
+
+    // Build triangle-mesh voxel grid for accurate inside/outside collision.
+    const voxels = buildVoxelGrid(mesh.geometry, mesh.position, scaleFactor);
+
     _objSphere = {
         cx: mesh.position.x,
         cy: mesh.position.y,
         cz: mesh.position.z,
         r : bs.radius * scaleFactor,
-        // AABB half-extents in world space (geometry was centred at step 2)
+        // Merged AABB half-extents (kept for bounding-sphere sizing in physics)
         hx: size.x * scaleFactor * 0.5,
         hy: size.y * scaleFactor * 0.5,
         hz: size.z * scaleFactor * 0.5,
+        // Per-component AABBs (null for single-part shapes)
+        boxes,
+        // Triangle-mesh voxel grid – primary inside/outside test in physics.js
+        voxels,
     };
 
     // Keep the object shader's Cp-map centre uniform in sync with world placement.
@@ -211,17 +235,110 @@ function _setObject(mesh, label, knownCd, physLenM, physAreaM2) {
     if (_onObjectChange) _onObjectChange(_currentStats);
 }
 
-/** Car: three merged boxes (body + cabin + spoiler). */
-function _buildCarGeo() {
-    const body   = new THREE.BoxGeometry(1.8, 0.5, 4.0);
-    const cabin  = new THREE.BoxGeometry(1.4, 0.6, 2.2);
-    const spoiler = new THREE.BoxGeometry(1.6, 0.08, 0.5);
+// ── Mesh voxelizer ────────────────────────────────────────────────────────────
+/**
+ * Build a binary voxel grid from a (centred, unscaled) BufferGeometry.
+ * Uses Möller–Trumbore ray casting along the +X axis with a parity rule to
+ * determine inside/outside — this respects the actual triangle faces of the
+ * mesh rather than bounding shapes.
+ *
+ * @param {THREE.BufferGeometry} geometry  centred, unscaled source geometry
+ * @param {THREE.Vector3}        position  world-space mesh.position
+ * @param {number}               scale     uniform scale factor applied to mesh
+ * @returns {{ ox, oy, oz, step, nx, ny, nz, data: Uint8Array }}
+ */
+function buildVoxelGrid(geometry, position, scale) {
+    const posAttr = geometry.attributes.position.array;
+    const idxArr  = geometry.index ? geometry.index.array : null;
+    const triCount = idxArr ? (idxArr.length / 3) : (posAttr.length / 9);
 
-    // Position sub-meshes before merging
-    cabin.translate(0, 0.55, -0.4);
-    spoiler.translate(0, 0.75, -2.0);
+    // World-space AABB
+    geometry.computeBoundingBox();
+    const bb = geometry.boundingBox;
+    const pad = 0.04;
+    const ox = bb.min.x * scale + position.x - pad;
+    const oy = bb.min.y * scale + position.y - pad;
+    const oz = bb.min.z * scale + position.z - pad;
+    const ex = bb.max.x * scale + position.x + pad;
+    const ey = bb.max.y * scale + position.y + pad;
+    const ez = bb.max.z * scale + position.z + pad;
 
-    return _mergeGeometries([body, cabin, spoiler]);
+    // ~64 cells across the largest dimension
+    const maxDim = Math.max(ex - ox, ey - oy, ez - oz);
+    const step   = maxDim / 64;
+    const nx = Math.max(1, Math.ceil((ex - ox) / step));
+    const ny = Math.max(1, Math.ceil((ey - oy) / step));
+    const nz = Math.max(1, Math.ceil((ez - oz) / step));
+
+    const data = new Uint8Array(nx * ny * nz);
+
+    // Helper: get world-space vertex i into out[0..2]
+    function vtx(i, out) {
+        out[0] = posAttr[i * 3    ] * scale + position.x;
+        out[1] = posAttr[i * 3 + 1] * scale + position.y;
+        out[2] = posAttr[i * 3 + 2] * scale + position.z;
+    }
+
+    const a = new Float64Array(3), b = new Float64Array(3), c = new Float64Array(3);
+
+    // For each (iy, iz) column shoot a ray in the +X direction and collect all
+    // triangle intersection X values, then use the even-odd rule to fill voxels.
+    for (let iz = 0; iz < nz; iz++) {
+        for (let iy = 0; iy < ny; iy++) {
+            const ry = oy + (iy + 0.5) * step;
+            const rz = oz + (iz + 0.5) * step;
+
+            const hits = [];
+
+            for (let ti = 0; ti < triCount; ti++) {
+                const i0 = idxArr ? idxArr[ti * 3    ] : ti * 3;
+                const i1 = idxArr ? idxArr[ti * 3 + 1] : ti * 3 + 1;
+                const i2 = idxArr ? idxArr[ti * 3 + 2] : ti * 3 + 2;
+                vtx(i0, a); vtx(i1, b); vtx(i2, c);
+
+                // Möller–Trumbore: ray origin = (0, ry, rz), direction = (1, 0, 0)
+                const e1x = b[0]-a[0], e1y = b[1]-a[1], e1z = b[2]-a[2];
+                const e2x = c[0]-a[0], e2y = c[1]-a[1], e2z = c[2]-a[2];
+                // h = dir × e2  (dir = [1,0,0])  →  [0*e2z-0*e2y, 0*e2x-1*e2z, 1*e2y-0*e2x]
+                //                                  = [0, -e2z, e2y]
+                const hy = -e2z, hz = e2y;
+                const det = /* e1x*0 + */ e1y * hy + e1z * hz;
+                if (Math.abs(det) < 1e-10) continue;
+                const inv = 1.0 / det;
+
+                // s = rayOrigin - a  (rayOrigin.x = 0)
+                const sx = -a[0], sy = ry - a[1], sz = rz - a[2];
+                // u = (s · h) * inv  (hx=0 so s·h = sy*hy + sz*hz)
+                const u = (sy * hy + sz * hz) * inv;
+                if (u < 0 || u > 1) continue;
+
+                // q = s × e1
+                const qx = sy * e1z - sz * e1y;
+                const qy = sz * e1x - sx * e1z;
+                const qz = sx * e1y - sy * e1x;
+                // v = (dir · q) * inv  (dir=[1,0,0] → dir·q = qx)
+                const v = qx * inv;
+                if (v < 0 || u + v > 1) continue;
+
+                // t = (e2 · q) * inv  → hit world X = 0 + t*1 = t
+                const hitX = (e2x * qx + e2y * qy + e2z * qz) * inv;
+                hits.push(hitX);
+            }
+
+            if (!hits.length) continue;
+            hits.sort((p, q) => p - q);
+
+            // Walk voxels in X, toggling inside/outside at each hit
+            let inside = false, hi = 0;
+            for (let ix = 0; ix < nx; ix++) {
+                const wx = ox + (ix + 0.5) * step;
+                while (hi < hits.length && hits[hi] < wx) { inside = !inside; hi++; }
+                if (inside) data[ix + nx * (iy + ny * iz)] = 1;
+            }
+        }
+    }
+
+    return { ox, oy, oz, step, nx, ny, nz, data };
 }
 
 /** Naively merge an array of BufferGeometries into one. */

@@ -268,6 +268,41 @@ function buildStreamers(nX, nY) {
             streamers.push({ positions, colors, posAttr, colAttr, x0, y0, seed: Math.random() * Math.PI * 2 });
         }
     }
+
+    // Surface-tracing ring — seeds placed exactly at the object's projected silhouette
+    // radius so they produce streamlines that run right along the surface, showing
+    // the stagnation point, equatorial acceleration, and downstream wake.
+    if (objSphere) {
+        const N_RING = 20;
+        const { cx, cy, r: R } = objSphere;
+        for (let k = 0; k < N_RING; k++) {
+            const angle = (k / N_RING) * Math.PI * 2;
+            const x0 = cx + R * 1.02 * Math.cos(angle);
+            const y0 = cy + R * 1.02 * Math.sin(angle);
+            // Skip seeds that fall outside the tunnel cross-section
+            if (Math.abs(x0) > TW * 0.5 - 0.15 || y0 < -TH * 0.5 + 0.12 || y0 > TH * 0.5 - 0.15) continue;
+            const positions = new Float32Array(TRAIL_LEN * 3);
+            const colors    = new Float32Array(TRAIL_LEN * 3);
+            for (let i = 0; i < TRAIL_LEN; i++) {
+                positions[i * 3]     = x0;
+                positions[i * 3 + 1] = y0;
+                positions[i * 3 + 2] = -TL / 2;
+                const c = speedToColor(1.0);
+                colors[i * 3]     = c.r;
+                colors[i * 3 + 1] = c.g;
+                colors[i * 3 + 2] = c.b;
+            }
+            const geo     = new THREE.BufferGeometry();
+            const posAttr = new THREE.BufferAttribute(positions, 3);
+            const colAttr = new THREE.BufferAttribute(colors, 3);
+            posAttr.usage = THREE.DynamicDrawUsage;
+            colAttr.usage = THREE.DynamicDrawUsage;
+            geo.setAttribute('position', posAttr);
+            geo.setAttribute('color',    colAttr);
+            streamerGroup.add(new THREE.Line(geo, streamerMat));
+            streamers.push({ positions, colors, posAttr, colAttr, x0, y0, seed: Math.random() * Math.PI * 2 });
+        }
+    }
 }
 
 /** Advance all streamers one simulation step using RK4 integration. */
@@ -305,8 +340,9 @@ function advanceStreamers(dt, windMult) {
         // Magnitude of representative velocity (midpoint)
         const spd = Math.sqrt(v2.x*v2.x + v2.y*v2.y + v2.z*v2.z) / (VSIM * windMult);
 
-        // ── Reset if out of bounds ─────────────────────────────────────────────
-        if (nz > TL / 2 + 0.5 || nz < -TL / 2 - 1.0 ||
+        // ── Reset if out of bounds OR frozen inside solid ──────────────────────
+        const stuck = (v1.x * v1.x + v1.y * v1.y + v1.z * v1.z) < 1e-8;
+        if (stuck || nz > TL / 2 + 0.5 || nz < -TL / 2 - 1.0 ||
             Math.abs(nx) > TW / 2 + 0.1 || Math.abs(ny) > TH / 2 + 0.1) {
 
             for (let i = 0; i < T; i++) {
@@ -412,6 +448,8 @@ function setObject(mesh, label, knownCd, physLenM, physAreaM2) {
 
     currentStats = { cd, frontAreaM2: physArea, lengthM: physLen, label: label ?? 'Custom OBJ' };
     updateStats();
+    // Rebuild streamer seeds so the surface-tracing ring matches the new object
+    rebuildStreamers();
 }
 
 /**

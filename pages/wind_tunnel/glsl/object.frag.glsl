@@ -79,5 +79,5 @@ void main() {
     // uSimDone: 0 = plain metallic, 1 = full Cp blend (50% Cp + 50% lighting).
     vec3 col = mix(base, mix(base, cpCol * (0.35 + 0.65 * diff), 0.52), uSimDone);
 
-    gl_FragColor = vec4(col, 0.90);
+    gl_FragColor = vec4(col, 1.0);
 }

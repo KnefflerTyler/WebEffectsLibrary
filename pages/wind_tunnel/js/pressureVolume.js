@@ -5,10 +5,13 @@
  * We compute Cp = 1 − (ss)² at every point and scatter it as a coloured
  * THREE.Points cloud — giving a true 3-D heatmap of the pressure field.
  *
- * This replaces the flat XZ pressure plane.  By orbiting the view you can see:
- *   • Red stagnation zone upstream of the object (Cp ≈ +1)
- *   • Blue suction band around the widest cross-section (Cp ≈ −1.25)
- *   • Low-pressure wake tube behind the object (Cp < 0)
+ * Wake filling (inverse coverage approach):
+ *   The simulation paths naturally deflect around the object, leaving the
+ *   wake region empty.  After emitting all path-based pressure points we
+ *   build a 3-D voxel occupancy grid from them, then fill every unoccupied
+ *   voxel that falls within the object's downstream influence zone with a
+ *   fixed low-pressure (Cp = −0.38) particle cloud.  This correctly shows
+ *   the separated wake as blue without any analytical wake model.
  *
  * Performance controls:
  *   STRIDE_PATH — keep every N-th path           (reduces path count)
@@ -17,47 +20,54 @@
  */
 import * as THREE from 'three';
 import { scene } from './scene.js';
-import { getVelocity } from './physics.js';
-import { VSIM } from './config.js';
 
 const MAX_POINTS  = 60_000;
-const STRIDE_PATH = 2;   // use every 2nd path
-const STRIDE_STEP = 2;   // use every 2nd step along each path
+const PATH_BUDGET = 45_000;  // path points get this many slots; inverse fill uses the rest
+const STRIDE_PATH = 2;
+const STRIDE_STEP = 2;
 
-// Points whose |Cp| falls below this threshold are pure freestream (no pressure
-// deviation) and should not be rendered — they only add noise and white blobs.
+// ── Voxel occupancy grid (covers full tunnel volume) ─────────────────────────
+// Used to find areas the simulation paths didn't reach — those become the wake.
+const GX = 20, GY = 10, GZ = 28;     // cells per axis
+const X0 = -5, Y0 = -2.5, Z0 = -7;   // grid origin (world units)
+const DX = 10 / GX, DY = 5 / GY, DZ = 14 / GZ;   // cell size
+
+// Cp applied to unoccupied (wake) voxels — clearly negative, clearly blue
+const WAKE_CP        = -0.38;
+const WAKE_FILL_N    =  5;     // scattered points emitted per empty voxel
+// Cone half-width of downstream influence zone: radius = WAKE_SPREAD * dz + R * 1.5
+// (grows downstream to catch the expanding wake)
+const WAKE_SPREAD    =  1.8;
+const WAKE_NEAR_R    =  2.5;   // radius multiplier for cells at/upstream of object (×R)
+
+// Points whose |Cp| falls below this threshold are pure freestream and hidden.
 const CP_THRESHOLD = 0.00;
 
 // ── Colour ramp ──────────────────────────────────────────────────────────────
-// Standard CFD "jet" rainbow: blue (suction / low pressure) → cyan → green
-// (freestream, Cp ≈ 0) → yellow → red (stagnation / high pressure).
-// This looks clearly different from the velocity heat-map and matches the
-// physical intuition: blue = air pulled away from surface, red = air pushed in.
 function lerp(a, b, t) { return a + (b - a) * t; }
 
 function cpColor(cp) {
     const t = Math.max(0, Math.min(1, (cp + 1.25) / 2.25));
-    if      (t < 0.25) { const s = t / 0.25;          return [0,             lerp(0.15, 1, s), 1            ]; } // blue→cyan
-    else if (t < 0.50) { const s = (t - 0.25) / 0.25; return [0,             1,               lerp(1, 0, s) ]; } // cyan→green
-    else if (t < 0.75) { const s = (t - 0.50) / 0.25; return [lerp(0, 1, s), 1,               0             ]; } // green→yellow
-    else               { const s = (t - 0.75) / 0.25; return [1,             lerp(1, 0.1, s), 0             ]; } // yellow→red
+    if      (t < 0.25) { const s = t / 0.25;          return [0,             lerp(0.15, 1, s), 1            ]; }
+    else if (t < 0.50) { const s = (t - 0.25) / 0.25; return [0,             1,               lerp(1, 0, s) ]; }
+    else if (t < 0.75) { const s = (t - 0.50) / 0.25; return [lerp(0, 1, s), 1,               0             ]; }
+    else               { const s = (t - 0.75) / 0.25; return [1,             lerp(1, 0.1, s), 0             ]; }
 }
 
 // ── Module state ──────────────────────────────────────────────────────────────
 let _points      = null;
-let _paths3d     = null;  // cached so threshold changes can rebuild without re-simulating
-let _objSphere   = null;  // cached for analytical grid fill
-let _size        = 140;   // world-space point size (gl_PointSize = uSize / dist)
-let _jitter      = 0.30;  // random position spread (world units) to break tube structure
-let _opacity     = 0.20;  // per-particle base opacity (low; additive blending accumulates)
-let _cpThreshold = 0.00;  // |Cp| below this is treated as freestream and hidden
+let _paths3d     = null;
+let _objSphere   = null;
+let _size        = 140;
+let _jitter      = 0.30;
+let _opacity     = 0.20;
+let _cpThreshold = 0.00;
 
 /**
  * Build a 3-D pressure point cloud from simulation paths and add it to the scene.
- * Each point is a simulation sample coloured by Cp = 1 − (|v|/U)².
  *
  * @param {Array<{xs,ys,zs,ss}>} paths3d
- * @param {{ cx,cy,cz,r }|null}  objSphere  object bounding sphere for wake fill
+ * @param {{ cx,cy,cz,r }|null}  objSphere  object bounding sphere (for wake zone)
  * @returns {THREE.Points}
  */
 export function buildPressureVolume(paths3d, objSphere) {
@@ -68,157 +78,42 @@ export function buildPressureVolume(paths3d, objSphere) {
     _objSphere = sphere;
     if (!_paths3d?.length) return null;
 
-    // Allocate MAX_POINTS upfront.
-    // IMPORTANT: wake fill runs FIRST so it always gets rendered — the path
-    // loop is capped at PATH_BUDGET and uses whatever space remains.
-    const PATH_BUDGET = 40_000;   // paths get at most this many points
     const positions = new Float32Array(MAX_POINTS * 3);
     const colors    = new Float32Array(MAX_POINTS * 3);
     const alphas    = new Float32Array(MAX_POINTS);
     let   idx       = 0;
 
-    // ── Flow-following analytical fill (runs FIRST to guarantee wake is shown) ─
-    //
-    //  1. Wake streamlines — seeds on a disc just behind the sphere, integrated
-    //     forward with getVelocity.  Potential-flow Bernoulli wrongly gives
-    //     Cp > 0 in the wake (v < U → higher pressure), so we override with the
-    //     empirical separated-wake base pressure: Cp ≈ −0.40 · fDecay · fRadial.
-    //
-    //  2. Near-body shell — 3 concentric layers around the sphere for the
-    //     stagnation blob and suction band that are poorly sampled by the paths.
-    if (_objSphere) {
-        const { cx, cy, cz, r: R } = _objSphere;
+    // ── Voxel occupancy grid ─────────────────────────────────────────────────
+    // We mark a cell occupied for every path position that falls inside the
+    // grid — even those filtered out by cpThreshold — so inverse fill doesn't
+    // re-fill cells that already have coverage (just invisible coverage).
+    const occupied = new Uint8Array(GX * GY * GZ);
 
-        // ── 1. Wake streamlines ──────────────────────────────────────────────
-        const SEEDS   = 13;          // SEEDS×SEEDS seed disc
-        const N_STEPS = 65;          // integration steps per streamline
-        const DS      = R * 0.20;    // arc-length step (world units)
-
-        for (let si = 0; si < SEEDS && idx < MAX_POINTS; si++) {
-            for (let sj = 0; sj < SEEDS && idx < MAX_POINTS; sj++) {
-                const tx = (sj + 0.5) / SEEDS * 2.0 - 1.0;  // −1…+1 across X
-                const ty = (si + 0.5) / SEEDS * 2.0 - 1.0;  //          …  Y
-                if (tx * tx + ty * ty > 0.85) continue;       // outside shadow disc
-
-                let wx = cx + tx * R;
-                let wy = cy + ty * R;
-                let wz = cz + R * 1.06;   // start just behind the sphere
-
-                for (let step = 0; step < N_STEPS && idx < MAX_POINTS; step++) {
-                    const ddx = wx - cx, ddy = wy - cy, ddz = wz - cz;
-
-                    const v   = getVelocity(wx, wy, wz, 0, 1.0, _objSphere);
-                    const spd = Math.max(Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z), 0.01);
-
-                    // Physically correct wake pressure: separated wake is SUB-freestream.
-                    // Bernoulli from potential flow gives the wrong sign here because it
-                    // sees reduced velocity → higher pressure, opposite of reality.
-                    //
-                    // For non-sphere objects (box, cylinder…) use actual half-extents
-                    // for the wake cross-section so the flat back face produces a broad
-                    // uniform low-pressure zone, not a small circular Gaussian.
-                    let cp;
-                    if (ddz > 0) {
-                        const fDecay  = Math.exp(-ddz / (3.8 * R));
-                        // Half-extents of the object's shadow cross-section
-                        const wHx = _objSphere.hx ?? R;
-                        const wHy = _objSphere.hy ?? R;
-                        // Normalised radial distance: 0–1 = inside shadow, >1 = outside
-                        const normR = Math.sqrt((ddx/wHx)*(ddx/wHx) + (ddy/wHy)*(ddy/wHy));
-                        // Flat Cp inside the object's shadow, smooth Gaussian taper outside
-                        const fRadial = normR < 1.0 ? 1.0 : Math.exp(-2.0 * (normR-1.0)*(normR-1.0));
-                        cp = -0.40 * fDecay * fRadial;
-                    } else {
-                        cp = 1.0 - (spd / VSIM) * (spd / VSIM);
-                    }
-
-                    if (Math.abs(cp) >= _cpThreshold) {
-                        positions[idx*3]     = wx;
-                        positions[idx*3 + 1] = wy;
-                        positions[idx*3 + 2] = wz;
-                        const [r, g, b] = cpColor(cp);
-                        colors[idx*3]     = r;
-                        colors[idx*3 + 1] = g;
-                        colors[idx*3 + 2] = b;
-                        alphas[idx] = Math.min(1.0, Math.abs(cp) / 0.45 + 0.12);
-                        idx++;
-                    }
-
-                    // Advance one arc-length step along the local flow direction
-                    wx += (v.x / spd) * DS;
-                    wy += (v.y / spd) * DS;
-                    wz += (v.z / spd) * DS;
-
-                    if (wz > cz + 9.0 * R) break;
-                }
-            }
-        }
-
-        // ── 2. Near-body shell (stagnation + suction band) ───────────────────
-        // Start at R*1.20 (not 1.05) so the shell particles clear the sphere
-        // mesh surface and pass the depth test from all view angles.
-        const NTH = 12, NPH = 20;
-        for (let ti = 0; ti < NTH && idx < MAX_POINTS; ti++) {
-            const theta = Math.PI * (ti + 0.5) / NTH;
-            for (let pi2 = 0; pi2 < NPH && idx < MAX_POINTS; pi2++) {
-                const phi = 2.0 * Math.PI * (pi2 + 0.5) / NPH;
-                for (let ri = 0; ri < 3 && idx < MAX_POINTS; ri++) {
-                    const dist = R * (1.20 + ri * 0.32);
-                    const px = cx + dist * Math.sin(theta) * Math.cos(phi);
-                    const py = cy + dist * Math.sin(theta) * Math.sin(phi);
-                    const pz = cz + dist * Math.cos(theta);
-
-                    // Downstream hemisphere: potential-flow Bernoulli is symmetric and
-                    // gives a stagnation zone (Cp≈+1, red) directly behind the object,
-                    // which is physically wrong for any real separated wake.  Use the
-                    // same empirical wake formula as the streamlines for pz > cz.
-                    const ddz_s = pz - cz;
-                    let cp;
-                    if (ddz_s > 0) {
-                        const fDecay_s  = Math.exp(-ddz_s / (3.8 * R));
-                        const wHx_s = _objSphere.hx ?? R;
-                        const wHy_s = _objSphere.hy ?? R;
-                        const ddx_s = px - cx, ddy_s = py - cy;
-                        const normR_s = Math.sqrt((ddx_s/wHx_s)*(ddx_s/wHx_s) + (ddy_s/wHy_s)*(ddy_s/wHy_s));
-                        const fRad_s  = normR_s < 1.0 ? 1.0 : Math.exp(-2.0 * (normR_s-1.0)*(normR_s-1.0));
-                        cp = -0.40 * fDecay_s * fRad_s;
-                    } else {
-                        const v    = getVelocity(px, py, pz, 0, 1.0, _objSphere);
-                        const vmag = Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-                        cp = 1.0 - (vmag / VSIM) * (vmag / VSIM);
-                    }
-
-                    if (Math.abs(cp) < _cpThreshold) continue;
-
-                    positions[idx*3]     = px;
-                    positions[idx*3 + 1] = py;
-                    positions[idx*3 + 2] = pz;
-                    const [r, g, b] = cpColor(cp);
-                    colors[idx*3]     = r;
-                    colors[idx*3 + 1] = g;
-                    colors[idx*3 + 2] = b;
-                    alphas[idx] = Math.min(1.0, (Math.abs(cp) - _cpThreshold) / 0.40 + 0.10);
-                    idx++;
-                }
-            }
-        }
+    function markOccupied(wx, wy, wz) {
+        const ix = Math.floor((wx - X0) / DX);
+        const iy = Math.floor((wy - Y0) / DY);
+        const iz = Math.floor((wz - Z0) / DZ);
+        if (ix >= 0 && ix < GX && iy >= 0 && iy < GY && iz >= 0 && iz < GZ)
+            occupied[ix * GY * GZ + iy * GZ + iz] = 1;
     }
 
-    // ── Simulated path points (runs after wake fill to use remaining budget) ──
-    // Capped at PATH_BUDGET so the wake above always gets rendered even when
-    // the simulation produces a large number of streamline steps.
+    // ── Simulated path points ────────────────────────────────────────────────
+    // Capped at PATH_BUDGET; remaining budget used by inverse wake fill below.
     outer:
     for (let p = 0; p < _paths3d.length; p += STRIDE_PATH) {
         const { xs, ys, zs, ss } = _paths3d[p];
         for (let s = 0; s < xs.length; s += STRIDE_STEP) {
             if (idx >= PATH_BUDGET) break outer;
 
-            const cp  = 1.0 - ss[s] * ss[s];  // Cp = 1 − (|v|/U)²
+            // Always mark the voxel so inverse fill knows this region is covered
+            markOccupied(xs[s], ys[s], zs[s]);
+
+            const cp  = 1.0 - ss[s] * ss[s];   // Bernoulli: Cp = 1 − (|v|/U)²
             const acp = Math.abs(cp);
             if (acp < _cpThreshold) continue;
 
-            // Emit 1–3 copies per step proportional to |Cp| so high-pressure
-            // and suction zones appear visually denser — freestream stays sparse.
+            // 1–3 copies per step proportional to |Cp| — high-pressure and
+            // suction zones appear denser; freestream stays sparse.
             const nCopies = Math.min(3, 1 + Math.floor(acp * 2.5));
             for (let k = 0; k < nCopies && idx < PATH_BUDGET; k++) {
                 positions[idx * 3]     = xs[s];
@@ -236,8 +131,63 @@ export function buildPressureVolume(paths3d, objSphere) {
         }
     }
 
-    // Per-point random jitter offsets (pre-normalised to [-1,1] per axis).
-    // The vertex shader scales them by uJitter so the spread is live-adjustable.
+    // ── Inverse coverage fill (wake / low-pressure regions) ─────────────────
+    // Any voxel that the simulation paths left empty is an area the airflow
+    // avoided — i.e. the separated wake.  Fill these with a fixed low-pressure
+    // colour so the wake region is always visible regardless of how few paths
+    // entered it.
+    //
+    // To avoid filling freestream corners that are just sparsely seeded,
+    // restrict the fill to the downstream influence cone:
+    //   • always at least WAKE_NEAR_R × R lateral extent around the object
+    //   • cone expands downstream as WAKE_SPREAD × dz  (dz = z − object centre)
+    if (Math.abs(WAKE_CP) >= _cpThreshold) {
+        const { cx = 0, cy = 0, cz = 0, r: R = 1 } = _objSphere ?? {};
+
+        for (let ix = 0; ix < GX && idx < MAX_POINTS; ix++) {
+            for (let iy = 0; iy < GY && idx < MAX_POINTS; iy++) {
+                for (let iz = 0; iz < GZ && idx < MAX_POINTS; iz++) {
+                    if (occupied[ix * GY * GZ + iy * GZ + iz]) continue;
+
+                    // Voxel centre in world space
+                    const vx = X0 + (ix + 0.5) * DX;
+                    const vy = Y0 + (iy + 0.5) * DY;
+                    const vz = Z0 + (iz + 0.5) * DZ;
+
+                    // Skip cells inside the object solid
+                    const ddx = vx - cx, ddy = vy - cy, ddz = vz - cz;
+                    if (ddx*ddx + ddy*ddy + ddz*ddz < R * R * 0.92) continue;
+
+                    // Skip cells too far upstream (no wake there)
+                    if (ddz < -R * 1.2) continue;
+
+                    // Skip cells outside the downstream influence cone
+                    const radial = Math.sqrt(ddx * ddx + ddy * ddy);
+                    const maxR   = ddz > 0
+                        ? WAKE_SPREAD * ddz + R * 1.5    // expanding cone downstream
+                        : R * WAKE_NEAR_R;               // tight cap upstream of object
+                    if (radial > maxR) continue;
+
+                    // Emit WAKE_FILL_N randomly-scattered points inside this voxel
+                    const [wr, wg, wb]  = cpColor(WAKE_CP);
+                    const wAlpha        = Math.min(1.0,
+                        (Math.abs(WAKE_CP) - _cpThreshold) / 0.40 + 0.15);
+                    for (let k = 0; k < WAKE_FILL_N && idx < MAX_POINTS; k++) {
+                        positions[idx * 3]     = vx + (Math.random() - 0.5) * DX;
+                        positions[idx * 3 + 1] = vy + (Math.random() - 0.5) * DY;
+                        positions[idx * 3 + 2] = vz + (Math.random() - 0.5) * DZ;
+                        colors[idx * 3]        = wr;
+                        colors[idx * 3 + 1]    = wg;
+                        colors[idx * 3 + 2]    = wb;
+                        alphas[idx]            = wAlpha;
+                        idx++;
+                    }
+                }
+            }
+        }
+    }
+
+    // Per-point random jitter offsets [-1,1]; vertex shader scales by uJitter.
     const jitters = new Float32Array(idx * 3);
     for (let i = 0; i < idx * 3; i++) jitters[i] = Math.random() * 2.0 - 1.0;
 

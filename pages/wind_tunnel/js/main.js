@@ -42,7 +42,7 @@ setObjectChangeCallback(stats => {
 });
 
 // Load default preset (sphere)
-loadPreset('sphere');
+loadPreset('sphere').catch(console.error);
 
 // ── Animation loop ────────────────────────────────────────────────────────────
 let _totalTime = 0;
@@ -282,7 +282,7 @@ document.querySelectorAll('.preset-btn[data-shape]').forEach(btn => {
     btn.addEventListener('click', () => {
         document.querySelectorAll('.preset-btn[data-shape]').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        loadPreset(btn.dataset.shape);
+        loadPreset(btn.dataset.shape).catch(console.error);
     });
 });
 
@@ -383,7 +383,7 @@ document.getElementById('simCancelBtn')?.addEventListener('click', () => {
 
 // ── Restore last simulation from localStorage ─────────────────────────────────
 // Runs after all listeners are wired so _simActive interactions are safe.
-(function _restoreLastSim() {
+(async function _restoreLastSim() {
     const saved = _loadSimPaths();
     if (!saved) return;
     const { paths3d, preset } = saved;
@@ -391,7 +391,7 @@ document.getElementById('simCancelBtn')?.addEventListener('click', () => {
     // Restore the saved object preset (fires objectChangeCallback → _clearSim,
     // but _simActive is false so nothing is destroyed)
     if (preset && preset !== 'sphere') {
-        loadPreset(preset);
+        await loadPreset(preset);
         document.querySelectorAll('.preset-btn').forEach(b => {
             b.classList.toggle('active', b.dataset.shape === preset);
         });
@@ -405,4 +405,4 @@ document.getElementById('simCancelBtn')?.addEventListener('click', () => {
     buildFlowLines(paths3d);
     setFlowLinesVisible(!!document.getElementById('cfgFlowLines')?.checked);
     _simActive = true;
-}());
+}()).catch(console.error);

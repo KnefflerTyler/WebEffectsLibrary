@@ -29,13 +29,29 @@ export function getVelocity(px, py, pz, t, windMult, objSphere) {
     const dx = px - cx, dy = py - cy, dz = pz - cz;
     const r2 = dx*dx + dy*dy + dz*dz;
 
-    // Inside the object: use the tight AABB when half-extents are available
-    // (non-sphere presets and imported OBJs), otherwise fall back to the
-    // bounding-sphere check.  The AABB prevents particles from passing through
-    // flat faces or corners that lie outside the inscribed sphere.
-    const insideSolid = (objSphere.hx !== undefined)
-        ? (Math.abs(dx) <= objSphere.hx && Math.abs(dy) <= objSphere.hy && Math.abs(dz) <= objSphere.hz)
-        : (r2 < R * R * 0.96);
+    // Inside the object: use the triangle-mesh voxel grid when available so the
+    // boundary exactly matches the OBJ faces.  Fall back to per-component AABBs,
+    // then merged AABB, then bounding-sphere for legacy / safety.
+    let insideSolid;
+    if (objSphere.voxels) {
+        const vox = objSphere.voxels;
+        const ix = Math.floor((px - vox.ox) / vox.step);
+        const iy = Math.floor((py - vox.oy) / vox.step);
+        const iz = Math.floor((pz - vox.oz) / vox.step);
+        insideSolid = (ix >= 0 && iy >= 0 && iz >= 0 &&
+                       ix < vox.nx && iy < vox.ny && iz < vox.nz &&
+                       vox.data[ix + vox.nx * (iy + vox.ny * iz)] !== 0);
+    } else if (objSphere.boxes) {
+        insideSolid = objSphere.boxes.some(b =>
+            Math.abs(px - b.cx) <= b.hx &&
+            Math.abs(py - b.cy) <= b.hy &&
+            Math.abs(pz - b.cz) <= b.hz
+        );
+    } else if (objSphere.hx !== undefined) {
+        insideSolid = Math.abs(dx) <= objSphere.hx && Math.abs(dy) <= objSphere.hy && Math.abs(dz) <= objSphere.hz;
+    } else {
+        insideSolid = r2 < R * R * 0.96;
+    }
     if (insideSolid) return { x: 0, y: 0, z: 0 };
 
     const dist  = Math.sqrt(r2);
