@@ -1,0 +1,258 @@
+/* ── Case Studies Scrolljack Carousel ────────────────────────────────────── */
+:root {
+    --header-h:        72px; /* match actual nav height — adjust if needed  */
+    --cs-item-w:       360px;
+    --cs-item-h:       400px;
+    --cs-radius:       240px;
+    --cs-bg:           #1a1512;
+    --cs-gold:         #a47951;
+    --cs-gold-dim:     rgba(164, 121, 81, 0.28);
+    --cs-gold-glow:    rgba(164, 121, 81, 0.50);
+    --cs-card-bg:      rgba(164, 121, 81, 0.06);
+    --cs-card-bg-act:  rgba(164, 121, 81, 0.14);
+    --cs-text:         #f0efee;
+    --cs-text-dim:     rgba(240, 239, 238, 0.55);
+}
+/* ── Fixed header ────────────────────────────────────────────────────────── */
+/* Fix the nav bar only — the <header> element stays in normal flow as a     */
+/* natural height-spacer, so no horizontal layout disruption occurs.         */
+nav#header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    margin-top: 0!important;
+    background: linear-gradient(to bottom,
+        #000000 0%,
+        #000000 70%,
+        transparent 100%) !important;
+}
+
+/* Ensure the spacer header is at least as tall as the nav */
+header {
+    min-height: var(--header-h);
+}
+
+/* ── Prevent 100vw breakout from creating a horizontal scrollbar ────────── */
+/* overflow-x:clip clips visually (unlike hidden it does NOT become a scroll  */
+/* container, so position:sticky on children is preserved)                   */
+#post-22 {
+    overflow-x: clip;
+}
+
+/* ── Outer section — tall so user has room to scroll through all 3 cards ── */
+.cs-section {
+    position: relative;
+    height: 350vh;
+    /* Break out of Bootstrap .container to fill full viewport width */
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    background: var(--cs-bg);
+    /* overflow:clip clips visually without creating a scroll container,
+       so position:sticky on .cs-sticky still works correctly */
+    overflow: clip;
+}
+
+/* ── Sticky viewport — pins below the fixed header ───────────────────────── */
+.cs-sticky {
+    position: sticky;
+    top: var(--header-h);
+    height: calc(100vh - var(--header-h));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* ── Section heading ── */
+.cs-heading {
+    position: relative;
+    z-index: 200;
+    text-align: center;
+    color: var(--cs-text);
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 0 0 0.3rem;
+    pointer-events: none;
+    font-family: inherit;
+}
+
+.cs-heading-sub {
+    color: var(--cs-gold);
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin: 0 0 1.6rem;
+    text-align: center;
+    pointer-events: none;
+}
+
+/* ── Carousel container ── */
+.cs-carousel {
+    position: relative;
+    width:  var(--cs-item-w);
+    height: var(--cs-item-h);
+    flex-shrink: 0;
+}
+
+/* ── Individual carousel items ── */
+.cs-item {
+    position: absolute;
+    top:  50%;
+    left: 50%;
+    width:  var(--cs-item-w);
+    height: var(--cs-item-h);
+    margin-top:  calc(var(--cs-item-h) / -2);
+    margin-left: calc(var(--cs-item-w) / -2);
+    pointer-events: auto;
+    /* transform + opacity are the only compositor-only properties;
+       filter is intentionally excluded — it forces a full composite flush */
+    will-change: transform, opacity;
+}
+
+/* ── Card ── */
+.cs-card {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 2rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    background: var(--cs-card-bg);
+    border: 1.5px solid var(--cs-gold-dim);
+    border-radius: 14px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: var(--cs-text-dim);
+    transition:
+        background    0.25s ease,
+        border-color  0.25s ease,
+        box-shadow    0.25s ease,
+        color         0.25s ease;
+}
+
+.cs-item.is-active .cs-card {
+    background:   var(--cs-card-bg-act);
+    border-color: var(--cs-gold);
+    box-shadow:   0 0 36px var(--cs-gold-glow), inset 0 0 24px rgba(164,121,81,0.06);
+    color:        var(--cs-text);
+}
+
+/* ── Card logo ── */
+.cs-card-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 76px;
+    flex-shrink: 0;
+}
+
+.cs-card-logo img {
+    max-height: 68px;
+    max-width: 100%;
+    width: auto;
+    object-fit: contain;
+    filter: grayscale(1) brightness(1.5);
+    transition: filter 0.25s ease;
+}
+
+.cs-item.is-active .cs-card-logo img {
+    filter: grayscale(0) brightness(1);
+}
+
+/* ── Card title ── */
+.cs-card-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: inherit;
+    margin: 0;
+    line-height: 1.3;
+}
+
+/* ── Card excerpt ── */
+p.cs-card-excerpt {
+    font-size: 0.875rem!important;
+    line-height: 1.6;
+    color: inherit;
+    flex: 1;
+    margin: 0;
+}
+
+/* ── Card CTA link ── */
+.cs-card-link {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--cs-gold);
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    opacity: 0;
+    transform: translateY(5px);
+    transition: opacity 0.22s ease, transform 0.22s ease, color 0.15s ease;
+    pointer-events: none;
+}
+
+.cs-item.is-active .cs-card-link {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.cs-card-link:hover {
+    color: #c49a6a;
+    text-decoration: underline;
+}
+
+/* ── Dot indicators ── */
+.cs-dots {
+    display: flex;
+    gap: 10px;
+    margin-top: 1.6rem;
+    z-index: 200;
+}
+
+.cs-dot {
+    width:  8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--cs-gold-dim);
+    transition: background 0.25s ease, transform 0.25s ease;
+}
+
+.cs-dot.is-active {
+    background: var(--cs-gold);
+    transform: scale(1.4);
+}
+
+/* ── Scroll hint ── */
+.cs-scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--cs-gold-dim);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    animation: cs-hint-bounce 2.4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes cs-hint-bounce {
+    0%, 100% { opacity: 0.4; transform: translateX(-50%) translateY(0);    }
+    50%       { opacity: 1.0; transform: translateX(-50%) translateY(5px);  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 680px) {
+    :root {
+        --cs-item-w:   290px;
+        --cs-item-h:   370px;
+        --cs-radius:   175px;
+    }
+    .cs-heading { font-size: 1.35rem; }
+}

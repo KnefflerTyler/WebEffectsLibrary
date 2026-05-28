@@ -1,0 +1,90 @@
+/* ── Service Ribbon — Scrolljack Icon Highlight ───────────────────────────── */
+
+/* ── Scene: overarching 350vh scroll container ────────────────────────────── */
+/* hero + ribbon both live inside the sticky panel;                            */
+/* scrollable = 350vh - 100vh = 250vh → ~83vh per icon activation             */
+.sr-scene {
+    position: relative;
+    height: 350vh;
+}
+
+/* Viewport-height sticky panel — hero fills the top, ribbon sits at bottom */
+.sr-scene-sticky {
+    position: sticky;
+    top: var(--header-h, 72px);
+    height: calc(100vh - var(--header-h, 72px));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1;
+}
+
+/* Hero stretches to fill whatever space the ribbon doesn't need */
+.sr-scene-sticky .wp-block-group.home-banner {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Ribbon sits at the bottom of the sticky panel, natural height */
+.sr-ribbon-footer {
+    flex: 0 0 auto;
+    margin-top: 1.5rem;
+}
+
+/* ── Column states ── */
+.sr-ribbon-footer .wp-block-column {
+    transition: opacity 0.45s ease;
+    opacity: 0.28;
+}
+
+.sr-ribbon-footer .wp-block-column.sr-active {
+    opacity: 1;
+}
+
+/* ── Icon: scale + gold glow on active ── */
+.sr-ribbon-footer .wp-block-column svg {
+    display: block;
+    margin: 0 auto;
+    transition: transform 0.45s ease, filter 0.45s ease;
+}
+
+.sr-ribbon-footer .wp-block-column.sr-active svg {
+    transform: scale(1.22);
+    filter: drop-shadow(0 0 10px rgba(164, 121, 81, 0.65));
+}
+
+/* ── Label text ── */
+.sr-ribbon-footer .wp-block-column .icon-description {
+    transition: opacity 0.45s ease;
+    opacity: 0.5;
+}
+
+.sr-ribbon-footer .wp-block-column.sr-active .icon-description {
+    opacity: 1;
+}
+
+/* ── Sliding gold indicator bar ── */
+/*   sits flush against the bottom edge of the service-icons strip   */
+/*   width = 25% (1 of 4 columns); translateX uses --sr-step (0-3)   */
+.sr-indicator {
+    width: 100%;
+    height: 3px;
+    background: transparent;
+    pointer-events: none;
+    overflow: visible;
+    position: relative;
+    margin-top: -3px; /* overlap the strip's bottom padding */
+}
+
+.sr-indicator::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 25%;
+    background: #a47951;
+    box-shadow: 0 0 18px rgba(164, 121, 81, 0.60);
+    transform: translateX(calc(var(--sr-step, 0) * 100%));
+    transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
