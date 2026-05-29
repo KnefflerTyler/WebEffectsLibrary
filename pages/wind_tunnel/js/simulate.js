@@ -1,26 +1,29 @@
 /**
- * simulate.js — offline batch streamline simulation for high-quality renders.
+ * simulate.js — two-phase offline simulation.
  *
- * Integrates N_PARTICLES streamlines through the analytical potential-flow
- * velocity field, then renders them to an offscreen canvas coloured by local
- * flow speed using the same blue→green→yellow→red ramp as the live simulation.
+ * Phase 1 (0 – LBM_PROGRESS_FRACTION of total progress):
+ *   Runs the D3Q19 BGK Lattice-Boltzmann CFD solver in a dedicated WebWorker
+ *   (lbm.worker.js).  The converged, shape-specific velocity field is attached
+ *   to the working copy of objSphere as `.lbmGrid` so that physics.js uses it
+ *   automatically for all subsequent streamline queries.
  *
- * The heavy computation phase is broken into small batches separated by
- * setTimeout(0) so the main thread remains responsive and a progress bar can
- * update between batches.
- *
- * Rendering uses a 5-bucket pass strategy: all path segments in the same
- * speed band are accumulated into one canvas subpath and flushed with a
- * single ctx.stroke(), keeping GPU draw calls to just 5 regardless of how
- * many particles are simulated.
+ * Phase 2 (LBM_PROGRESS_FRACTION – 1.0):
+ *   Multi-pass Euler streamline integration through getVelocity() (which now
+ *   looks up the real CFD field instead of the former BEM+analytical-wake
+ *   approximation).  Adaptive starting positions and an XZ influence grid
+ *   concentrate lines near the object.
  */
 import { TW, TH, TL, VSIM } from './config.js';
 import { getVelocity }       from './physics.js';
+import { runLBM }            from './lbm.js';
+
+/** Fraction of total reported progress allocated to the LBM phase. */
+export const LBM_PROGRESS_FRACTION = 0.45;
 
 // ── Simulation constants ──────────────────────────────────────────────────────
 export const SIM_N_PARTICLES = 12000;   // particles PER PASS (× N_PASSES total integrations)
 const N_PASSES     = 3;                 // passes; each samples a different vortex-shedding phase
-const N_STEPS      = 480;               // Euler steps per particle
+const N_STEPS      = 960;               // arc-length steps per particle (each = DT*U ≈ 0.066 wu)
 const DT           = 0.022;             // timestep (seconds)
 const BATCH_SIZE   = 200;               // particles per setTimeout tick
 
@@ -160,20 +163,11 @@ function isNearObject(xs, ys, zs, len, obj, thresh = NEAR_THRESH) {
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 /**
- * Run the multi-pass batch simulation.
- * Each pass uses a different vortex-shedding phase and adaptive starting
- * positions informed by the previous pass.  The velocity field for each
- * pass is also nudged by an accumulated influence grid built from the
- * paths already computed, so later particles follow previously-discovered
- * flow corridors while fresh random starts fill unexplored regions.
+ * Run the two-phase simulation:
+ *   1. LBM CFD solve  (produces a real velocity field for this mesh)
+ *   2. Multi-pass Euler streamline integration through that field
  *
  * @param {{ windMult, objSphere, onProgress, onComplete, onCancel }} opts
- *   windMult   – visual speed multiplier (from UI slider)
- *   objSphere  – { cx, cy, cz, r } | null
- *   onProgress – fn(fraction: 0..1)   called after each batch
- *   onComplete – fn(canvas: HTMLCanvasElement)  called when done
- *   onCancel   – fn()  called if the user cancels
- *
  * @returns {{ cancel: function }}
  */
 export function runBatchSimulation({ windMult = 1.0, objSphere = null,
@@ -183,17 +177,46 @@ export function runBatchSimulation({ windMult = 1.0, objSphere = null,
                                      nSteps            = N_STEPS,
                                      influenceWeight   = INFLUENCE_W,
                                      nearThresh        = NEAR_THRESH } = {}) {
-    // Near-object paths from all passes (the final output).
+    // Shallow-clone objSphere so we can attach lbmGrid without mutating the
+    // live object that the renderer holds a reference to.
+    const workSphere = objSphere ? { ...objSphere } : null;
+
+    let _currentCancel = null;
+    const handle = {
+        cancel() { _currentCancel?.(); },
+    };
+
+    // ── Phase 1: LBM ─────────────────────────────────────────────────────────
+    const lbmHandle = runLBM({
+        voxels    : objSphere?.voxels ?? null,
+        onProgress: p => onProgress?.(p * LBM_PROGRESS_FRACTION),
+        onComplete: lbmGrid => {
+            if (workSphere) workSphere.lbmGrid = lbmGrid;
+            // ── Phase 2: streamlines ────────────────────────────────────────
+            _currentCancel = _runStreamlinePhase({
+                windMult, objSphere: workSphere,
+                onProgress: p => onProgress?.(LBM_PROGRESS_FRACTION + p * (1 - LBM_PROGRESS_FRACTION)),
+                onComplete, onCancel,
+                nPasses, particlesPerPass, nSteps, influenceWeight, nearThresh,
+            }).cancel;
+        },
+        onCancel,
+    });
+    _currentCancel = lbmHandle.cancel;
+
+    return handle;
+}
+
+/**
+ * Internal: multi-pass streamline integration (formerly the body of
+ * runBatchSimulation).  Separated so LBM can hand off to it cleanly.
+ */
+function _runStreamlinePhase({ windMult = 1.0, objSphere = null,
+                                onProgress, onComplete, onCancel,
+                                nPasses, particlesPerPass, nSteps,
+                                influenceWeight, nearThresh }) {
     const allPaths = [];
     const U = VSIM * (windMult || 1);
-
-    // Shedding period T = 2π/ω, where ω = π·St·U/R (angular frequency).
-    // Simplifies to:  T = 2R / (St·U)
-    // Spreading N passes evenly across T_shed gives each pass a unique
-    // vortex-shedding snapshot, improving ensemble coverage.
-    const St     = 0.21;                           // Strouhal number (subcritical sphere)
-    const R      = objSphere?.r ?? 1.0;
-    const T_shed = (2 * R) / (St * U);             // one full shedding period
 
     // Influence grid built from the previous pass.
     let prevGrid      = null;
@@ -220,10 +243,6 @@ export function runBatchSimulation({ windMult = 1.0, objSphere = null,
             const { x: x0, y: y0 } = startPositions[i];
             let x = x0, y = y0, z = -TL / 2;
 
-            // Phase offset: each pass samples a different instant of the
-            // von Kármán shedding cycle for ensemble-averaged coverage.
-            const t0 = passIndex * (T_shed / nPasses);
-
             const xs = new Float32Array(nSteps + 1);
             const ys = new Float32Array(nSteps + 1);
             const zs = new Float32Array(nSteps + 1);
@@ -232,8 +251,7 @@ export function runBatchSimulation({ windMult = 1.0, objSphere = null,
             let len = 1;
 
             for (let s = 0; s < nSteps; s++) {
-                const t = t0 + s * DT;
-                const v = getVelocity(x, y, z, t, windMult, objSphere);
+                const v = getVelocity(x, y, z, windMult, objSphere);
 
                 // Ensemble influence: blend the previous-pass direction grid into
                 // the analytical velocity so later particles preferentially follow
@@ -245,20 +263,40 @@ export function runBatchSimulation({ windMult = 1.0, objSphere = null,
                 }
 
                 const vmag = Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
-                const nx = x + v.x * DT;
-                const ny = y + v.y * DT;
-                const nz = z + v.z * DT;
+
+                // Geometric streamline: always advance DT*U world-units per step,
+                // regardless of local speed.  This prevents particles from stalling
+                // in the LBM no-slip boundary layer or near stagnation zones.
+                // Only the true stagnation singularity (|v| ≈ 0) terminates early.
+                if (vmag < U * 0.005) break;
+                const arcStep = DT * U / vmag;   // normalise to fixed arc-length
+                const nx = x + v.x * arcStep;
+                const ny = y + v.y * arcStep;
+                const nz = z + v.z * arcStep;
 
                 // Stop if the Euler step would carry the particle into the object.
                 // Without this guard the particle gets stuck at an interior point and
                 // all remaining path segments draw as a straight line into the solid.
+                // Use the voxel grid when available so hollow regions (e.g. the torus
+                // hole) are never treated as solid — falls back to AABB / sphere.
                 if (objSphere) {
-                    const dox = nx - objSphere.cx;
-                    const doy = ny - objSphere.cy;
-                    const doz = nz - objSphere.cz;
-                    const wouldEnter = (objSphere.hx !== undefined)
-                        ? (Math.abs(dox) <= objSphere.hx && Math.abs(doy) <= objSphere.hy && Math.abs(doz) <= objSphere.hz)
-                        : (dox*dox + doy*doy + doz*doz < objSphere.r * objSphere.r);
+                    let wouldEnter;
+                    if (objSphere.voxels) {
+                        const vox = objSphere.voxels;
+                        const vix = Math.floor((nx - vox.ox) / vox.step);
+                        const viy = Math.floor((ny - vox.oy) / vox.step);
+                        const viz = Math.floor((nz - vox.oz) / vox.step);
+                        wouldEnter = (vix >= 0 && viy >= 0 && viz >= 0 &&
+                                      vix < vox.nx && viy < vox.ny && viz < vox.nz &&
+                                      vox.data[vix + vox.nx * (viy + vox.ny * viz)] !== 0);
+                    } else {
+                        const dox = nx - objSphere.cx;
+                        const doy = ny - objSphere.cy;
+                        const doz = nz - objSphere.cz;
+                        wouldEnter = (objSphere.hx !== undefined)
+                            ? (Math.abs(dox) <= objSphere.hx && Math.abs(doy) <= objSphere.hy && Math.abs(doz) <= objSphere.hz)
+                            : (dox*dox + doy*doy + doz*doz < objSphere.r * objSphere.r);
+                    }
                     if (wouldEnter) break;
                 }
 
@@ -460,7 +498,6 @@ export function runBatchSimulation({ windMult = 1.0, objSphere = null,
         },
     };
 }
-
 
 // ── Legend ─────────────────────────────────────────────────────────────────────
 function _drawLegend(ctx, W, H, PAD) {

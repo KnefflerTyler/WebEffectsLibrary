@@ -77,23 +77,11 @@ Object.keys(PRESET_META).forEach(k => {
  * Replace the current object with a named preset shape loaded from an OBJ file.
  * Returns a Promise so callers that need to await geometry placement can do so.
  *
- * @param {'none'|'sphere'|'cube'|'cylinder'|'cone'|'car'} type
+ * @param {'none'|'sphere'|'cube'|'cylinder'|'cone'|'car'|'torus'} type
  * @returns {Promise<void>}
  */
 export async function loadPreset(type) {
     if (type === 'none') { _clearObject(); return; }
-
-    // ── Torus: procedurally generated, no OBJ file needed ─────────────────────
-    if (type === 'torus') {
-        const R_maj = 1.0, r_min = 0.35;
-        // TorusGeometry default axis = +Z (ring lies in XY plane), so the hole
-        // faces the incoming +Z flow — perfect for demonstrating through-hole flow.
-        const geo  = new THREE.TorusGeometry(R_maj, r_min, 24, 64);
-        const mesh = new THREE.Mesh(geo, objectMat);
-        const meta = PRESET_META.torus;
-        _setObject(mesh, meta.label, meta.knownCd, meta.physLenM, meta.physAreaM2);
-        return;
-    }
 
     const meta = PRESET_META[type];
     if (!meta) return;
@@ -214,10 +202,6 @@ function _setObject(mesh, label, knownCd, physLenM, physAreaM2, rawCompBoxes = n
     // Build triangle-mesh voxel grid for accurate inside/outside collision.
     const voxels = buildVoxelGrid(mesh.geometry, mesh.position, scaleFactor);
 
-    // Build BEM panel velocity grid so getVelocity uses mesh-accurate flow
-    // deflection for every shape — no per-shape branches in physics.js.
-    const panelGrid = buildPanelSystem(mesh.geometry, mesh.position, scaleFactor);
-
     _objSphere = {
         cx: mesh.position.x,
         cy: mesh.position.y,
@@ -231,8 +215,6 @@ function _setObject(mesh, label, knownCd, physLenM, physAreaM2, rawCompBoxes = n
         boxes,
         // Triangle-mesh voxel grid – primary inside/outside test in physics.js
         voxels,
-        // BEM precomputed velocity perturbation grid – topology-correct flow field
-        panelGrid,
     };
 
     // Keep the object shader's Cp-map centre uniform in sync with world placement.
@@ -395,164 +377,6 @@ function _mergeGeometries(geos) {
     out.setAttribute('normal',   new THREE.BufferAttribute(nrmArr, 3));
     if (idxArr) out.setIndex(new THREE.BufferAttribute(idxArr, 1));
     return out;
-}
-
-// ── BEM Panel Velocity Grid ───────────────────────────────────────────────────
-/**
- * Build a precomputed panel-method velocity grid from the mesh geometry.
- *
- * Algorithm (Neumann BEM with lumped source panels):
- *   1. Sample ≤ N_MAX_PANELS triangle centroids, face normals, and areas.
- *   2. Assemble the N×N influence matrix M and solve M·σ = –n_z for the
- *      source strengths σ that satisfy the no-penetration condition at U=1.
- *   3. Evaluate the induced velocity perturbation on a 24³ grid covering the
- *      object's bounding box plus 1.5-unit padding.  Values are at U=1;
- *      physics.js multiplies by the actual wind speed U at query time.
- *
- * This is fully shape-agnostic: holes, gaps, cutouts, and any topological
- * feature emerge naturally from the BEM solution.  The torus hole, for
- * example, shows (near-)freestream flow through the opening because the ring
- * of panels has zero net z-perturbation at the hole centre — no torus-specific
- * code is needed anywhere in the pipeline.
- *
- * @param {THREE.BufferGeometry} geometry  centred, unscaled source geometry
- * @param {THREE.Vector3}        position  world-space mesh.position
- * @param {number}               scale     uniform scale factor
- * @returns {{ ox,oy,oz, dx,dy,dz, nx,ny,nz, vx,vy,vz }|null}
- */
-const N_MAX_PANELS = 200;
-const PANEL_GRID   = 24;       // grid resolution per axis (24³ = 13 824 cells)
-const _INV4PI      = 1.0 / (4 * Math.PI);
-
-function buildPanelSystem(geometry, position, scale) {
-    const posAttr  = geometry.attributes.position.array;
-    const idxArr   = geometry.index ? geometry.index.array : null;
-    const triCount = idxArr ? (idxArr.length / 3) : (posAttr.length / 9);
-    if (triCount < 8) return null;
-
-    // Sample triangles uniformly across the mesh
-    const N      = Math.min(triCount, N_MAX_PANELS);
-    const stride = triCount / N;
-    const pcx = new Float64Array(N), pcy = new Float64Array(N), pcz = new Float64Array(N);
-    const pnx = new Float64Array(N), pny = new Float64Array(N), pnz = new Float64Array(N);
-    const pA  = new Float64Array(N);
-
-    function vtxW(i, out) {
-        out[0] = posAttr[i * 3    ] * scale + position.x;
-        out[1] = posAttr[i * 3 + 1] * scale + position.y;
-        out[2] = posAttr[i * 3 + 2] * scale + position.z;
-    }
-    const va = new Float64Array(3), vb = new Float64Array(3), vc = new Float64Array(3);
-
-    for (let p = 0; p < N; p++) {
-        const ti = Math.floor(p * stride);
-        const i0 = idxArr ? idxArr[ti * 3    ] : ti * 3;
-        const i1 = idxArr ? idxArr[ti * 3 + 1] : ti * 3 + 1;
-        const i2 = idxArr ? idxArr[ti * 3 + 2] : ti * 3 + 2;
-        vtxW(i0, va); vtxW(i1, vb); vtxW(i2, vc);
-
-        pcx[p] = (va[0] + vb[0] + vc[0]) / 3;
-        pcy[p] = (va[1] + vb[1] + vc[1]) / 3;
-        pcz[p] = (va[2] + vb[2] + vc[2]) / 3;
-
-        const e1x = vb[0]-va[0], e1y = vb[1]-va[1], e1z = vb[2]-va[2];
-        const e2x = vc[0]-va[0], e2y = vc[1]-va[1], e2z = vc[2]-va[2];
-        const cx = e1y*e2z - e1z*e2y, cy = e1z*e2x - e1x*e2z, cz = e1x*e2y - e1y*e2x;
-        const len = Math.sqrt(cx*cx + cy*cy + cz*cz);
-        if (len < 1e-12) { pnz[p] = 1; continue; }
-        pnx[p] = cx / len; pny[p] = cy / len; pnz[p] = cz / len;
-        pA[p]  = len * 0.5;
-    }
-
-    // ── Assemble influence matrix M and RHS b ─────────────────────────────────
-    // M[i][j] = A_j / (4π) · dot(xi–xj, ni) / |xi–xj|³   (i ≠ j)
-    // M[i][i] = 0.5   (Neumann jump condition for exterior domain)
-    // b[i]    = –nz_i  (no-penetration under unit +Z freestream)
-    const M = new Float64Array(N * N);
-    const b = new Float64Array(N);
-    for (let i = 0; i < N; i++) {
-        M[i * N + i] = 0.5;
-        b[i] = -pnz[i];
-        const xi = pcx[i], yi = pcy[i], zi = pcz[i];
-        const nix = pnx[i], niy = pny[i], niz = pnz[i];
-        for (let j = 0; j < N; j++) {
-            if (i === j) continue;
-            const rx = xi - pcx[j], ry = yi - pcy[j], rz = zi - pcz[j];
-            const r2 = rx*rx + ry*ry + rz*rz;
-            if (r2 < 1e-12) continue;
-            M[i * N + j] = pA[j] * _INV4PI * (rx*nix + ry*niy + rz*niz) / (r2 * Math.sqrt(r2));
-        }
-    }
-
-    const sigma = _gaussianElim(M, b, N);
-    if (!sigma) return null;
-
-    // ── Precompute induced velocity on a PANEL_GRID³ grid ────────────────────
-    geometry.computeBoundingBox();
-    const bb  = geometry.boundingBox;
-    const pad = 1.5;   // world-unit padding beyond bounding box
-    const ox = bb.min.x * scale + position.x - pad,  ex = bb.max.x * scale + position.x + pad;
-    const oy = bb.min.y * scale + position.y - pad,  ey = bb.max.y * scale + position.y + pad;
-    const oz = bb.min.z * scale + position.z - pad,  ez = bb.max.z * scale + position.z + pad;
-    const G = PANEL_GRID;
-    const gdx = (ex - ox) / G, gdy = (ey - oy) / G, gdz = (ez - oz) / G;
-    const gvx = new Float32Array(G * G * G);
-    const gvy = new Float32Array(G * G * G);
-    const gvz = new Float32Array(G * G * G);
-
-    for (let iz = 0; iz < G; iz++) {
-        for (let iy = 0; iy < G; iy++) {
-            for (let ix = 0; ix < G; ix++) {
-                const qx = ox + (ix + 0.5) * gdx;
-                const qy = oy + (iy + 0.5) * gdy;
-                const qz = oz + (iz + 0.5) * gdz;
-                let svx = 0, svy = 0, svz = 0;
-                for (let p = 0; p < N; p++) {
-                    const rx = qx - pcx[p], ry = qy - pcy[p], rz = qz - pcz[p];
-                    const r2 = rx*rx + ry*ry + rz*rz;
-                    if (r2 < 1e-6) continue;
-                    const s = sigma[p] * pA[p] * _INV4PI / (r2 * Math.sqrt(r2));
-                    svx += s * rx; svy += s * ry; svz += s * rz;
-                }
-                const idx = ix + G * (iy + G * iz);
-                gvx[idx] = svx; gvy[idx] = svy; gvz[idx] = svz;
-            }
-        }
-    }
-    return { ox, oy, oz, dx: gdx, dy: gdy, dz: gdz, nx: G, ny: G, nz: G,
-             vx: gvx, vy: gvy, vz: gvz };
-}
-
-/** Gaussian elimination with partial pivoting.  Returns null if singular. */
-function _gaussianElim(matIn, rhsIn, N) {
-    const A = Float64Array.from(matIn), b = Float64Array.from(rhsIn);
-    for (let col = 0; col < N; col++) {
-        let maxV = Math.abs(A[col * N + col]), maxR = col;
-        for (let row = col + 1; row < N; row++) {
-            const v = Math.abs(A[row * N + col]);
-            if (v > maxV) { maxV = v; maxR = row; }
-        }
-        if (maxV < 1e-14) return null;
-        if (maxR !== col) {
-            for (let k = 0; k < N; k++) {
-                const t = A[col * N + k]; A[col * N + k] = A[maxR * N + k]; A[maxR * N + k] = t;
-            }
-            const t = b[col]; b[col] = b[maxR]; b[maxR] = t;
-        }
-        const inv = 1.0 / A[col * N + col];
-        for (let row = col + 1; row < N; row++) {
-            const f = A[row * N + col] * inv;
-            for (let k = col; k < N; k++) A[row * N + k] -= f * A[col * N + k];
-            b[row] -= f * b[col];
-        }
-    }
-    const x = new Float64Array(N);
-    for (let i = N - 1; i >= 0; i--) {
-        let s = b[i];
-        for (let j = i + 1; j < N; j++) s -= A[i * N + j] * x[j];
-        x[i] = s / A[i * N + i];
-    }
-    return x;
 }
 
 // ── Optional callback (set by main.js after stats module is ready) ────────────

@@ -22,7 +22,7 @@ import { buildPressureVolume, clearPressureVolume, setPressureVolumeVisible,
 import { buildFlowLines, clearFlowLines, setFlowLinesVisible,
          setFlowLinesOpacity, setFlowLinesAnimated, updateFlowLinesTime,
          setFlowLinesBeadWidth } from './flowLines.js';
-import { runBatchSimulation } from './simulate.js';
+import { runBatchSimulation, LBM_PROGRESS_FRACTION } from './simulate.js';
 import { buildPressureMap, disposePressureMap } from './pressureMap.js';
 import { initPanelToggle }                   from '../../../shared/settings.js';
 
@@ -336,10 +336,18 @@ _simBtn?.addEventListener('click', () => {
         nearThresh      : simNearThresh,
 
         onProgress(p) {
-            _simBar.style.width    = `${(p * 100).toFixed(1)}%`;
-            const done = Math.round(p * simTotal);
-            _simStatus.textContent =
-                `Pass ${Math.min(simPasses, Math.floor(p * simPasses) + 1)} / ${simPasses}\u2002\u00b7\u2002${done.toLocaleString()} / ${simTotal.toLocaleString()} particles`;
+            _simBar.style.width = `${(p * 100).toFixed(1)}%`;
+            if (p < LBM_PROGRESS_FRACTION) {
+                // LBM CFD phase — show solver progress
+                const lbmPct = Math.round((p / LBM_PROGRESS_FRACTION) * 100);
+                _simStatus.textContent = `CFD Solver (LBM) · ${lbmPct}% of 3000 iterations`;
+            } else {
+                // Streamline integration phase
+                const sp = (p - LBM_PROGRESS_FRACTION) / (1 - LBM_PROGRESS_FRACTION);
+                const done = Math.round(sp * simTotal);
+                _simStatus.textContent =
+                    `Pass ${Math.min(simPasses, Math.floor(sp * simPasses) + 1)} / ${simPasses} · ${done.toLocaleString()} / ${simTotal.toLocaleString()} particles`;
+            }
         },
 
         onComplete(canvas, paths3d) {
