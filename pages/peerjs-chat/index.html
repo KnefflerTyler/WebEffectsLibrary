@@ -1,0 +1,92 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>P2P Chat - PeerJS</title>
+  <link rel="stylesheet" href="css/chat.css" />
+</head>
+<body>
+
+  <div id="nickname-overlay">
+    <div class="nickname-box">
+      <h2>Choose a nickname</h2>
+      <p>Only visible to the person you chat with &mdash; nothing is stored on a server.</p>
+      <input type="text" id="nickname-input" placeholder="e.g. Alice" maxlength="24" />
+      <button class="btn btn-primary" onclick="setNickname()">Continue</button>
+    </div>
+  </div>
+
+  <a class="back-btn" href="../../index.html">&#8592; Back</a>
+
+  <div class="app">
+    <h1>P2P Chat <span>/ PeerJS</span></h1>
+
+    <div class="step active" id="role-step">
+      <div class="card">
+        <div class="card-title">How are you joining?</div>
+        <p class="hint">
+          Two people open this same page. <b>One creates a room</b> and shares the code &mdash;
+          the other pastes it and connects instantly. No back-and-forth required.
+        </p>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="startAsHost()">Create Room</button>
+          <button class="btn btn-ghost"   onclick="showStep('guest-join-step')">Join Room</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" id="host-wait-step">
+      <div class="card">
+        <div class="card-title">Your room code</div>
+        <p class="hint">Share this code with the person you want to chat with. The connection opens automatically once they join.</p>
+        <div class="code-display">
+          <span id="room-code-display">Generating&#8230;</span>
+          <button class="btn btn-primary btn-sm" onclick="copyRoomCode(event)">Copy</button>
+        </div>
+        <div class="status connecting" id="host-status">
+          <span class="status-dot"></span>
+          <span>Waiting for someone to join&#8230;</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" id="guest-join-step">
+      <div class="card">
+        <div class="card-title">Enter room code</div>
+        <p class="hint">Paste the code shared by the room creator and click Connect.</p>
+        <input type="text" id="join-code-input" placeholder="Paste room code here" maxlength="60"
+               onkeydown="if(event.key==='Enter') joinRoom()" />
+        <div class="btn-row">
+          <button class="btn btn-success" onclick="joinRoom()">Connect</button>
+          <button class="btn btn-ghost"   onclick="showStep('role-step')">Back</button>
+        </div>
+        <div class="status connecting" id="guest-status" style="display:none">
+          <span class="status-dot"></span>
+          <span>Connecting&#8230;</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="chat-step">
+      <div class="chat-header">
+        <h1>P2P Chat <span>/ PeerJS</span></h1>
+        <div class="status connected">
+          <span class="status-dot"></span>
+          <span>Connected</span>
+        </div>
+      </div>
+      <div id="messages"></div>
+      <div class="chat-input-row">
+        <input type="text" id="msg-input" placeholder="Type a message..." maxlength="2000"
+               onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); sendMessage(); }" />
+        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

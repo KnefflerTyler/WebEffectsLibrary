@@ -1,0 +1,102 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>P2P Chat - WebRTC</title>
+  <link rel="stylesheet" href="css/chat.css" />
+</head>
+<body>
+
+  <!-- Nickname overlay -->
+  <div id="nickname-overlay">
+    <div class="nickname-box">
+      <h2>Choose a nickname</h2>
+      <p>This is only visible to the person you chat with &mdash; nothing is sent to a server.</p>
+      <input type="text" id="nickname-input" placeholder="e.g. Alice" maxlength="24" />
+      <button class="btn btn-primary" onclick="setNickname()">Continue</button>
+    </div>
+  </div>
+
+  <a class="back-btn" href="../../index.html">&#8592; Back</a>
+
+  <div class="app">
+    <h1>P2P Chat <span>/ WebRTC</span></h1>
+
+    <!-- Role selection -->
+    <div class="step active" id="role-step">
+      <div class="card">
+        <div class="card-title">How are you joining?</div>
+        <p class="hint">
+          Two people open this same page. <b>One creates a room</b>, the other joins.<br>
+          No server is involved &mdash; the connection is directly between your browsers.
+        </p>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="startAsHost()">Create Room</button>
+          <button class="btn btn-ghost"   onclick="startAsGuest()">Join Room</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOST: share offer -->
+    <div class="step" id="host-offer-step">
+      <div class="card">
+        <div class="card-title">Step 1 of 2 &mdash; Share this offer</div>
+        <p class="hint">Copy the text below and send it to the person you want to chat with (paste, email, DM &mdash; anything works).</p>
+        <textarea id="offer-out" readonly placeholder="Generating offer..."></textarea>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="copyText('offer-out')">Copy Offer</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Step 2 of 2 &mdash; Paste their answer</div>
+        <p class="hint">After they paste your offer on their page, they'll get an <b>answer</b> to send back to you. Paste it here.</p>
+        <textarea id="answer-in" placeholder="Paste answer here..."></textarea>
+        <div class="btn-row">
+          <button class="btn btn-success" onclick="hostAcceptAnswer()">Connect</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GUEST: paste offer, copy answer -->
+    <div class="step" id="guest-offer-step">
+      <div class="card">
+        <div class="card-title">Step 1 of 2 &mdash; Paste the offer</div>
+        <p class="hint">The person who created the room will give you an <b>offer</b>. Paste it below.</p>
+        <textarea id="offer-in" placeholder="Paste offer here..."></textarea>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="guestProcessOffer()">Generate Answer</button>
+        </div>
+      </div>
+      <div class="card" id="guest-answer-card" style="display:none">
+        <div class="card-title">Step 2 of 2 &mdash; Share this answer</div>
+        <p class="hint">Copy the text below and send it back to the room creator. They'll paste it in to complete the connection.</p>
+        <textarea id="answer-out" readonly placeholder="Generating answer..."></textarea>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="copyText('answer-out')">Copy Answer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat -->
+    <div id="chat-step">
+      <div class="chat-header">
+        <h1>P2P Chat <span>/ WebRTC</span></h1>
+        <div class="status connected" id="conn-status">
+          <span class="status-dot"></span>
+          <span>Connected</span>
+        </div>
+      </div>
+      <div id="messages"></div>
+      <div class="chat-input-row">
+        <input type="text" id="msg-input" placeholder="Type a message..." maxlength="2000"
+               onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); sendMessage(); }" />
+        <button class="btn btn-primary" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
