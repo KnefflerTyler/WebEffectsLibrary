@@ -1,0 +1,175 @@
+/* ── Two Problems Split-Screen Scrolljack ───────────────────────────────────
+ *
+ * Layout:
+ *   .tp-scene  — tall scroll container (provides the scroll budget)
+ *     .tp-sticky — viewport-height sticky pane, clipped
+ *       .tp-left   — locked heading + closing paragraph
+ *       .tp-divider — animated vertical rule
+ *       .tp-right  — clipping window for the two problem panels
+ *         .tp-track  — translates upward during the transition
+ *           .tp-panel (×2) — each is exactly 100vh tall
+ *       .tp-progress — dot indicators
+ *
+ * Scroll phases (driven by two-problems.js):
+ *   0.00 – 0.25  Problem 1 fully readable, nothing moves
+ *   0.25 – 0.65  Problem 1 slides up → Problem 2 slides in
+ *   0.65 – 1.00  Problem 2 fully readable; closing text fades in on left
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Scene container ──────────────────────────────────────────────────────── */
+.tp-scene {
+  position: relative;
+  height: 300vh;        /* scroll budget — 3× viewport gives comfortable reading time */
+  margin-top: var(--header-h, 72px);
+}
+
+/* ── Sticky viewport pane ─────────────────────────────────────────────────── */
+.tp-sticky {
+  position: sticky;
+  top: var(--header-h, 72px);
+  height: calc(100vh - var(--header-h, 72px));
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  background: inherit;
+}
+
+/* ── Left panel — locked heading ─────────────────────────────────────────── */
+.tp-left {
+  flex: 0 0 42%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 3.5rem 0 2rem;
+}
+
+.tp-left-inner {
+  max-width: 380px;
+  width: 100%;
+}
+
+.tp-heading {
+  /* Inherit the page's heading styles; override sizing for impact */
+  font-size: clamp(1.75rem, 3.2vw, 2.6rem);
+  line-height: 1.22;
+  margin: 0 0 2rem;
+}
+
+.tp-closer {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  margin: 0;
+  opacity: 0;
+  transform: translateY(18px);
+  /* JS drives opacity + translateY; transition smooths rapid scroll reversals */
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* ── Vertical progress bar (replaces divider + dots) ────────────────────── */
+.tp-divider {
+  flex: 0 0 3px;
+  align-self: stretch;
+  position: relative;
+  background: rgba(164, 121, 81, 0.15); /* gold track — faint */
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.tp-divider-fill {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 100%;
+  background: #a47951; /* brand gold */
+  border-radius: 2px;
+  transform-origin: top center;
+  transform: scaleY(0);
+  will-change: transform;
+}
+
+/* ── Right panel — clipping viewport ─────────────────────────────────────── */
+.tp-right {
+  flex: 1 1 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Track — the element that moves ─────────────────────────────────────── */
+.tp-track {
+  position: absolute;
+  inset: 0 0 auto 0;
+  will-change: transform;
+}
+
+/* ── Individual problem panels ───────────────────────────────────────────── */
+.tp-panel {
+  min-height: 100vh;  /* allow content to grow beyond viewport height */
+  display: flex;
+  flex-direction: column;
+  padding: 0 4rem 2rem 3rem;
+  box-sizing: border-box;
+}
+
+.tp-label {
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 0.6rem;
+  opacity: 0.55;
+}
+
+.tp-body {
+  font-size: clamp(0.95rem, 1.4vw, 1.1rem);
+  line-height: 1.75;
+  margin: 0;
+  max-width: 580px;
+}
+
+/* dots removed — progress is conveyed by the divider bar */
+
+/* ── Responsive: stack vertically on narrow screens ──────────────────────── */
+@media (max-width: 700px) {
+  /* On mobile, disable scrolljacking entirely — just show content normally */
+  .tp-scene {
+    height: auto;
+  }
+
+  .tp-sticky {
+    position: static;
+    height: auto;
+    flex-direction: column;
+  }
+
+  .tp-left {
+    flex: none;
+    justify-content: flex-start;
+    padding: 2.5rem 1.5rem 1rem;
+  }
+
+  .tp-divider {
+    display: none;
+  }
+
+  .tp-right {
+    overflow: visible;
+    flex: none;
+  }
+
+  .tp-track {
+    position: static;
+  }
+
+  .tp-panel {
+    height: auto;
+    padding: 1.5rem;
+  }
+
+  .tp-closer {
+    opacity: 1;
+    transform: none;
+    padding: 1.5rem 1.5rem 2.5rem;
+  }
+
+  .tp-progress {
+    display: none;
+  }
+}

@@ -50,7 +50,7 @@
         const progress = scrollable <= 0 ? 0
                        : Math.max(0, Math.min(1, raw / scrollable));
 
-        const totalRot  = progress * (COUNT - 1) * ANGLE;
+        const totalRot  = -progress * (COUNT - 1) * ANGLE;
         let activeIndex = 0;
         let bestDist    = Infinity;
 
