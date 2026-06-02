@@ -1,0 +1,119 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic-Tac-Toe — Multiplayer</title>
+  <link rel="stylesheet" href="../../shared/settings.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <a href="../../index.html" class="back-btn">&#8592; Back</a>
+
+  <!-- ── Role Select ───────────────────────────────────────────── -->
+  <div id="role-screen" class="screen active">
+    <div class="card">
+      <h1>Tic-Tac-Toe</h1>
+      <p class="sub">Play vs a friend over the internet</p>
+      <div class="role-row">
+        <button class="btn" onclick="showHost()">Create Game</button>
+        <button class="btn btn-outline" onclick="showJoin()">Join Game</button>
+      </div>
+      <div id="join-area" class="hidden">
+        <input id="join-code-input" class="input" placeholder="Paste room code or link" />
+        <button class="btn" onclick="joinGame()">Join</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Name Entry (shared for host & guest) ──────────────────── -->
+  <div id="name-screen" class="screen">
+    <div class="card">
+      <h2 id="name-screen-title">Enter Your Name</h2>
+      <p class="sub" id="name-screen-sub">What should we call you?</p>
+      <input id="name-input" class="input" placeholder="Your name" maxlength="20" />
+      <button class="btn" onclick="submitName()">Continue</button>
+    </div>
+  </div>
+
+  <!-- ── Connecting (guest only, brief) ────────────────────────── -->
+  <div id="connecting-screen" class="screen">
+    <div class="card">
+      <h2>Connecting&hellip;</h2>
+      <p class="sub">Joining the room, please wait</p>
+    </div>
+  </div>
+
+  <!-- ── Game ──────────────────────────────────────────────────── -->
+  <div id="game-screen" class="screen">
+
+    <!-- Top bar: room info (host) + viewer bar -->
+    <div id="top-bar">
+      <div id="room-info-bar" class="room-info-bar hidden">
+        <span class="room-label">Room code:</span>
+        <span id="game-room-code" class="room-code-inline">Generating&hellip;</span>
+        <button class="btn btn-sm" onclick="copyGameLink(this)">Copy Link</button>
+        <span class="room-hint">Drag viewers into player slots to change who plays</span>
+      </div>
+      <div id="viewer-bar" class="viewer-bar">
+        <span class="viewer-bar-empty">No one connected yet&hellip;</span>
+      </div>
+    </div>
+
+    <!-- Game layout: board + chat side by side -->
+    <div class="game-layout">
+
+      <!-- Left: game content -->
+      <div class="game-content">
+
+        <!-- Player slots -->
+        <div class="player-slots">
+          <div id="slot-x" class="player-slot"></div>
+          <span class="slots-vs">vs</span>
+          <div id="slot-o" class="player-slot"></div>
+        </div>
+
+        <div id="turn-banner" class="turn-banner">Waiting for players&hellip;</div>
+
+        <!-- Board -->
+        <div id="board" class="board">
+          <div class="cell" onclick="cellClick(0)"></div>
+          <div class="cell" onclick="cellClick(1)"></div>
+          <div class="cell" onclick="cellClick(2)"></div>
+          <div class="cell" onclick="cellClick(3)"></div>
+          <div class="cell" onclick="cellClick(4)"></div>
+          <div class="cell" onclick="cellClick(5)"></div>
+          <div class="cell" onclick="cellClick(6)"></div>
+          <div class="cell" onclick="cellClick(7)"></div>
+          <div class="cell" onclick="cellClick(8)"></div>
+        </div>
+
+        <!-- Result overlay -->
+        <div id="result-overlay" class="result-overlay hidden">
+          <div class="result-box">
+            <div id="result-text" class="result-text"></div>
+            <button class="btn" id="replay-btn" onclick="requestReplay()">Play Again</button>
+            <div id="replay-status" class="replay-status"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right: chat panel -->
+      <div class="chat-panel">
+        <div class="chat-header">Chat &amp; Events</div>
+        <div id="chat-log" class="chat-log"></div>
+        <div class="chat-input-row">
+          <input id="chat-input" class="input chat-input" placeholder="Say something&hellip;" maxlength="200"
+                 onkeydown="if(event.key==='Enter')sendChat()" />
+          <button class="btn btn-sm" onclick="sendChat()">Send</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
