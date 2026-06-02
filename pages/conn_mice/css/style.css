@@ -1,0 +1,86 @@
+﻿*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0d0f14;
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Screens ── */
+.screen { display: none; position: fixed; inset: 0; z-index: 10;
+          display: none; align-items: center; justify-content: center; }
+.screen.active { display: flex; }
+
+.center-card {
+  background: #161b24;
+  border: 1px solid #1e2a3a;
+  border-radius: 12px;
+  padding: 36px 40px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: center;
+}
+
+h1 { font-size: 1.5rem; }
+.sub { color: #64748b; font-size: 0.875rem; }
+
+.btn-row { display: flex; gap: 10px; justify-content: center; }
+
+.btn {
+  background: #2563eb; color: #fff; border: none;
+  border-radius: 7px; padding: 10px 22px; font-size: 14px;
+  cursor: pointer; transition: background 0.15s;
+}
+.btn:hover { background: #1d4ed8; }
+.btn-ghost {
+  background: transparent; border: 1px solid #334155; color: #94a3b8;
+}
+.btn-ghost:hover { background: #1e2a3a; color: #e2e8f0; }
+
+.input {
+  width: 100%; background: #0d0f14; border: 1px solid #1e2a3a;
+  border-radius: 6px; padding: 9px 12px; color: #e2e8f0; font-size: 14px;
+}
+.input:focus { outline: none; border-color: #2563eb; }
+
+/* ── Canvas ── */
+#canvas {
+  position: fixed; inset: 0;
+  width: 100vw; height: 100vh;
+  display: none;
+}
+#canvas.active { display: block; }
+
+/* ── HUD ── */
+#hud {
+  position: fixed; top: 14px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 8px; align-items: center;
+  z-index: 20;
+}
+
+.hud-pill {
+  background: rgba(13,15,20,0.75);
+  backdrop-filter: blur(6px);
+  border: 1px solid #1e2a3a;
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 12px;
+  display: flex; align-items: center; gap: 6px;
+  cursor: default;
+  text-decoration: none;
+  color: #e2e8f0;
+}
+
+#hud-code { cursor: pointer; }
+#hud-code:hover { border-color: #2563eb; }
+#hud-code-val { font-family: monospace; color: #7dd3fc; letter-spacing: 0.05em; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-label { color: #475569; font-size: 10px; }
+.hud-back { color: #94a3b8; }
+.hud-back:hover { color: #e2e8f0; }
+
+.hidden { display: none !important; }

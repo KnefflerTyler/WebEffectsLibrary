@@ -1,0 +1,55 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Connected Mice</title>
+  <link rel="stylesheet" href="../../shared/settings.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Role Select -->
+  <div id="role-screen" class="screen active">
+    <div class="center-card">
+      <h1>Connected Mice</h1>
+      <p class="sub">See everyone's cursor in real-time via P2P.</p>
+      <div class="btn-row">
+        <button class="btn" onclick="initHost()">Host Room</button>
+        <button class="btn btn-ghost" onclick="showJoin()">Join Room</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Join overlay (over canvas) -->
+  <div id="join-screen" class="screen">
+    <div class="center-card">
+      <h1>Join Room</h1>
+      <input id="join-code" class="input" placeholder="Paste room code..." />
+      <input id="join-name" class="input" placeholder="Your name (optional)" />
+      <button class="btn" style="margin-top:12px" onclick="joinRoom()">Connect</button>
+    </div>
+  </div>
+
+  <!-- Canvas layer (shown when connected) -->
+  <canvas id="canvas"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="hud-code" class="hud-pill" title="Click to copy">
+      <span id="hud-code-val"></span>
+      <span class="hud-label">room</span>
+    </div>
+    <div id="hud-peers" class="hud-pill">
+      <span id="hud-peer-count">0</span>
+      <span class="hud-label">peers</span>
+    </div>
+    <div id="hud-role" class="hud-pill"></div>
+    <a href="../../index.html" class="hud-pill hud-back">&#8592; Back</a>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="../../shared/back-button.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multiplayer Connection Test</title>
+  <link rel="stylesheet" href="../../shared/settings.css" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <a href="../../index.html" class="back-btn">&#8592; Back</a>
+
+  <!-- Role Select -->
+  <div id="role-screen" class="screen active">
+    <div class="card center-card">
+      <h1>Multiplayer Connection Test</h1>
+      <p class="sub">Test P2P connections, packet rates, and channel reliability via PeerJS.</p>
+      <div class="btn-row">
+        <button class="btn" onclick="initHost()">Host Room</button>
+        <button class="btn btn-ghost" onclick="showGuestScreen()">Join Room</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Host Screen -->
+  <div id="host-screen" class="screen">
+    <div class="layout">
+      <!-- Left: room info + connections -->
+      <div class="panel" id="host-left">
+        <div class="card">
+          <div class="label">Room Code</div>
+          <div class="code-row">
+            <span id="room-code">Connecting...</span>
+            <button class="btn btn-sm" onclick="copyCode()">Copy</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="label">Connected Peers <span id="peer-count">(0)</span></div>
+          <div id="peer-list" class="peer-list"></div>
+        </div>
+        <div class="card">
+          <div class="label">Broadcast Test</div>
+          <div class="btn-row wrap">
+            <button class="btn btn-sm" onclick="runTest('unreliable', 'burst')">Unreliable Burst</button>
+            <button class="btn btn-sm" onclick="runTest('reliable', 'burst')">Reliable Burst</button>
+            <button class="btn btn-sm" onclick="runTest('unreliable', 'stream')">Unreliable Stream</button>
+            <button class="btn btn-sm" onclick="runTest('reliable', 'stream')">Reliable Stream</button>
+            <button class="btn btn-sm btn-danger" onclick="stopTest()">Stop</button>
+          </div>
+        </div>
+      </div>
+      <!-- Right: log -->
+      <div class="panel" id="host-right">
+        <div class="card fill-height">
+          <div class="label">Event Log</div>
+          <div id="host-log" class="log-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guest Screen -->
+  <div id="guest-screen" class="screen">
+    <div class="layout">
+      <!-- Left: join + host info -->
+      <div class="panel" id="guest-left">
+        <div class="card" id="guest-join-card">
+          <div class="label">Enter Room Code</div>
+          <input id="join-code-input" class="input" placeholder="Paste room code..." />
+          <button class="btn" style="margin-top:10px" onclick="joinRoom()">Connect</button>
+        </div>
+        <div class="card hidden" id="guest-host-card">
+          <div class="label">Host</div>
+          <div id="guest-host-info" class="peer-item">Not connected</div>
+        </div>
+        <div class="card hidden" id="guest-test-card">
+          <div class="label">Ping Test (guest → host)</div>
+          <div class="btn-row wrap">
+            <button class="btn btn-sm" onclick="runTest('unreliable', 'burst')">Unreliable Burst</button>
+            <button class="btn btn-sm" onclick="runTest('reliable', 'burst')">Reliable Burst</button>
+            <button class="btn btn-sm" onclick="runTest('unreliable', 'stream')">Unreliable Stream</button>
+            <button class="btn btn-sm" onclick="runTest('reliable', 'stream')">Reliable Stream</button>
+            <button class="btn btn-sm btn-danger" onclick="stopTest()">Stop</button>
+          </div>
+        </div>
+      </div>
+      <!-- Right: log -->
+      <div class="panel" id="guest-right">
+        <div class="card fill-height">
+          <div class="label">Event Log</div>
+          <div id="guest-log" class="log-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
