@@ -1,0 +1,293 @@
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: #0a0e14;
+  color: #c8d6e8;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* ── Back button ─────────────────────────────────────────── */
+.back-btn {
+  position: fixed;
+  top: 18px; left: 18px;
+  z-index: 400;
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: rgba(5,3,20,0.55);
+  color: rgba(255,255,255,0.75);
+  font-size: 13px;
+  text-decoration: none;
+  backdrop-filter: blur(10px);
+  transition: border-color 0.2s, color 0.2s;
+}
+.back-btn:hover { border-color: rgba(100,160,255,0.5); color: #fff; }
+
+/* ── Lobby overlay ───────────────────────────────────────── */
+#lobby {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  background: #0a0e14;
+}
+
+.lobby-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 24px;
+  width: 100%; max-width: 480px;
+  padding: 0 16px;
+}
+
+h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: 0.05em; color: #e2ecf8; text-align: center; }
+h1 span { color: rgba(255,255,255,0.3); font-weight: 400; }
+
+.card {
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.card-title {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.35);
+}
+
+.step { display: none; flex-direction: column; gap: 14px; width: 100%; }
+.step.active { display: flex; }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+  padding: 10px 22px;
+  border-radius: 8px; border: none;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: #4a90d9; color: #fff; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.7);
+}
+.btn-ghost:hover { border-color: rgba(255,255,255,0.4); color: #fff; }
+.btn-danger { background: #c0392b; color: #fff; }
+.btn-danger:hover { opacity: 0.85; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ── Inputs ──────────────────────────────────────────────── */
+input[type="text"] {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #e2ecf8;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+input[type="text"]:focus { border-color: #4a90d9; }
+
+.code-display {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: monospace; font-size: 14px; color: #7ec8e3;
+  word-break: break-all;
+}
+.code-display span { flex: 1; }
+
+/* ── Status dot ──────────────────────────────────────────── */
+.status { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #888; flex-shrink: 0;
+}
+.status.connecting .status-dot { background: #f0a500; animation: pulse 1.2s ease-in-out infinite; }
+.status.connected  .status-dot { background: #3dba7e; }
+.status.error      .status-dot { background: #e05c5c; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.hint { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.6; }
+
+/* ── Canvas app shell ────────────────────────────────────── */
+#app {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+}
+#app.active { display: flex; }
+
+/* ── Toolbar ─────────────────────────────────────────────── */
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  z-index: 10;
+  min-height: 52px;
+}
+
+.tool-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  font-size: 16px;
+  position: relative;
+}
+.tool-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.tool-btn.active {
+  background: rgba(74,144,217,0.25);
+  border-color: #4a90d9;
+  color: #7ec8e3;
+}
+
+.tool-sep {
+  width: 1px; height: 28px;
+  background: rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+
+/* Color swatch */
+#color-preview {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25);
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+#color-input {
+  position: absolute; inset: -4px;
+  opacity: 0;
+  cursor: pointer;
+  width: calc(100% + 8px); height: calc(100% + 8px);
+}
+
+/* Size slider */
+#size-label { font-size: 12px; color: rgba(255,255,255,0.4); white-space: nowrap; }
+#size-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 90px; height: 4px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+#size-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #4a90d9;
+  cursor: pointer;
+}
+
+/* Peer count badge */
+#peer-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ── Canvas area ─────────────────────────────────────────── */
+#canvas-area {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #12161e;
+  position: relative;
+}
+
+/* Wrapper must be relative so the overlay canvas (absolute) stacks correctly */
+#canvas-wrapper {
+  position: relative;
+  display: inline-flex;
+  box-shadow: 0 4px 40px rgba(0,0,0,0.5);
+}
+
+#draw-canvas {
+  display: block;
+  background: #fff;
+  cursor: crosshair;
+  touch-action: none;
+  max-width: 100%;
+  max-height: 100%;
+  image-rendering: pixelated;
+}
+
+/* cursor overrides per tool */
+#app[data-tool="eraser"]       #draw-canvas { cursor: cell; }
+#app[data-tool="fill"]         #draw-canvas { cursor: default; }
+#app[data-tool="select"]       #draw-canvas { cursor: crosshair; }
+#app[data-tool="line"]         #draw-canvas,
+#app[data-tool="rect"]         #draw-canvas,
+#app[data-tool="rect-fill"]    #draw-canvas,
+#app[data-tool="ellipse"]      #draw-canvas,
+#app[data-tool="ellipse-fill"] #draw-canvas { cursor: crosshair; }
+#app[data-pasteMode]           #draw-canvas { cursor: copy; }
+
+/* Disabled copy button when no selection is active */
+#btn-copy:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* ── Toast ───────────────────────────────────────────────── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: rgba(20,25,35,0.95);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  color: #c8d6e8;
+  pointer-events: none;
+  z-index: 500;
+  transition: transform 0.3s, opacity 0.3s;
+  opacity: 0;
+  white-space: nowrap;
+}
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ── Tooltip ─────────────────────────────────────────────── */
+[data-tip] { position: relative; }
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  background: rgba(10,14,20,0.95);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px; white-space: nowrap;
+  color: rgba(255,255,255,0.75);
+  pointer-events: none;
+  opacity: 0; transition: opacity 0.15s;
+  z-index: 50;
+}
+[data-tip]:hover::after { opacity: 1; }

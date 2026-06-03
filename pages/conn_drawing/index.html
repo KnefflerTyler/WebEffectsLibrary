@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Collaborative Drawing</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <a class="back-btn" href="../../index.html">&#8592; Back</a>
+
+  <!-- ── Lobby ─────────────────────────────────────────────────────── -->
+  <div id="lobby">
+    <div class="lobby-inner">
+      <h1>Collaborative Drawing <span>/ PeerJS</span></h1>
+
+      <!-- Role select -->
+      <div class="step active" id="role-step">
+        <div class="card">
+          <div class="card-title">How are you joining?</div>
+          <p class="hint">
+            One person creates a room and shares the code — everyone else joins with it.
+            All drawing is synced in real time, peer-to-peer.
+          </p>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="startAsHost()">Create Room</button>
+            <button class="btn btn-ghost"   onclick="showGuestStep()">Join Room</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Host: waiting for guests -->
+      <div class="step" id="host-wait-step">
+        <div class="card">
+          <div class="card-title">Your room code</div>
+          <p class="hint">Share this code — guests can join while you draw.</p>
+          <div class="code-display">
+            <span id="room-code-display">Generating&#8230;</span>
+            <button class="btn btn-primary btn-sm" onclick="copyRoomCode(event)">Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guest: enter code -->
+      <div class="step" id="guest-join-step">
+        <div class="card">
+          <div class="card-title">Join a room</div>
+          <p class="hint">Paste the room code the host shared with you.</p>
+          <input type="text" id="room-code-input" placeholder="Room code" autocomplete="off" spellcheck="false" />
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="startAsGuest()">Connect</button>
+            <button class="btn btn-ghost"   onclick="showGuestStep()">Back</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guest: connecting -->
+      <div class="step" id="guest-connecting-step">
+        <div class="card">
+          <div class="card-title">Connecting…</div>
+          <div class="status connecting">
+            <span class="status-dot"></span>
+            <span>Reaching the host…</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Drawing app ───────────────────────────────────────────────── -->
+  <div id="app">
+
+    <!-- Toolbar -->
+    <div id="toolbar">
+
+      <!-- Freehand -->
+      <button class="tool-btn" data-tool="pen"    data-tip="Pen"    >&#9998;</button>
+      <button class="tool-btn" data-tool="eraser" data-tip="Eraser" >&#9003;</button>
+      <button class="tool-btn" data-tool="fill"   data-tip="Fill"   >&#9724;</button>
+
+      <div class="tool-sep"></div>
+
+      <!-- Shapes -->
+      <button class="tool-btn" data-tool="line"         data-tip="Line"           >&#9135;</button>
+      <button class="tool-btn" data-tool="rect"         data-tip="Rectangle"      >&#9645;</button>
+      <button class="tool-btn" data-tool="rect-fill"    data-tip="Filled Rect"    >&#9644;</button>
+      <button class="tool-btn" data-tool="ellipse"      data-tip="Ellipse"        >&#9675;</button>
+      <button class="tool-btn" data-tool="ellipse-fill" data-tip="Filled Ellipse" >&#9679;</button>
+
+      <div class="tool-sep"></div>
+
+      <!-- Select / Copy / Paste -->
+      <button class="tool-btn" data-tool="select" data-tip="Select region">&#11034;</button>
+      <button class="tool-btn" id="btn-copy"  data-tip="Copy selection">&#10697;</button>
+      <button class="tool-btn" id="btn-paste" data-tip="Paste (or Ctrl+V)">&#128203;</button>
+
+      <div class="tool-sep"></div>
+
+      <!-- Colour picker -->
+      <div id="color-preview" data-tip="Colour">
+        <input type="color" id="color-input" value="#e74c3c" />
+      </div>
+
+      <div class="tool-sep"></div>
+
+      <!-- Brush / shape size -->
+      <span id="size-label">Size: 6</span>
+      <input type="range" id="size-slider" min="1" max="60" value="6" />
+
+      <div class="tool-sep"></div>
+
+      <!-- Clear -->
+      <button class="tool-btn" id="btn-clear" data-tip="Clear canvas">&#128465;</button>
+
+      <!-- Role + peer count (right-aligned via margin-left:auto on peer-count) -->
+      <span id="role-badge" style="font-size:12px;color:rgba(255,255,255,0.45);"></span>
+      <span id="peer-count"></span>
+    </div>
+
+    <!-- Canvas -->
+    <div id="canvas-area">
+      <div id="canvas-wrapper">
+        <canvas id="draw-canvas"></canvas>
+        <!-- overlay canvas appended here by DrawingCanvas.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"></div>
+
+  <!-- PeerJS CDN -->
+  <script src="https://unpkg.com/peerjs@1/dist/peerjs.min.js"></script>
+  <!-- Entry point (ES module — imports all classes) -->
+  <script type="module" src="js/main.js"></script>
+
+</body>
+</html>
