@@ -8,7 +8,8 @@ html, body {
   overflow: hidden;
 }
 
-/* ── Back button ─────────────────────────────────────────── */
+/* ── Back button (hidden while drawing app is open) ─────── */
+body:has(#app.active) .back-btn { display: none; }
 .back-btn {
   position: fixed;
   top: 18px; left: 18px;
@@ -204,6 +205,37 @@ input[type="text"]:focus { border-color: #4a90d9; }
   background: #4a90d9;
   cursor: pointer;
 }
+
+/* Toolbar back/home icon button */
+#btn-home {
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+/* Room code chip in toolbar */
+#room-code-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  font-size: 12px;
+  font-family: monospace;
+  color: #7ec8e3;
+  white-space: nowrap;
+}
+#room-code-chip #btn-copy-code {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 13px;
+  transition: color 0.15s;
+}
+#room-code-chip #btn-copy-code:hover { color: #fff; }
 
 /* Peer count badge */
 #peer-count {

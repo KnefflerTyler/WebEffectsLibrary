@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Collaborative Drawing</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -74,26 +75,31 @@
     <!-- Toolbar -->
     <div id="toolbar">
 
+      <!-- Back to home -->
+      <a class="tool-btn" id="btn-home" href="../../index.html" data-tip="Back to home"><i class="fa-solid fa-arrow-left"></i></a>
+
+      <div class="tool-sep"></div>
+
       <!-- Freehand -->
-      <button class="tool-btn" data-tool="pen"    data-tip="Pen"    >&#9998;</button>
-      <button class="tool-btn" data-tool="eraser" data-tip="Eraser" >&#9003;</button>
-      <button class="tool-btn" data-tool="fill"   data-tip="Fill"   >&#9724;</button>
+      <button class="tool-btn" data-tool="pen"    data-tip="Pen"    ><i class="fa-solid fa-pen"></i></button>
+      <button class="tool-btn" data-tool="eraser" data-tip="Eraser" ><i class="fa-solid fa-eraser"></i></button>
+      <button class="tool-btn" data-tool="fill"   data-tip="Fill"   ><i class="fa-solid fa-fill-drip"></i></button>
 
       <div class="tool-sep"></div>
 
       <!-- Shapes -->
-      <button class="tool-btn" data-tool="line"         data-tip="Line"           >&#9135;</button>
-      <button class="tool-btn" data-tool="rect"         data-tip="Rectangle"      >&#9645;</button>
-      <button class="tool-btn" data-tool="rect-fill"    data-tip="Filled Rect"    >&#9644;</button>
-      <button class="tool-btn" data-tool="ellipse"      data-tip="Ellipse"        >&#9675;</button>
-      <button class="tool-btn" data-tool="ellipse-fill" data-tip="Filled Ellipse" >&#9679;</button>
+      <button class="tool-btn" data-tool="line"         data-tip="Line"           ><i class="fa-solid fa-minus"></i></button>
+      <button class="tool-btn" data-tool="rect"         data-tip="Rectangle"      ><i class="fa-regular fa-square"></i></button>
+      <button class="tool-btn" data-tool="rect-fill"    data-tip="Filled Rect"    ><i class="fa-solid fa-square"></i></button>
+      <button class="tool-btn" data-tool="ellipse"      data-tip="Ellipse"        ><i class="fa-regular fa-circle"></i></button>
+      <button class="tool-btn" data-tool="ellipse-fill" data-tip="Filled Ellipse" ><i class="fa-solid fa-circle"></i></button>
 
       <div class="tool-sep"></div>
 
       <!-- Select / Copy / Paste -->
-      <button class="tool-btn" data-tool="select" data-tip="Select region">&#11034;</button>
-      <button class="tool-btn" id="btn-copy"  data-tip="Copy selection">&#10697;</button>
-      <button class="tool-btn" id="btn-paste" data-tip="Paste (or Ctrl+V)">&#128203;</button>
+      <button class="tool-btn" data-tool="select" data-tip="Select region"><i class="fa-solid fa-vector-square"></i></button>
+      <button class="tool-btn" id="btn-copy"  data-tip="Copy selection"><i class="fa-regular fa-copy"></i></button>
+      <button class="tool-btn" id="btn-paste" data-tip="Paste (or Ctrl+V)"><i class="fa-solid fa-paste"></i></button>
 
       <div class="tool-sep"></div>
 
@@ -111,7 +117,13 @@
       <div class="tool-sep"></div>
 
       <!-- Clear -->
-      <button class="tool-btn" id="btn-clear" data-tip="Clear canvas">&#128465;</button>
+      <button class="tool-btn" id="btn-clear" data-tip="Clear canvas"><i class="fa-solid fa-trash"></i></button>
+
+      <!-- Room code chip (hosts only) -->
+      <div id="room-code-chip" style="display:none;">
+        <span id="room-code-chip-value"></span>
+        <button id="btn-copy-code" data-tip="Copy room code"><i class="fa-solid fa-copy"></i></button>
+      </div>
 
       <!-- Role + peer count (right-aligned via margin-left:auto on peer-count) -->
       <span id="role-badge" style="font-size:12px;color:rgba(255,255,255,0.45);"></span>

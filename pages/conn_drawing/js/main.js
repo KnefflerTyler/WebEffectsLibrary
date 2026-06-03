@@ -62,6 +62,16 @@ window.startAsHost = async function () {
     ui.showStep('host-wait-step');
     ui.openApp('host');
     ui.updatePeerCount(true, 0);
+
+    // Show room code chip in toolbar so hosts can always copy the code
+    const chip = document.getElementById('room-code-chip');
+    document.getElementById('room-code-chip-value').textContent = roomCode;
+    chip.style.display = 'flex';
+    document.getElementById('btn-copy-code').addEventListener('click', () => {
+      navigator.clipboard.writeText(roomCode).then(() => {
+        ui.showToast('Room code copied!');
+      });
+    });
   } catch {
     // onError already handled
   }
