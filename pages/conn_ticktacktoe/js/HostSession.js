@@ -86,8 +86,9 @@ export class HostSession {
         this._update();
         if (this._game.over) {
           const w = this._game.winner;
-          this._ui.appendEvent(w === 'draw' ? "It's a draw!" : (w === 'X' ? this._peers.get('host')?.name : p.name) + ' wins!');
-          this._ui.showResult(w, this._myMark());
+          const winnerPeer = [...this._peers.values()].find(peer => peer.role === w.toLowerCase());
+          this._ui.appendEvent(w === 'draw' ? "It's a draw!" : (winnerPeer?.name || w) + ' wins!');
+          this._ui.showResult(w, this._myMark(), this._peersArray());
         }
       }
       return;
@@ -104,7 +105,8 @@ export class HostSession {
       const text = String(msg.text || '').trim().slice(0, 200);
       if (!text) return;
       this._ui.appendChat(p.name, text, false);
-      this._broadcastRaw({ type: 'chat', from: p.name, text });
+      // Broadcast to everyone except the sender to avoid echoing back
+      this._broadcastExcept(peerId, { type: 'chat', from: p.name, text });
     }
   }
 
@@ -116,7 +118,12 @@ export class HostSession {
     if (myRole !== expectedRole) return;
     if (this._game.applyMove(index)) {
       this._update();
-      if (this._game.over) this._ui.showResult(this._game.winner, this._myMark());
+      if (this._game.over) {
+        const w = this._game.winner;
+        const winnerPeer = [...this._peers.values()].find(p => p.role === w.toLowerCase());
+        this._ui.appendEvent(w === 'draw' ? "It's a draw!" : (winnerPeer?.name || w) + ' wins!');
+        this._ui.showResult(w, this._myMark(), this._peersArray());
+      }
     }
   }
 
@@ -174,6 +181,12 @@ export class HostSession {
       if (p.role === slot) p.role = 'viewer';
     }
     target.role = slot;
+    // Reset a finished game so new players start fresh
+    if (this._game.over) {
+      this._game.reset();
+      this._ui.hideResult();
+      this._broadcastRaw({ type: 'replay-ack' });
+    }
     this._update();
   }
 
@@ -191,6 +204,12 @@ export class HostSession {
   _broadcastRaw(data) {
     for (const [id, p] of this._peers.entries()) {
       if (id !== 'host') this._sendTo(p.conn, data);
+    }
+  }
+
+  _broadcastExcept(exceptId, data) {
+    for (const [id, p] of this._peers.entries()) {
+      if (id !== 'host' && id !== exceptId) this._sendTo(p.conn, data);
     }
   }
 

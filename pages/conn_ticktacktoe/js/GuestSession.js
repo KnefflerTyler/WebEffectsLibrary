@@ -92,7 +92,7 @@ export class GuestSession {
     this._ui.renderPlayerSlots(peers, game.scores);
     this._ui.renderBoard(game.board, game.winLine, myMark, game.over);
     this._ui.updateBanner(game.turn, myMark, game.over);
-    if (game.over) this._ui.showResult(game.winner, myMark);
+    if (game.over) this._ui.showResult(game.winner, myMark, peers);
   }
 
   // ── Cell click ─────────────────────────────────────────────────

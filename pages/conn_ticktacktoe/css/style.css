@@ -60,6 +60,10 @@ h2 { font-size: 1.5rem; font-weight: 600; }
   transition: border-color .2s;
 }
 .input:focus { border-color: #5b6af0; }
+.join-code-input{
+  margin-top: .4rem;
+  margin-bottom: .4rem;
+}
 
 /* ── Buttons ─────────────────────────────────────── */
 .btn {
@@ -326,7 +330,7 @@ h2 { font-size: 1.5rem; font-weight: 600; }
   background: #1e1e38;
 }
 
-.slot-mark { font-size: 2rem; font-weight: 700; line-height: 1; }
+.slot-mark { font-size: 2rem; font-weight: 700; line-height: 1; display: flex; align-items: center; justify-content: center; }
 .slot-mark.X     { color: #5b6af0; }
 .slot-mark.O     { color: #f07b5b; }
 .slot-mark.empty { color: #333; }
@@ -351,9 +355,10 @@ h2 { font-size: 1.5rem; font-weight: 600; }
 .board {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
   gap: 8px;
   width: min(300px, 90vw);
-  aspect-ratio: 1;
+  height: min(300px, 90vw);
   position: relative;
 }
 .cell {
@@ -364,6 +369,7 @@ h2 { font-size: 1.5rem; font-weight: 600; }
   align-items: center;
   justify-content: center;
   font-size: clamp(1.8rem, 9vw, 3rem);
+  line-height: 1;
   font-weight: 700;
   cursor: pointer;
   user-select: none;

@@ -25,7 +25,7 @@ export class UI {
       chip.dataset.pid = p.id;
 
       const badge = p.role !== 'viewer'
-        ? '<span class="chip-role ' + p.role + '">' + p.role.toUpperCase() + '</span>'
+        ? '<span class="chip-role ' + p.role + '">' + _markIcon(p.role.toUpperCase()) + '</span>'
         : '';
 
       const kickBtn = (this._isHost && p.id !== 'host')
@@ -70,10 +70,10 @@ export class UI {
   _renderSlot(slotId, peer, score, mark) {
     const el = document.getElementById(slotId);
     el.innerHTML = peer
-      ? '<div class="slot-mark ' + mark + '">' + mark + '</div>' +
+      ? '<div class="slot-mark ' + mark + '">' + _markIcon(mark) + '</div>' +
         '<div class="slot-name">'  + _esc(peer.name) + '</div>' +
         '<div class="slot-score">' + score           + '</div>'
-      : '<div class="slot-mark empty">?</div>' +
+      : '<div class="slot-mark empty"><i class="fa-regular fa-circle-question"></i></div>' +
         '<div class="slot-name empty-slot">Empty</div>' +
         '<div class="slot-score">0</div>';
 
@@ -99,7 +99,7 @@ export class UI {
     const cells = document.querySelectorAll('.cell');
     cells.forEach((cell, i) => {
       const mark     = board[i];
-      cell.textContent = mark ?? '';
+      cell.innerHTML   = mark ? _markIcon(mark) : '';
       cell.className   = 'cell' + (mark ? ' taken ' + mark : '') +
                          (winLine?.includes(i) ? ' win' : '');
     });
@@ -119,7 +119,7 @@ export class UI {
   }
 
   // ── Result overlay ─────────────────────────────────────────────
-  showResult(winner, myMark) {
+  showResult(winner, myMark, peers) {
     const overlay = document.getElementById('result-overlay');
     const text    = document.getElementById('result-text');
     document.getElementById('replay-btn').disabled       = false;
@@ -127,8 +127,12 @@ export class UI {
 
     if (winner === 'draw') {
       text.textContent = "It's a draw!";
+    } else if (!myMark) {
+      // Viewer — show who won by name
+      const winnerPeer = peers?.find(p => p.role === winner.toLowerCase());
+      text.textContent = winnerPeer ? (winnerPeer.name + ' wins! 🎉') : (winner + ' wins!');
     } else {
-      const winnerIsMe = myMark && winner === myMark.toUpperCase();
+      const winnerIsMe = winner === myMark.toUpperCase();
       text.textContent = winnerIsMe ? 'You win! 🎉' : 'You lost.';
     }
     overlay.classList.remove('hidden');
@@ -178,4 +182,10 @@ function _esc(str) {
   return String(str)
     .replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _markIcon(mark) {
+  if (mark === 'X') return '<i class="fa-solid fa-xmark"></i>';
+  if (mark === 'O') return '<i class="fa-regular fa-circle"></i>';
+  return '';
 }
