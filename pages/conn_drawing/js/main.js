@@ -3,19 +3,43 @@ import { Toolbar }       from './Toolbar.js';
 import { HostSession }   from './HostSession.js';
 import { GuestSession }  from './GuestSession.js';
 import { UI }            from './UI.js';
+import { CursorOverlay } from './CursorOverlay.js';
 
 // ── Singletons ────────────────────────────────────────────────────────
-const ui      = new UI();
-const appEl   = document.getElementById('app');
-const canvasEl = document.getElementById('draw-canvas');
+const ui        = new UI();
+const appEl     = document.getElementById('app');
+const canvasEl  = document.getElementById('draw-canvas');
+const cursorOverlay = new CursorOverlay(document.getElementById('canvas-wrapper'));
 
 let session = null;   // HostSession | GuestSession
 let isHost  = false;
+
+// Throttle cursor broadcasts to ~30 fps
+let _lastCursorSend = 0;
+
+function _handleRemoteOp(msg) {
+  if (msg.type === 'cursor_move') {
+    cursorOverlay.update(msg.peerId, msg.x, msg.y, msg.tool);
+  } else if (msg.type === 'cursor_leave') {
+    cursorOverlay.remove(msg.peerId);
+  } else {
+    drawingCanvas.applyOp(msg);
+  }
+}
 
 // ── Drawing canvas (wired to session on connection) ───────────────────
 const drawingCanvas = new DrawingCanvas(canvasEl, {
   onOp(msg) {
     if (!session) return;
+    if (isHost) session.broadcast(msg);
+    else        session.send(msg);
+  },
+  onPointerMove(x, y) {
+    if (!session) return;
+    const now = Date.now();
+    if (now - _lastCursorSend < 33) return;
+    _lastCursorSend = now;
+    const msg = { type: 'cursor_move', peerId: session.peerId, x, y, tool: toolbar.tool };
     if (isHost) session.broadcast(msg);
     else        session.send(msg);
   },
@@ -39,7 +63,7 @@ const toolbar = new Toolbar(appEl, {
 window.startAsHost = async function () {
   isHost  = true;
   session = new HostSession({
-    onOp:          msg => drawingCanvas.applyOp(msg),
+    onOp:          msg => _handleRemoteOp(msg),
     onStateRequest: ()  => drawingCanvas.getDataUrl(),
     onGuestJoined() {
       ui.updatePeerCount(true, session.connectionCount);
@@ -86,7 +110,7 @@ window.startAsGuest = async function () {
 
   isHost  = false;
   session = new GuestSession({
-    onOp:     msg => drawingCanvas.applyOp(msg),
+    onOp:     msg => _handleRemoteOp(msg),
     onConnected() {
       ui.openApp('guest');
       ui.updatePeerCount(false, 1);
@@ -94,6 +118,7 @@ window.startAsGuest = async function () {
     onDisconnected() {
       ui.updatePeerCount(false, 0);
       ui.showToast('Disconnected from host.');
+      cursorOverlay.clear();
     },
     onError(msg) {
       ui.showToast('Connection error: ' + msg);

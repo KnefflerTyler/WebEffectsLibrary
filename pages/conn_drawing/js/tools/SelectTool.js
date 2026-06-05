@@ -1,45 +1,52 @@
 import { Tool } from './Tool.js';
 
-/** Half-size of the hit-test zone around each handle (canvas px). */
+/** Hit zone radius around each handle (canvas px). */
 const HIT  = 8;
-/** Half-size of the drawn square handle (canvas px). */
+/** Half-side of drawn square handles (canvas px). */
 const DRAW = 5;
 
 /**
  * Drag-to-select a rectangular region.
  *
- * Behaviours:
- *  - Drag on empty canvas  → draw new selection
- *  - Drag inside selection  → move selection
- *  - Drag corner handle     → resize both axes
- *  - Drag edge handle       → resize one axis
+ * Interactions on a committed selection:
+ *  - Drag inside   → moves the selected pixels
+ *  - Drag handle   → resizes / skews the selected pixels
+ *  - Click outside → drops the current selection and starts a new one
  *
- * Exposes `selection` ({ x, y, w, h } | null) after an interaction.
+ * Pixel manipulation is done via two emitted ops:
+ *  - `fill_rect`   – erases the original region (on lift)
+ *  - `paste_image` – draws the captured pixels at the new position/size (on commit)
  */
 export class SelectTool extends Tool {
   constructor() {
     super();
-    this._sel  = null;   // committed { x, y, w, h }
-    this._drag = null;   // active drag state
+    this._sel    = null;   // committed { x, y, w, h }
+    this._drag   = null;   // active drag state
+    this._lifted = null;   // { img: HTMLCanvasElement, origSel } while moving/resizing
   }
 
   /** @returns {{ x: number, y: number, w: number, h: number } | null} */
   get selection() { return this._sel; }
 
-  // ── Pointer events ─────────────────────────────────────────────────
+  // ── Pointer events ──────────────────────────────────────────────────
 
   onPointerDown({ x, y }) {
     if (this._sel) {
       const handle = this._hitHandle(x, y);
       if (handle) {
+        this._lift();
         this._drag = { mode: 'resize', handle, startSel: { ...this._sel }, startX: x, startY: y };
         return;
       }
       if (this._hitInside(x, y)) {
+        this._lift();
         this._drag = { mode: 'move', startSel: { ...this._sel }, startX: x, startY: y };
         return;
       }
+      // Clicked outside — commit any lifted pixels first
+      this._commitLift();
     }
+
     // Start a fresh selection draw
     this._drag = { mode: 'draw', startX: x, startY: y };
     this._sel  = null;
@@ -59,10 +66,10 @@ export class SelectTool extends Tool {
     } else if (d.mode === 'move') {
       const dx = x - d.startX, dy = y - d.startY;
       this._sel = { x: d.startSel.x + dx, y: d.startSel.y + dy, w: d.startSel.w, h: d.startSel.h };
-      this._drawSelection();
+      this._drawSelectionWithContent();
     } else if (d.mode === 'resize') {
       this._sel = this._applyResize(d, x, y);
-      this._drawSelection();
+      this._drawSelectionWithContent();
     }
   }
 
@@ -76,29 +83,77 @@ export class SelectTool extends Tool {
       this._sel = rw > 2 && rh > 2
         ? { x: Math.min(d.startX, x), y: Math.min(d.startY, y), w: rw, h: rh }
         : null;
+      if (this._sel) this._drawSelection();
+      else           this._clearOverlay();
     } else if (d.mode === 'resize') {
       const s = this._applyResize(d, x, y);
       this._sel = (s.w > 2 && s.h > 2) ? s : null;
+      this._commitLift();
+      if (this._sel) this._drawSelection();
+      else           this._clearOverlay();
+    } else if (d.mode === 'move') {
+      // _sel already updated live in onPointerMove
+      this._commitLift();
+      if (this._sel) this._drawSelection();
+      else           this._clearOverlay();
     }
-    // move: _sel already updated live
-
-    if (this._sel) this._drawSelection();
-    else           this._clearOverlay();
   }
 
   onCancel() {
+    // Restore lifted pixels to their original position
+    if (this._lifted) {
+      const { origSel, img } = this._lifted;
+      this._emit({ type: 'paste_image',
+        x: origSel.x, y: origSel.y, w: origSel.w, h: origSel.h,
+        dataUrl: img.toDataURL(),
+      });
+      this._lifted = null;
+    }
     this._drag = null;
     this._sel  = null;
     this._clearOverlay();
   }
 
   deactivate() {
+    this._commitLift();
     this._drag = null;
     this._sel  = null;
     super.deactivate();
   }
 
-  // ── Resize ─────────────────────────────────────────────────────────
+  // ── Lift / commit ───────────────────────────────────────────────────
+
+  /** Capture the selected canvas region and erase it from the main canvas. */
+  _lift() {
+    if (!this._sel || this._lifted) return;
+    const { x, y, w, h } = this._sel;
+
+    // Snapshot the region
+    const tmp = document.createElement('canvas');
+    tmp.width  = w;
+    tmp.height = h;
+    tmp.getContext('2d').drawImage(this._canvas, x, y, w, h, 0, 0, w, h);
+
+    this._lifted = { img: tmp, origSel: { ...this._sel } };
+
+    // Erase from main canvas (local + remote)
+    this._emit({ type: 'fill_rect', x, y, w, h });
+  }
+
+  /** Draw the lifted image at the current `_sel` position/size onto the main canvas. */
+  _commitLift() {
+    if (!this._lifted) return;
+    if (this._sel && this._sel.w > 2 && this._sel.h > 2) {
+      const { x, y, w, h } = this._sel;
+      this._emit({ type: 'paste_image',
+        x, y, w, h,
+        dataUrl: this._lifted.img.toDataURL(),
+      });
+    }
+    this._lifted = null;
+  }
+
+  // ── Resize ──────────────────────────────────────────────────────────
 
   _applyResize(d, x, y) {
     const dx = x - d.startX, dy = y - d.startY;
@@ -117,7 +172,7 @@ export class SelectTool extends Tool {
     return { x: lx, y: ly, w: rw, h: rh };
   }
 
-  // ── Hit testing ────────────────────────────────────────────────────
+  // ── Hit testing ─────────────────────────────────────────────────────
 
   _handles() {
     if (!this._sel) return [];
@@ -144,28 +199,38 @@ export class SelectTool extends Tool {
     return s && x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h;
   }
 
-  // ── Drawing ────────────────────────────────────────────────────────
+  // ── Drawing ─────────────────────────────────────────────────────────
 
   _drawSelection() {
-    if (!this._sel) { this._clearOverlay(); return; }
-    const { x, y, w, h } = this._sel;
-    this._drawRect(x, y, w, h, true);
-  }
-
-  _drawRect(x, y, w, h, withHandles) {
     const octx = this._octx;
     octx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+    if (!this._sel) return;
+    this._drawOutlineAndHandles(this._sel);
+  }
 
-    octx.fillStyle = 'rgba(74,144,217,0.08)';
-    octx.fillRect(x, y, w, h);
+  _drawSelectionWithContent() {
+    const octx = this._octx;
+    octx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+    if (!this._sel) return;
+    const { x, y, w, h } = this._sel;
+
+    // Draw the lifted pixels at the new position/size (clearly, no tint over them)
+    if (this._lifted) {
+      octx.drawImage(this._lifted.img, x, y, w, h);
+    }
+
+    this._drawOutlineAndHandles(this._sel);
+  }
+
+  /** Draw just the dashed border + handles (no fill tint) so content shows through. */
+  _drawOutlineAndHandles({ x, y, w, h }) {
+    const octx = this._octx;
 
     octx.setLineDash([6, 3]);
     octx.strokeStyle = '#4a90d9';
     octx.lineWidth   = 1.5;
     octx.strokeRect(x, y, w, h);
     octx.setLineDash([]);
-
-    if (!withHandles) return;
 
     const cx = x + w / 2, cy = y + h / 2;
     const pts = [
@@ -180,5 +245,18 @@ export class SelectTool extends Tool {
       octx.fillRect  (hx - DRAW, hy - DRAW, DRAW * 2, DRAW * 2);
       octx.strokeRect(hx - DRAW, hy - DRAW, DRAW * 2, DRAW * 2);
     }
+  }
+
+  /** Used only for the live new-selection draw (no handles yet). */
+  _drawRect(x, y, w, h) {
+    const octx = this._octx;
+    octx.clearRect(0, 0, this._canvas.width, this._canvas.height);
+    octx.fillStyle = 'rgba(74,144,217,0.08)';
+    octx.fillRect(x, y, w, h);
+    octx.setLineDash([6, 3]);
+    octx.strokeStyle = '#4a90d9';
+    octx.lineWidth   = 1.5;
+    octx.strokeRect(x, y, w, h);
+    octx.setLineDash([]);
   }
 }

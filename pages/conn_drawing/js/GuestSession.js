@@ -68,4 +68,8 @@ export class GuestSession {
   get isConnected() {
     return this._conn?.open ?? false;
   }
+
+  get peerId() {
+    return this._peer?.id ?? null;
+  }
 }

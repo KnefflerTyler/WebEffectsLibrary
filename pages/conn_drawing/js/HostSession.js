@@ -57,6 +57,10 @@ export class HostSession {
     return this._connections.filter(c => c.open).length;
   }
 
+  get peerId() {
+    return this._peer?.id ?? null;
+  }
+
   // ── Private ──────────────────────────────────────────────────────────
 
   _handleIncoming(conn) {
@@ -77,12 +81,18 @@ export class HostSession {
     });
 
     conn.on('close', () => {
+      const leaveMsg = { type: 'cursor_leave', peerId: conn.peer };
       this._connections = this._connections.filter(c => c !== conn);
+      this.broadcast(leaveMsg);
+      this._onOp(leaveMsg);  // update host's own cursor overlay
       this._onGuestLeft();
     });
 
     conn.on('error', () => {
+      const leaveMsg = { type: 'cursor_leave', peerId: conn.peer };
       this._connections = this._connections.filter(c => c !== conn);
+      this.broadcast(leaveMsg);
+      this._onOp(leaveMsg);
       this._onGuestLeft();
     });
   }

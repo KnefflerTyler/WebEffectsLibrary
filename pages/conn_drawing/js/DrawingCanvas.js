@@ -20,10 +20,11 @@ export const CANVAS_H = 750;
  * @param {{ onOp: (msg: object) => void }} opts
  */
 export class DrawingCanvas {
-  constructor(canvasEl, { onOp }) {
-    this._canvas = canvasEl;
-    this._ctx    = canvasEl.getContext('2d');
-    this._onOp   = onOp;
+  constructor(canvasEl, { onOp, onPointerMove }) {
+    this._canvas         = canvasEl;
+    this._ctx            = canvasEl.getContext('2d');
+    this._onOp           = onOp;
+    this._onPointerMove  = onPointerMove ?? (() => {});
 
     this._canvas.width  = CANVAS_W;
     this._canvas.height = CANVAS_H;
@@ -108,8 +109,17 @@ export class DrawingCanvas {
         ctx.globalCompositeOperation = 'source-over';
         break;
       }
+      case 'cursor_move':
+      case 'cursor_leave':
+        break; // handled externally — not a canvas mutation
       case 'fill': {
         this._floodFill(Math.round(msg.x), Math.round(msg.y), msg.color);
+        break;
+      }
+      case 'fill_rect': {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(msg.x, msg.y, msg.w, msg.h);
         break;
       }
       case 'shape': {
@@ -249,7 +259,9 @@ export class DrawingCanvas {
     });
 
     el.addEventListener('pointermove', e => {
-      this._activeTool?.onPointerMove(this._getPos(e));
+      const pos = this._getPos(e);
+      this._activeTool?.onPointerMove(pos);
+      this._onPointerMove(pos.x, pos.y);
     });
 
     el.addEventListener('pointerup', e => {
