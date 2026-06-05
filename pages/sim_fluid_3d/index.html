@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Fluid Simulation</title>
+    <script src="../../shared/preview.js"></script>
+    <link rel="stylesheet" href="../../shared/settings.css"/>
+    <link rel="stylesheet" href="css/style.css"/>
+    <script src="../../shared/back-button.js"></script>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+<canvas id="overlay"></canvas>
+
+<!-- GPU/CPU status indicator -->
+<div id="gpuStatus">…</div>
+
+<!-- Mode toolbar -->
+<div id="toolbar">
+    <button class="mode-btn active" data-mode="paint"  title="P — Paint fluid">
+        &#9998; Paint
+    </button>
+    <button class="mode-btn" data-mode="faucet" title="F — Place faucet (right-click to remove)">
+        &#9670; Faucet
+    </button>
+    <button class="mode-btn" data-mode="drain"title="D — Place drain (right-click to remove)">
+        &#9675; Drain
+    </button>
+</div>
+
+<div id="hint">P · F · D — mode &nbsp;|&nbsp; Left-drag — paint &nbsp;|&nbsp; Right-drag — orbit &nbsp;|&nbsp; Scroll — zoom &nbsp;|&nbsp; R — reset camera &nbsp;|&nbsp; C — clear</div>
+
+<!-- Settings gear -->
+<button class="sp-btn" id="spBtn" title="Settings" aria-label="Open settings">&#9881;</button>
+
+<!-- Settings panel -->
+<div class="sp-panel" id="spPanel" role="dialog" aria-label="Fluid simulation settings">
+    <h2>3D Fluid Settings</h2>
+
+    <!-- Physics -->
+    <div class="sp-card">
+        <div class="sp-card-title">Physics</div>
+
+        <div class="sp-row">
+            <span class="sp-label">Viscosity</span>
+            <input type="range" class="sp-range" id="cfgViscosity"
+                   min="0" max="0.002" step="0.00001" value="0">
+            <span class="sp-val" id="valViscosity">0.00000</span>
+        </div>
+
+        <div class="sp-row">
+            <span class="sp-label">Diffusion</span>
+            <input type="range" class="sp-range" id="cfgDiffusion"
+                   min="0" max="0.000050" step="0.000001" value="0">
+            <span class="sp-val" id="valDiffusion">0.000000</span>
+        </div>
+
+        <div class="sp-row">
+            <span class="sp-label">Gravity</span>
+            <input type="checkbox" class="sp-check" id="cfgGravity">
+            <span class="sp-val" style="min-width:0"></span>
+        </div>
+
+        <div class="sp-row">
+            <span class="sp-label">Grav. Strength</span>
+            <input type="range" class="sp-range" id="cfgGravStrength"
+                   min="0" max="20" step="0.5" value="4">
+            <span class="sp-val" id="valGravStrength">4.0</span>
+        </div>
+    </div>
+
+    <!-- Brush -->
+    <div class="sp-card">
+        <div class="sp-card-title">Paint Brush</div>
+
+        <div class="sp-row">
+            <span class="sp-label">Size</span>
+            <input type="range" class="sp-range" id="cfgBrushSize"
+                   min="1" max="10" step="1" value="3">
+            <span class="sp-val" id="valBrushSize">3</span>
+        </div>
+
+        <div class="sp-row">
+            <span class="sp-label">Strength</span>
+            <input type="range" class="sp-range" id="cfgBrushStrength"
+                   min="5" max="200" step="5" value="60">
+            <span class="sp-val" id="valBrushStrength">60</span>
+        </div>
+    </div>
+
+    <!-- Appearance -->
+    <div class="sp-card">
+        <div class="sp-card-title">Appearance</div>
+
+        <div class="sp-row">
+            <span class="sp-label">Color</span>
+            <select class="sp-select" id="cfgColorTheme">
+                <option value="water">Water</option>
+                <option value="fire">Fire</option>
+                <option value="plasma">Plasma</option>
+                <option value="neon">Neon</option>
+                <option value="lava">Lava</option>
+            </select>
+        </div>
+
+        <div class="sp-row">
+            <span class="sp-label">Show Velocity</span>
+            <input type="checkbox" class="sp-check" id="cfgShowVel">
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="sp-card">
+        <div class="sp-card-title">Actions</div>
+        <button class="sp-apply" id="btnClear">&#10005; Clear Scene</button>
+    </div>
+
+    <!-- Legend -->
+    <div class="sp-card" style="margin-top:6px">
+        <div class="sp-card-title">Controls</div>
+        <div style="color:rgba(255,255,255,0.38);font-size:10px;line-height:1.8;letter-spacing:0.04em">
+            <div><b style="color:rgba(255,255,255,0.55)">Paint mode</b> — drag to add fluid &amp; velocity</div>
+            <div><b style="color:rgba(80,200,255,0.75)">Faucet</b> — click to place a fluid source</div>
+            <div><b style="color:rgba(255,80,60,0.85)">Drain</b> — click to place a fluid sink</div>
+            <div>Right-click — remove faucet / drain</div>
+            <div>Right-drag — orbit camera &nbsp;|&nbsp; Scroll — zoom</div>
+            <div>C — clear &nbsp;|&nbsp; R — reset camera &nbsp;|&nbsp; P / F / D — mode</div>
+        </div>
+    </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
+</body>
+</html>
