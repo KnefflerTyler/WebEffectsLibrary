@@ -134,28 +134,36 @@
 
     <script>
         const effects = [
-            { label: 'Default Cube',        href: 'pages/default_cube/index.html' },
-            { label: 'Galaxy',              href: 'pages/galaxy/index.html' },
-            { label: 'Grid Breath',         href: 'pages/grid_breath/index.html' },
-            { label: 'Shape Grid',          href: 'pages/grid_shape/index.html' },
-            { label: '3D Point Graph',      href: 'pages/grid_3d_points/index.html' },
-            { label: 'Perlin Mask',         href: 'pages/perlin_noise_mask/index.html' },
-            { label: 'OBJ Viewer',          href: 'pages/obj_display/index.html' },
-            { label: 'Parallax Horizontal', href: 'pages/Parallax_Horizontal/index.html' },
-            { label: 'Parallax Vertical',   href: 'pages/Parallax_Vertical/index.html' },
-            { label: 'Marching Cubes',      href: 'pages/marching_cubes/index.html',  heavy: true },
-            { label: 'Hex Terrain',         href: 'pages/marching_hex/index.html',    heavy: true,    image: '/assets/images/image.png' },
-            { label: 'Cubic Voxel Terrain', href: 'pages/voxel_cubes/index.html',     heavy: true },
-            { label: 'Hex Voxel Terrain',   href: 'pages/voxel_hex/index.html',       heavy: true,    image: '/assets/images/image.png' },
-            { label: '2D Collisions',       href: 'pages/2d_collisions/index.html' },
-            { label: '2D Fireworks',        href: 'pages/2d_particals/index.html' },
-            { label: 'Fluid Simulation',    href: 'pages/sim_fluid/index.html' },
-            { label: '3D Fluid Simulation', href: 'pages/sim_fluid_3d/index.html' },
-            { label: 'Scroll Jack Web Example',   href: 'pages/scrolljack_web_sample/index.html' },
-            { label: 'Progress Bar',        href: 'pages/scrolljack_progressbar/index.html' },
-            { label: 'Carousel',            href: 'pages/scrolljack_carousel/index.html' },
-            { label: 'Wind Tunnel',           href: 'pages/wind_tunnel/index.html' },
-            { label: 'P2P Chat (manual)',      href: 'pages/conn_p2p_chat/index.html' },
+            // ── WebGL / 3D ──────────────────────────────────────────────
+            { label: 'Default Cube',          href: 'pages/default_cube/index.html' },
+            { label: 'Galaxy',                href: 'pages/galaxy/index.html' },
+            { label: 'OBJ Viewer',            href: 'pages/obj_display/index.html' },
+            { label: 'Wind Tunnel',           href: 'pages/sim_wind_tunnel/index.html' },
+            // ── Grid / Terrain ──────────────────────────────────────────
+            { label: 'Grid Breath',           href: 'pages/grid_breath/index.html' },
+            { label: 'Shape Grid',            href: 'pages/grid_shape/index.html' },
+            { label: '3D Point Graph',        href: 'pages/grid_3d_points/index.html' },
+            { label: 'Marching Cubes',        href: 'pages/marching_cubes/index.html',  heavy: true },
+            { label: 'Hex Terrain',           href: 'pages/marching_hex/index.html',    heavy: true, image: '/assets/images/image.png' },
+            { label: 'Cubic Voxel Terrain',   href: 'pages/voxel_cubes/index.html',     heavy: true },
+            { label: 'Hex Voxel Terrain',     href: 'pages/voxel_hex/index.html',       heavy: true, image: '/assets/images/image.png' },
+            // ── Simulation ──────────────────────────────────────────────
+            { label: 'Fluid Simulation',      href: 'pages/sim_fluid/index.html' },
+            { label: '3D Fluid Simulation',   href: 'pages/sim_fluid_3d/index.html' },
+            // ── 2D Effects ──────────────────────────────────────────────
+            { label: 'Perlin Mask',           href: 'pages/perlin_noise_mask/index.html' },
+            { label: '2D Collisions',         href: 'pages/2d_collisions/index.html' },
+            { label: '2D Fireworks',          href: 'pages/2d_particals/index.html' },
+            //{ label: 'RMR',                   href: 'pages/rmr/index.html' },
+            // ── Parallax ────────────────────────────────────────────────
+            { label: 'Parallax Horizontal',   href: 'pages/Parallax_Horizontal/index.html' },
+            { label: 'Parallax Vertical',     href: 'pages/Parallax_Vertical/index.html' },
+            // ── Scroll Jack ─────────────────────────────────────────────
+            { label: 'Scroll Jack Web Sample',href: 'pages/scrolljack_web_sample/index.html' },
+            { label: 'Scroll Jack Progress Bar', href: 'pages/scrolljack_progressbar/index.html' },
+            { label: 'Scroll Jack Carousel',  href: 'pages/scrolljack_carousel/index.html' },
+            // ── Multiplayer / P2P ────────────────────────────────────────
+            { label: 'P2P Chat (Manual)',      href: 'pages/conn_p2p_chat/index.html' },
             { label: 'P2P Chat (PeerJS)',      href: 'pages/conn_peerjs_chat/index.html' },
             { label: 'Multiplayer Conn Test',  href: 'pages/conn_stress_test/index.html' },
             { label: 'Connected Mice',         href: 'pages/conn_mice/index.html' },
