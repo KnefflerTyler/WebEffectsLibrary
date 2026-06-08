@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloth Simulation</title>
+    <script src="../../shared/preview.js"></script>
+    <link  rel="stylesheet" href="../../shared/settings.css"/>
+    <link  rel="stylesheet" href="css/style.css"/>
+    <script src="../../shared/back-button.js"></script>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<!-- ── Start overlay ─────────────────────────────────────────────────────── -->
+<div id="startOverlay">
+    <div class="start-card">
+        <h1>Cloth Simulation</h1>
+        <p class="subtitle">GPU-accelerated · WebGL2 · Position-Based Dynamics</p>
+
+        <div class="start-options">
+            <div class="start-zone" id="zoneDefault">
+                <span class="zone-icon">🪡</span>
+                <span class="zone-title">Default Grid</span>
+                <span class="zone-sub">Flat cloth mesh</span>
+            </div>
+            <div class="start-zone" id="zoneUpload">
+                <span class="zone-icon">📂</span>
+                <span class="zone-title">Upload OBJ</span>
+                <span class="zone-sub">Custom mesh cloth</span>
+            </div>
+            <input type="file" id="objInput" accept=".obj">
+        </div>
+
+        <div class="start-divider">PIN PRESET</div>
+        <div class="preset-grid">
+            <button class="preset-btn active" data-preset="corners">📌 Corners</button>
+            <button class="preset-btn"        data-preset="top-edge">📌 Top Edge</button>
+            <button class="preset-btn"        data-preset="flag">🚩 Flag</button>
+            <button class="preset-btn"        data-preset="tablecloth">🍽️ Tablecloth</button>
+        </div>
+
+        <button class="start-launch-btn" id="btnLaunch">▶ Launch</button>
+    </div>
+</div>
+
+<!-- ── Mode toolbar ───────────────────────────────────────────────────────── -->
+<div id="toolbar">
+    <button class="mode-btn active" data-mode="orbit" title="O — Orbit camera">
+        ⊙ Orbit
+    </button>
+    <button class="mode-btn" data-mode="pin" title="P — Pin/unpin particles">
+        📌 Pin
+    </button>
+    <button class="mode-btn" data-mode="grab" title="G — Grab &amp; drag cloth">
+        ✋ Grab
+    </button>
+    <div class="toolbar-sep"></div>
+    <button id="btnSimToggle">▶ Start</button>
+</div>
+
+<div id="hint">Left-drag orbit  |  Right-drag pan  |  Scroll zoom  |  Space start/stop</div>
+
+<!-- ── Settings gear ────────────────────────────────────────────────────── -->
+<button class="sp-btn" id="spBtn" title="Settings" aria-label="Open settings">⚙</button>
+
+<!-- ── Settings panel ────────────────────────────────────────────────────── -->
+<div class="sp-panel" id="spPanel" role="dialog" aria-label="Cloth simulation settings">
+    <h2>Cloth Settings</h2>
+
+    <!-- Cloth Mesh -->
+    <div class="sp-card">
+        <div class="sp-card-title">Cloth Mesh</div>
+        <div class="sp-row">
+            <span class="sp-label">Type</span>
+            <select class="sp-select" id="cfgClothType">
+                <option value="grid">Flat Grid</option>
+                <option value="obj">Custom OBJ</option>
+            </select>
+        </div>
+        <!-- Grid subdivision controls -->
+        <div id="gridControls">
+            <div class="sp-row">
+                <span class="sp-label">Grid Size</span>
+                <input type="range" class="sp-range" id="cfgResolution"
+                       min="8" max="128" step="2" value="24">
+                <span class="sp-val" id="valResolution">24×24</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Spacing</span>
+                <input type="range" class="sp-range" id="cfgSpacing"
+                       min="0.02" max="0.40" step="0.005" value="0.10">
+                <span class="sp-val" id="valSpacing">0.100</span>
+            </div>
+            <div class="sp-row" style="justify-content:flex-end">
+                <span id="valParticleCount" style="font-size:10px;color:rgba(255,255,255,0.35);letter-spacing:0.06em">576 particles</span>
+            </div>
+        </div>
+        <!-- OBJ upload -->
+        <div id="objControls" style="display:none">
+            <div class="sp-row" style="gap:8px">
+                <span class="sp-label" id="lblClothOBJ" style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,0.45);">No file</span>
+                <button class="sp-action-btn" id="btnClothOBJ" style="flex:0 0 auto;white-space:nowrap">📂 Browse</button>
+                <input type="file" id="clothObjInput" accept=".obj" style="display:none">
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene -->
+    <div class="sp-card">
+        <div class="sp-card-title">Scene</div>
+        <div class="sp-row">
+            <span class="sp-label">Preset</span>
+            <select class="sp-select" id="cfgPreset">
+                <option value="corners">Corners</option>
+                <option value="top-edge">Top Edge</option>
+                <option value="flag">Flag</option>
+                <option value="tablecloth">Tablecloth</option>
+            </select>
+        </div>
+        <div class="sp-row-actions">
+            <button class="sp-action-btn" id="btnReset">↺ Reset</button>
+            <button class="sp-action-btn" id="btnClearPins">✕ Clear Pins</button>
+        </div>
+    </div>
+
+    <!-- Physics -->
+    <div class="sp-card">
+        <div class="sp-card-title">Physics</div>
+
+        <div class="sp-row">
+            <span class="sp-label">Gravity</span>
+            <input type="range" class="sp-range" id="cfgGravity"
+                   min="0" max="30" step="0.5" value="9.8">
+            <span class="sp-val" id="valGravity">9.8</span>
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Damping</span>
+            <input type="range" class="sp-range" id="cfgDamping"
+                   min="0.90" max="1.00" step="0.001" value="0.99">
+            <span class="sp-val" id="valDamping">0.990</span>
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Stiffness</span>
+            <input type="range" class="sp-range" id="cfgStiffness"
+                   min="0.1" max="1.0" step="0.05" value="1.0">
+            <span class="sp-val" id="valStiffness">1.00</span>
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Iterations</span>
+            <input type="range" class="sp-range" id="cfgIterations"
+                   min="1" max="60" step="1" value="30">
+            <span class="sp-val" id="valIterations">30</span>
+        </div>
+    </div>
+
+    <!-- Wind -->
+    <div class="sp-card">
+        <div class="sp-card-title">Wind</div>
+        <div class="sp-row">
+            <span class="sp-label">Wind X</span>
+            <input type="range" class="sp-range" id="cfgWindX"
+                   min="-10" max="10" step="0.5" value="0">
+            <span class="sp-val" id="valWindX">0.0</span>
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Wind Z</span>
+            <input type="range" class="sp-range" id="cfgWindZ"
+                   min="-10" max="10" step="0.5" value="0">
+            <span class="sp-val" id="valWindZ">0.0</span>
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Turbulence</span>
+            <input type="range" class="sp-range" id="cfgTurbulence"
+                   min="0" max="1" step="0.05" value="0.3">
+            <span class="sp-val" id="valTurbulence">0.30</span>
+        </div>
+    </div>
+
+    <!-- Floor -->
+    <div class="sp-card">
+        <div class="sp-card-title">Floor</div>
+        <div class="sp-row">
+            <span class="sp-label">Enabled</span>
+            <input type="checkbox" class="sp-check" id="cfgFloor" checked>
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Height Y</span>
+            <input type="range" class="sp-range" id="cfgFloorY"
+                   min="-5" max="0" step="0.1" value="-2.0">
+            <span class="sp-val" id="valFloorY">-2.0</span>
+        </div>
+    </div>
+
+    <!-- Colliders -->
+    <div class="sp-card">
+        <div class="sp-card-title">Colliders (OBJ mesh)</div>
+
+        <!-- Sphere -->
+        <div class="sp-row">
+            <span class="sp-label">Sphere</span>
+            <input type="checkbox" class="sp-check" id="cfgSphereOn">
+        </div>
+        <div id="sphereControls" class="collider-sub">
+            <div class="sp-row">
+                <span class="sp-label">Scale</span>
+                <input type="range" class="sp-range" id="cfgSphereScale"
+                       min="0.1" max="2.0" step="0.05" value="0.5">
+                <span class="sp-val" id="valSphereScale">0.50</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Pos X</span>
+                <input type="range" class="sp-range" id="cfgSphereX"
+                       min="-3" max="3" step="0.05" value="0">
+                <span class="sp-val" id="valSphereX">0.00</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Pos Y</span>
+                <input type="range" class="sp-range" id="cfgSphereY"
+                       min="-3" max="3" step="0.05" value="0">
+                <span class="sp-val" id="valSphereY">0.00</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Pos Z</span>
+                <input type="range" class="sp-range" id="cfgSphereZ"
+                       min="-3" max="3" step="0.05" value="0">
+                <span class="sp-val" id="valSphereZ">0.00</span>
+            </div>
+        </div>
+
+        <!-- Box -->
+        <div class="sp-row">
+            <span class="sp-label">Box</span>
+            <input type="checkbox" class="sp-check" id="cfgBoxOn">
+        </div>
+        <div id="boxControls" class="collider-sub">
+            <div class="sp-row">
+                <span class="sp-label">Scale</span>
+                <input type="range" class="sp-range" id="cfgBoxScale"
+                       min="0.1" max="2.5" step="0.05" value="0.8">
+                <span class="sp-val" id="valBoxScale">0.80</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Pos X</span>
+                <input type="range" class="sp-range" id="cfgBoxX"
+                       min="-3" max="3" step="0.05" value="0">
+                <span class="sp-val" id="valBoxX">0.00</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Pos Y</span>
+                <input type="range" class="sp-range" id="cfgBoxY"
+                       min="-3" max="3" step="0.05" value="-0.6">
+                <span class="sp-val" id="valBoxY">-0.60</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Pos Z</span>
+                <input type="range" class="sp-range" id="cfgBoxZ"
+                       min="-3" max="3" step="0.05" value="0">
+                <span class="sp-val" id="valBoxZ">0.00</span>
+            </div>
+        </div>
+
+        <!-- Pyramid -->
+        <div class="sp-row">
+            <span class="sp-label">Pyramid</span>
+            <input type="checkbox" class="sp-check" id="cfgPyramidOn">
+        </div>
+        <div id="pyramidControls" class="collider-sub">
+            <div class="sp-row">
+                <span class="sp-label">Scale</span>
+                <input type="range" class="sp-range" id="cfgPyramidScale"
+                       min="0.1" max="3.0" step="0.05" value="1.0">
+                <span class="sp-val" id="valPyramidScale">1.00</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Pos X</span>
+                <input type="range" class="sp-range" id="cfgPyramidX"
+                       min="-3" max="3" step="0.05" value="0">
+                <span class="sp-val" id="valPyramidX">0.00</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Pos Y</span>
+                <input type="range" class="sp-range" id="cfgPyramidY"
+                       min="-3" max="3" step="0.05" value="-1.5">
+                <span class="sp-val" id="valPyramidY">-1.50</span>
+            </div>
+            <div class="sp-row">
+                <span class="sp-label">Pos Z</span>
+                <input type="range" class="sp-range" id="cfgPyramidZ"
+                       min="-3" max="3" step="0.05" value="0">
+                <span class="sp-val" id="valPyramidZ">0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appearance -->
+    <div class="sp-card">
+        <div class="sp-card-title">Appearance</div>
+        <div class="sp-row">
+            <span class="sp-label">Color A</span>
+            <input type="color" class="sp-color" id="cfgColorA" value="#af6eef">
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Color B</span>
+            <input type="color" class="sp-color" id="cfgColorB" value="#7a4ab0">
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Shininess</span>
+            <input type="range" class="sp-range" id="cfgShininess"
+                   min="1" max="128" step="1" value="30">
+            <span class="sp-val" id="valShininess">30</span>
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Render</span>
+            <select class="sp-select" id="cfgRenderMode">
+                <option value="solid">Solid</option>
+                <option value="wireframe">Wireframe</option>
+                <option value="both">Solid + Wire</option>
+            </select>
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Show Pins</span>
+            <input type="checkbox" class="sp-check" id="cfgShowPins" checked>
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Show Floor</span>
+            <input type="checkbox" class="sp-check" id="cfgShowFloor" checked>
+        </div>
+        <div class="sp-row">
+            <span class="sp-label">Show Colliders</span>
+            <input type="checkbox" class="sp-check" id="cfgShowColliders" checked>
+        </div>
+    </div>
+
+    <!-- Apply / Save -->
+    <button class="sp-apply" id="btnApply">Apply</button>
+
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

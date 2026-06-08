@@ -103,10 +103,19 @@ export class PointManager {
                         if (!this._inBounds(nx, ny, nz)) continue;
                         const idx  = nx + S*ny + SS*nz;
                         const dist = Math.sqrt(dx*dx + dy*dy + dz*dz) || 1;
+                        // Inward radial component
+                        const inX = -dx / dist, inY = -dy / dist, inZ = -dz / dist;
+                        // Tangential swirl: cross((0,1,0), inward) = (-inZ, 0, inX)
+                        // This creates a counterclockwise spiral around +Y
+                        const swirlXZ = Math.sqrt(inX*inX + inZ*inZ) || 1;
+                        const tX = -inZ / swirlXZ;
+                        const tZ =  inX / swirlXZ;
+                        const inwardStrength = d.rate * 3 * scale;
+                        const swirlStrength  = d.rate * 2 * scale;
                         sim.dens[idx]  = Math.max(0, sim.dens[idx] - d.rate * scale);
-                        sim.uPrev[idx] += (-dx / dist) * d.rate * 2 * scale;
-                        sim.vPrev[idx] += (-dy / dist) * d.rate * 2 * scale;
-                        sim.wPrev[idx] += (-dz / dist) * d.rate * 2 * scale;
+                        sim.uPrev[idx] += inX * inwardStrength + tX * swirlStrength;
+                        sim.vPrev[idx] += inY * inwardStrength;
+                        sim.wPrev[idx] += inZ * inwardStrength + tZ * swirlStrength;
                     }
                 }
             }

@@ -1,0 +1,215 @@
+/* ── sim_cloth — style.css ─────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #050910;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+#canvas {
+    position: fixed;
+    inset: 0;
+    display: block;
+}
+
+/* ── Start Overlay ───────────────────────────────────────────────────────── */
+#startOverlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    background: rgba(5, 9, 16, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition: opacity 0.4s;
+}
+#startOverlay.hidden { opacity: 0; pointer-events: none; }
+
+.start-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    padding: 36px 44px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 18px;
+    width: min(520px, 94vw);
+}
+.start-card h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: rgba(255,255,255,0.92);
+    text-align: center;
+}
+.start-card .subtitle {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.38);
+    text-align: center;
+    letter-spacing: 0.05em;
+    margin-top: -8px;
+}
+
+.start-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.start-zone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding: 20px 12px;
+    border: 1.5px dashed rgba(255,255,255,0.18);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+}
+.start-zone:hover {
+    border-color: rgba(139,111,239,0.6);
+    background: rgba(139,111,239,0.08);
+}
+.start-zone .zone-icon { font-size: 2rem; }
+.start-zone .zone-title { font-size: 0.88rem; font-weight: 600; color: rgba(255,255,255,0.82); }
+.start-zone .zone-sub   { font-size: 0.72rem; color: rgba(255,255,255,0.36); text-align: center; }
+#objInput { display: none; }
+
+.start-divider {
+    display: flex; align-items: center; gap: 10px;
+    color: rgba(255,255,255,0.22); font-size: 0.72rem; letter-spacing: 0.1em;
+}
+.start-divider::before, .start-divider::after {
+    content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1);
+}
+
+.preset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.preset-btn {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.6);
+    font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; font-family: system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.04em; text-align: center;
+    transition: all 0.15s;
+}
+.preset-btn:hover { background: rgba(139,111,239,0.15); border-color: rgba(139,111,239,0.45); color: rgba(255,255,255,0.88); }
+.preset-btn.active { background: rgba(139,111,239,0.28); border-color: rgba(139,111,239,0.7); color: rgba(255,255,255,0.95); }
+
+.start-launch-btn {
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(139,111,239,0.5);
+    background: rgba(139,111,239,0.2);
+    color: rgba(255,255,255,0.88);
+    font-size: 0.9rem; font-weight: 700;
+    font-family: system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.15s;
+}
+.start-launch-btn:hover { background: rgba(139,111,239,0.38); border-color: rgba(139,111,239,0.85); }
+
+/* ── Mode Toolbar ────────────────────────────────────────────────────────── */
+#toolbar {
+    position: fixed;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    background: rgba(6, 4, 22, 0.72);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    padding: 7px 10px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+.toolbar-sep {
+    width: 1px;
+    height: 22px;
+    background: rgba(255,255,255,0.12);
+    margin: 0 2px;
+}
+.mode-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    border-radius: 9px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.55);
+    font-size: 12px; font-weight: 600;
+    font-family: system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.06em; cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.mode-btn:hover   { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.85); }
+.mode-btn.active  { background: rgba(139,111,239,0.22); border-color: rgba(139,111,239,0.55); color: rgba(255,255,255,0.92); }
+.mode-btn[data-mode="pin"].active  { background: rgba(255,200,50,0.18); border-color: rgba(255,200,50,0.6); color: rgba(255,225,100,0.95); }
+.mode-btn[data-mode="grab"].active { background: rgba(50,200,120,0.18); border-color: rgba(50,200,120,0.6); color: rgba(120,255,180,0.95); }
+
+#btnSimToggle {
+    padding: 6px 16px;
+    border-radius: 9px;
+    border: 1px solid rgba(80,220,120,0.5);
+    background: rgba(80,220,120,0.14);
+    color: rgba(160,255,180,0.9);
+    font-size: 12px; font-weight: 700;
+    font-family: system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.08em; cursor: pointer; transition: all 0.15s;
+}
+#btnSimToggle:hover { background: rgba(80,220,120,0.28); }
+#btnSimToggle.running { border-color: rgba(255,80,60,0.5); background: rgba(255,80,60,0.14); color: rgba(255,140,120,0.9); }
+#btnSimToggle.running:hover { background: rgba(255,80,60,0.28); }
+
+/* ── Hint ────────────────────────────────────────────────────────────────── */
+#hint {
+    position: fixed;
+    bottom: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 199;
+    color: rgba(255,255,255,0.26);
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+/* ── Settings panel additions ────────────────────────────────────────────── */
+.collider-sub {
+    padding-left: 8px;
+    border-left: 2px solid rgba(139,111,239,0.25);
+    margin-left: 4px;
+    margin-bottom: 4px;
+}
+
+.sp-row-actions {
+    display: flex;
+    gap: 8px;
+}
+.sp-action-btn {
+    flex: 1;
+    padding: 7px 10px;
+    border-radius: 7px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.6);
+    font-size: 10px; font-weight: 600;
+    font-family: system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.15s;
+}
+.sp-action-btn:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); }

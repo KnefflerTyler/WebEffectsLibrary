@@ -78,7 +78,7 @@ void main() {
     vec3 rd  = normalize(uCamRight * uv.x + uCamUp * uv.y + uCamFwd);
     vec3 ro  = uCamPos;
 
-    vec3 bg  = vec3(0.020, 0.035, 0.055);
+    vec3 bg = vec3(0.020, 0.035, 0.055); // scene background (outside box only)
 
     vec2 hit = rayBox(ro, rd);
     if (hit.x >= hit.y || hit.y <= 0.0) {
@@ -88,6 +88,19 @@ void main() {
 
     float tNear = max(hit.x, 0.0);
     float tFar  = hit.y;
+
+    // ── Wireframe edges ──────────────────────────────────────────────────────
+    // A surface point is on a box edge when 2+ coordinates are within EDGE_W
+    // of 0 or 1. Check both entry (tNear) and exit (tFar) faces.
+    const float EDGE_W = 0.018;
+    vec3 hp0 = ro + rd * tNear;
+    vec3 hp1 = ro + rd * tFar;
+    vec3 b0  = step(hp0, vec3(EDGE_W)) + step(vec3(1.0 - EDGE_W), hp0);
+    vec3 b1  = step(hp1, vec3(EDGE_W)) + step(vec3(1.0 - EDGE_W), hp1);
+    float wire = max(
+        step(2.0, b0.x + b0.y + b0.z),
+        step(2.0, b1.x + b1.y + b1.z)
+    );
 
     // Front-to-back ray march (96 steps)
     const int STEPS = 96;
@@ -106,14 +119,9 @@ void main() {
         }
     }
 
-    // Composite over background
-    vec3 col = mix(bg, accum.rgb / max(accum.a, 0.0001), accum.a);
-
-    // Subtle box-edge glow at the near intersection point
-    vec3 hitPos = ro + rd * tNear;
-    vec3 edge   = min(hitPos, 1.0 - hitPos);
-    float glow  = smoothstep(0.014, 0.0, min(min(edge.x, edge.y), edge.z));
-    col = mix(col, vec3(0.22, 0.32, 0.52), glow * 0.55);
+    // Interior is black (empty = air). Fluid composited on top, wireframe last.
+    vec3 col = mix(vec3(0.0), accum.rgb / max(accum.a, 0.0001), accum.a);
+    col = mix(col, vec3(0.22, 0.38, 0.65), wire * (1.0 - accum.a));
 
     fragColor = vec4(col, 1.0);
 }`;
