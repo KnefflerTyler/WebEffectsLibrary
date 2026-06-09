@@ -1,0 +1,355 @@
+/* -- Maze Search Algorithms � page-specific styles -- */
+/* Layout, buttons, forms are handled by shared/settings.css */
+
+:root {
+  --dim:   #8b949e;
+  --green: #00d68f;
+  --red:   #ff4757;
+}
+
+/* -- Canvas fills the page -- */
+#mazeCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* -- Run control buttons (inside sp-panel) -- */
+.run-btn-row {
+  display: flex;
+  gap: 5px;
+  margin: 8px 0 4px;
+}
+.run-btn {
+  flex: 1;
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.75);
+  font-size: 0.77rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.run-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.35);
+}
+.run-btn:disabled { opacity: 0.32; cursor: not-allowed; }
+.run-btn.run-btn-primary {
+  background: rgba(74,158,255,0.75);
+  border-color: rgba(74,158,255,0.9);
+  color: #fff;
+}
+.run-btn.run-btn-primary:hover:not(:disabled) {
+  background: rgba(58,142,224,0.9);
+}
+
+/* -- Run status label -- */
+.run-status {
+  font-size: 0.74rem;
+  min-height: 15px;
+  text-align: center;
+  color: rgba(255,255,255,0.35);
+  margin: 3px 0;
+}
+.run-status.exploring { color: #4a9eff; }
+.run-status.found     { color: var(--green); }
+.run-status.complete  { color: #00e5ff; font-weight: 700; }
+.run-status.nofound   { color: var(--red); }
+
+/* -- Stats box -- */
+.stats-box {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+}
+.stat-row span:first-child { color: rgba(255,255,255,0.38); }
+.stat-row span:last-child  { color: rgba(255,255,255,0.75); font-weight: 600; }
+.stat-optimal-yes { color: var(--green) !important; }
+.stat-optimal-no  { color: var(--red)   !important; }
+
+/* -- Legend -- */
+.legend { display: flex; flex-direction: column; gap: 4px; }
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.74rem;
+  color: rgba(255,255,255,0.45);
+}
+.legend-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* -- Batch algorithm checkboxes -- */
+.alg-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.77rem;
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  padding: 2px 0;
+}
+.alg-check input[type="checkbox"] {
+  accent-color: #4a9eff;
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+.alg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* -- Progress bar -- */
+.progress-bar-wrap {
+  width: 100%;
+  height: 3px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 5px;
+}
+.progress-bar {
+  height: 100%;
+  background: #4a9eff;
+  border-radius: 2px;
+  transition: width 0.15s;
+}
+
+/* -- Batch results modal -- */
+#batchResults {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+#batchResultsInner {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 20px 22px;
+  max-width: 860px;
+  width: 100%;
+  max-height: 88vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+.batch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.batch-header h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #4a9eff;
+}
+.batch-meta { font-size: 0.75rem; color: #8b949e; }
+
+/* Results table */
+#batchTable { overflow-x: auto; }
+#batchTable table { width: 100%; border-collapse: collapse; font-size: 0.81rem; }
+#batchTable th {
+  background: #1e2530;
+  color: #8b949e;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.68rem;
+  padding: 7px 11px;
+  text-align: left;
+  border-bottom: 1px solid #30363d;
+}
+#batchTable td { padding: 7px 11px; border-bottom: 1px solid rgba(48,54,61,0.45); color: #c9d1d9; }
+#batchTable tr:last-child td { border-bottom: none; }
+.alg-name-cell { display: flex; align-items: center; gap: 7px; }
+.badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 0.69rem; font-weight: 700; }
+.badge-yes { background: rgba(0,214,143,0.15); color: #00d68f; }
+.badge-no  { background: rgba(255,71,87,0.15);  color: #ff4757; }
+
+/* Bar chart */
+#batchChart { display: flex; flex-wrap: wrap; gap: 18px; }
+.chart-section { flex: 1; min-width: 200px; }
+.chart-section h3 {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #8b949e;
+  margin-bottom: 8px;
+}
+.chart-bar-row { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+.chart-alg-label { width: 72px; font-size: 0.74rem; color: #8b949e; flex-shrink: 0; text-align: right; }
+.chart-bar-bg { flex: 1; height: 17px; background: #0a0e14; border-radius: 4px; overflow: hidden; }
+.chart-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  min-width: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  transition: width 0.55s ease-out;
+}
+.chart-bar-val {
+  padding-right: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  white-space: nowrap;
+}
+
+/* ── Renderer badge ── */
+.renderer-badge {
+  position: fixed;
+  bottom: 14px;
+  right: 16px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 3px 9px;
+  border-radius: 5px;
+  pointer-events: none;
+  z-index: 50;
+}
+.renderer-badge.gpu {
+  background: rgba(74,158,255,0.15);
+  border: 1px solid rgba(74,158,255,0.4);
+  color: #4a9eff;
+}
+.renderer-badge.cpu {
+  background: rgba(139,148,158,0.12);
+  border: 1px solid rgba(139,148,158,0.28);
+  color: #8b949e;
+}
+
+/* Utility */
+.hidden { display: none !important; }
+
+/* ── Race overlay ── */
+#raceOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  padding: 16px;
+  backdrop-filter: blur(6px);
+}
+#raceInner {
+  background: #0f1318;
+  border: 1px solid #30363d;
+  border-radius: 14px;
+  padding: 16px 18px 20px;
+  width: min(96vw, 1100px);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.race-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#raceTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #4a9eff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+#raceGrid {
+  display: grid;
+  gap: 12px;
+  /* columns set dynamically by JS */
+}
+.race-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.race-tile-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+}
+.race-tile-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.race-tile-stat {
+  font-size: 0.69rem;
+  color: rgba(255,255,255,0.35);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+.race-tile canvas {
+  display: block;
+  border-radius: 6px;
+  border: 1px solid #1e2530;
+  width: 100%;
+  height: auto;
+}
+
+/* ── Save toast ── */
+.save-toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: rgba(0,214,143,0.18);
+  border: 1px solid rgba(0,214,143,0.45);
+  color: #00d68f;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 7px 18px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 9999;
+}
+.save-toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }

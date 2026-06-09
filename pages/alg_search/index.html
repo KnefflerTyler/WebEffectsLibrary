@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maze Search Algorithms</title>
+  <link rel="stylesheet" href="../../shared/base.css">
+  <link rel="stylesheet" href="../../shared/settings.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="pageBackground">
+
+  <!-- -- Canvas (full page) ------------------------------------------------ -->
+  <canvas id="mazeCanvas"></canvas>
+
+  <!-- -- GPU / CPU renderer badge ----------------------------------------- -->
+  <div id="rendererBadge" class="renderer-badge"></div>
+
+  <!-- -- Settings gear button --------------------------------------------- -->
+  <button class="sp-btn" id="spBtn" title="Settings" aria-label="Open settings">&#9881;</button>
+
+  <!-- -- Settings panel --------------------------------------------------- -->
+  <div class="sp-panel" id="spPanel" role="dialog" aria-label="Maze Search settings">
+    <h2>Maze Search</h2>
+
+    <!-- -- Maze -- -->
+    <div class="sp-card">
+      <div class="sp-card-title">Maze</div>
+
+      <div class="sp-row">
+        <span class="sp-label">Type</span>
+        <select class="sp-select" id="mazeType">
+          <option value="perfect">Perfect (DFS)</option>
+          <option value="prim">Prim's</option>
+          <option value="imperfect">Imperfect</option>
+          <option value="braided">Braided</option>
+          <option value="open">Open / Sparse</option>
+          <optgroup label="Dungeon">
+            <option value="dungeon">Dungeon &mdash; MST rooms + corridors</option>
+            <option value="bsp">BSP Dungeon &mdash; Binary Space Partitioning</option>
+            <option value="cave">Cave &mdash; Cellular Automata</option>
+            <option value="drunk">Drunkard's Walk &mdash; Random tunnels</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="sp-row">
+        <span class="sp-label">Columns</span>
+        <input type="range" class="sp-range" id="colsSlider" min="7" max="251" step="2" value="21">
+        <span class="sp-val" id="colsVal">21</span>
+      </div>
+
+      <div class="sp-row">
+        <span class="sp-label">Rows</span>
+        <input type="range" class="sp-range" id="rowsSlider" min="7" max="251" step="2" value="21">
+        <span class="sp-val" id="rowsVal">21</span>
+      </div>
+
+      <button class="sp-apply" id="btnGenerate">&#8635; Generate New Maze</button>
+    </div>
+
+    <!-- -- Dungeon options (shown only when a dungeon-type is selected) -- -->
+    <div class="sp-card hidden" id="dungeonOpts">
+      <div class="sp-card-title" id="dungeonOptsTitle">Dungeon Settings</div>
+
+      <!-- Room size (dungeon + bsp) -->
+      <div id="dungRoomRows">
+        <div class="sp-row">
+          <span class="sp-label">Min room</span>
+          <input type="range" class="sp-range" id="dungMinRoom" min="2" max="10" step="1" value="3">
+          <span class="sp-val" id="dungMinRoomVal">3</span>
+        </div>
+        <div class="sp-row">
+          <span class="sp-label">Max room</span>
+          <input type="range" class="sp-range" id="dungMaxRoom" min="3" max="16" step="1" value="8">
+          <span class="sp-val" id="dungMaxRoomVal">8</span>
+        </div>
+        <div class="sp-row">
+          <span class="sp-label">Extra paths</span>
+          <input type="range" class="sp-range" id="dungExtraPaths" min="0" max="10" step="1" value="2">
+          <span class="sp-val" id="dungExtraPathsVal">2</span>
+        </div>
+      </div>
+
+      <!-- Cave-specific options -->
+      <div id="dungCaveRows" class="hidden">
+        <div class="sp-row">
+          <span class="sp-label">Fill rate</span>
+          <input type="range" class="sp-range" id="dungCaveFill" min="30" max="60" step="1" value="45">
+          <span class="sp-val" id="dungCaveFillVal">45</span><span style="font-size:0.7rem;color:rgba(255,255,255,0.3)">%</span>
+        </div>
+        <div class="sp-row">
+          <span class="sp-label">Smooth steps</span>
+          <input type="range" class="sp-range" id="dungCaveIters" min="1" max="10" step="1" value="5">
+          <span class="sp-val" id="dungCaveItersVal">5</span>
+        </div>
+      </div>
+
+      <!-- Drunkard walk-specific options -->
+      <div id="dungDrunkRows" class="hidden">
+        <div class="sp-row">
+          <span class="sp-label">Target fill</span>
+          <input type="range" class="sp-range" id="dungDrunkFill" min="15" max="70" step="1" value="38">
+          <span class="sp-val" id="dungDrunkFillVal">38</span><span style="font-size:0.7rem;color:rgba(255,255,255,0.3)">%</span>
+        </div>
+        <div class="sp-row">
+          <span class="sp-label">Walkers</span>
+          <input type="range" class="sp-range" id="dungDrunkWalkers" min="1" max="8" step="1" value="3">
+          <span class="sp-val" id="dungDrunkWalkersVal">3</span>
+        </div>
+      </div>
+
+      <!-- Solid walls (dungeon + bsp + drunk) -->
+      <div id="dungSolidRow" class="sp-row">
+        <span class="sp-label">Solid walls</span>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1">
+          <input type="checkbox" class="sp-check" id="dungSolidWalls" checked>
+          <span style="font-size:0.75rem;color:rgba(255,255,255,0.45)" id="dungSolidWallsLabel">non-room cells are impassable</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- -- Legend -- -->
+    <div class="sp-card">
+      <div class="sp-card-title">Legend</div>
+      <div class="legend">
+        <div class="legend-item"><span class="legend-dot" style="background:#00d68f"></span>Start (center)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#ff4757"></span>Exit (edge)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#ffd43b"></span>Path (drawing)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#00e5ff"></span>Path (complete)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#4a9eff;opacity:0.65"></span>Explored cells</div>
+      </div>
+    </div>
+
+    <!-- -- Single Run -- -->
+    <div class="sp-card">
+      <div class="sp-card-title">Single Run</div>
+
+      <div class="sp-row">
+        <span class="sp-label">Algorithm</span>
+        <select class="sp-select" id="algSelect">
+          <option value="BFS">BFS &mdash; Breadth-First</option>
+          <option value="DFS">DFS &mdash; Depth-First</option>
+          <option value="ASTAR" selected>A* &mdash; A-Star</option>
+          <option value="DIJKSTRA">Dijkstra</option>
+          <option value="GREEDY">Greedy Best-First</option>
+          <option value="BIBFS">Bidirectional BFS</option>
+        </select>
+      </div>
+
+      <div class="sp-row">
+        <span class="sp-label">Speed</span>
+        <input type="range" class="sp-range" id="speedSlider" min="1" max="60" value="5">
+        <span class="sp-val" id="speedVal">5</span>
+      </div>
+
+      <div class="run-btn-row">
+        <button class="run-btn run-btn-primary" id="btnRun">&#9654; Run</button>
+        <button class="run-btn" id="btnStop" disabled>&#9208; Pause</button>
+        <button class="run-btn" id="btnReset">&#8635; Reset</button>
+      </div>
+
+      <div id="runStatus" class="run-status"></div>
+
+      <div id="singleStats" class="stats-box hidden">
+        <div class="stat-row"><span>Explored cells</span><span id="statVisited">&mdash;</span></div>
+        <div class="stat-row"><span>Path length</span>   <span id="statPath">&mdash;</span></div>
+        <div class="stat-row"><span>Compute time</span>  <span id="statTime">&mdash;</span></div>
+        <div class="stat-row"><span>Complexity</span>    <span id="statComplexity">&mdash;</span></div>
+        <div class="stat-row"><span>Optimal path?</span> <span id="statOptimal">&mdash;</span></div>
+      </div>
+    </div>
+
+    <!-- -- Batch Run -- -->
+    <div class="sp-card">
+      <div class="sp-card-title">Batch Run</div>
+
+      <div class="sp-row"><span class="sp-label">Algorithms</span></div>
+      <div id="batchAlgList"></div>
+
+      <div class="sp-row" style="margin-top:8px">
+        <span class="sp-label">Iterations</span>
+        <input type="number" class="sp-number" id="batchIter" value="100" min="1" max="1000">
+      </div>
+
+      <div class="sp-row">
+        <span class="sp-label">Maze size</span>
+        <input type="range" class="sp-range" id="batchSizeSlider" min="7" max="251" step="2" value="21">
+        <span class="sp-val" id="batchSizeVal">21</span>
+      </div>
+
+      <button class="sp-apply" id="btnBatch">&#9889; Run Batch</button>
+
+      <div id="batchProgress" class="hidden" style="margin-top:8px;font-size:0.75rem;color:rgba(255,255,255,0.45)">
+        Running&hellip; <span id="batchProgressText">0 / 0</span>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" id="batchProgressBar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- -- Save -- -->
+    <button class="sp-apply" id="btnSave" style="margin-top:4px;background:rgba(0,214,143,0.18);border-color:rgba(0,214,143,0.45);color:#00d68f">&#10003; Save Settings</button>
+
+  </div><!-- #spPanel -->
+
+  <!-- -- Save indicator toast -------------------------------------------- -->
+  <div id="saveToast" class="save-toast hidden">Settings saved</div>
+
+  <!-- -- Race overlay ------------------------------------------------------ -->
+  <div id="raceOverlay" class="hidden">
+    <div id="raceInner">
+      <div class="race-header">
+        <span id="raceTitle">Algorithm Race</span>
+        <button id="btnSkipRace" class="run-btn">Skip &rarr;</button>
+      </div>
+      <div id="raceGrid"></div>
+    </div>
+  </div>
+
+  <!-- -- Batch Results Modal ----------------------------------------------- -->
+  <div id="batchResults" class="hidden">
+    <div id="batchResultsInner">
+      <div class="batch-header">
+        <h2>Batch Results</h2>
+        <button id="btnCloseBatch" class="run-btn">&#x2715; Close</button>
+      </div>
+      <p id="batchMeta" class="batch-meta"></p>
+      <div id="batchTable"></div>
+      <div id="batchChart"></div>
+    </div>
+  </div>
+
+</div><!-- #pageBackground -->
+
+<script defer src="../../shared/back-button.js"></script>
+<script src="js/Maze.js"></script>
+<script src="js/algorithms.js"></script>
+<script src="js/shaders.js"></script>
+<script src="js/Renderer.js"></script>
+<script src="js/BatchRunner.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
