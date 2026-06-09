@@ -25,7 +25,7 @@
 
       <div class="sp-row">
         <span class="sp-label">Size</span>
-        <input type="range" class="sp-range" id="sizeSlider" min="12" max="160" step="1" value="64">
+        <input type="range" class="sp-range" id="sizeSlider" min="12" max="500" step="1" value="64">
         <span class="sp-val" id="sizeVal">64</span>
       </div>
 
@@ -62,9 +62,9 @@
       </div>
 
       <div class="sp-row">
-        <span class="sp-label">Delay</span>
-        <input type="range" class="sp-range" id="speedSlider" min="10" max="220" step="1" value="70">
-        <span class="sp-val" id="speedVal">70 ms</span>
+        <span class="sp-label">Speed</span>
+        <input type="range" class="sp-range" id="speedSlider" min="10" max="300" step="1" value="120">
+        <span class="sp-val" id="speedVal">70</span>
       </div>
 
       <div class="run-btn-row">
@@ -72,6 +72,8 @@
         <button class="run-btn" id="btnPause" disabled>&#9208; Pause</button>
         <button class="run-btn" id="btnReset">&#8635; Reset</button>
       </div>
+
+      <button class="sp-apply" id="btnSaveSettings">Save Settings (Session)</button>
 
       <div id="runStatus" class="run-status"></div>
 

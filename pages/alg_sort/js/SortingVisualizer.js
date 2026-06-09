@@ -9,6 +9,7 @@ const $ = id => document.getElementById(id);
 
 export class SortingVisualizer {
     constructor() {
+        this.settingsStorageKey = 'alg_sort_settings_v1';
         this.canvas = $('sortCanvas');
         this.sizeSlider = $('sizeSlider');
         this.sizeVal = $('sizeVal');
@@ -20,6 +21,7 @@ export class SortingVisualizer {
         this.btnRun = $('btnRun');
         this.btnPause = $('btnPause');
         this.btnReset = $('btnReset');
+        this.btnSaveSettings = $('btnSaveSettings');
         this.runStatusEl = $('runStatus');
         this.statComparisonsEl = $('statComparisons');
         this.statSwapsEl = $('statSwaps');
@@ -47,6 +49,7 @@ export class SortingVisualizer {
 
     init() {
         this.populateAlgorithms();
+        this.loadSettings();
         this.updateSpeedLabel();
         this.randomizeArray();
         this.render();
@@ -94,6 +97,7 @@ export class SortingVisualizer {
             this.resetToSource();
             this.render();
         });
+        this.btnSaveSettings.addEventListener('click', () => this.saveSettings());
     }
 
     populateAlgorithms() {
@@ -108,7 +112,20 @@ export class SortingVisualizer {
     }
 
     updateSpeedLabel() {
-        this.speedVal.textContent = `${this.speedSlider.value} ms`;
+        this.speedVal.textContent = String(this.speedSlider.value);
+    }
+
+    getStepDelayMs() {
+        const minSpeed = Number(this.speedSlider.min) || 10;
+        const maxSpeed = Number(this.speedSlider.max) || 400;
+        const speed = Number(this.speedSlider.value) || minSpeed;
+
+        const minDelayMs = 2;
+        const maxDelayMs = 220;
+        const span = Math.max(1, maxSpeed - minSpeed);
+        const t = Math.min(1, Math.max(0, (speed - minSpeed) / span));
+
+        return Math.round(maxDelayMs - t * (maxDelayMs - minDelayMs));
     }
 
     resetStats() {
@@ -252,7 +269,7 @@ export class SortingVisualizer {
         this.updateStats();
         this.render(step);
 
-        this.timerId = setTimeout(() => this.tick(token), +this.speedSlider.value);
+        this.timerId = setTimeout(() => this.tick(token), this.getStepDelayMs());
     }
 
     finishRun() {
@@ -333,11 +350,75 @@ export class SortingVisualizer {
     }
 
     playStepSound(step) {
-        const soundIndex = this.currentIndex ?? this.comparisonIndex;
-        if (soundIndex == null) return;
-        const value = this.values[soundIndex];
-        if (value == null) return;
-        const maxValue = Math.max(...this.values, value);
-        this.soundPlayer.playHeight(value, 1, maxValue).catch(() => {});
+        const stepDelayMs = this.getStepDelayMs();
+        const maxValue = Math.max(...this.values);
+        const currentValue = this.currentIndex != null ? this.values[this.currentIndex] : null;
+        const comparisonValue = this.comparisonIndex != null ? this.values[this.comparisonIndex] : null;
+
+        if (currentValue != null) {
+            this.soundPlayer.playHeight(currentValue, 1, maxValue, { stepDelayMs }).catch(() => {});
+        }
+
+        const canPlayComparisonTone = stepDelayMs >= 7;
+        if (canPlayComparisonTone && comparisonValue != null && this.comparisonIndex !== this.currentIndex) {
+            const compareDelayMs = Math.max(0, Math.min(8, Math.round(stepDelayMs * 0.25)));
+            window.setTimeout(() => {
+                this.soundPlayer.playHeight(comparisonValue, 1, maxValue, { stepDelayMs }).catch(() => {});
+            }, compareDelayMs);
+        }
+    }
+
+    saveSettings() {
+        try {
+            const payload = {
+                size: Number(this.sizeSlider.value),
+                pattern: this.patternSelect.value,
+                algorithm: this.algSelect.value,
+                speed: Number(this.speedSlider.value),
+            };
+            window.sessionStorage.setItem(this.settingsStorageKey, JSON.stringify(payload));
+            this.setStatus('Settings saved for this session');
+        } catch {
+            this.setStatus('Unable to save settings in this browser');
+        }
+    }
+
+    loadSettings() {
+        try {
+            const raw = window.sessionStorage.getItem(this.settingsStorageKey);
+            if (!raw) return;
+
+            const saved = JSON.parse(raw);
+
+            if (Number.isFinite(saved.size)) {
+                const min = Number(this.sizeSlider.min) || 1;
+                const max = Number(this.sizeSlider.max) || 999;
+                this.sizeSlider.value = String(Math.min(max, Math.max(min, Math.round(saved.size))));
+                this.sizeVal.textContent = this.sizeSlider.value;
+            }
+
+            if (
+                typeof saved.pattern === 'string'
+                && [...this.patternSelect.options].some(option => option.value === saved.pattern)
+            ) {
+                this.patternSelect.value = saved.pattern;
+            }
+
+            if (
+                typeof saved.algorithm === 'string'
+                && [...this.algSelect.options].some(option => option.value === saved.algorithm)
+            ) {
+                this.algSelect.value = saved.algorithm;
+            }
+
+            if (Number.isFinite(saved.speed)) {
+                const min = Number(this.speedSlider.min) || 1;
+                const max = Number(this.speedSlider.max) || 999;
+                this.speedSlider.value = String(Math.min(max, Math.max(min, Math.round(saved.speed))));
+                this.speedVal.textContent = this.speedSlider.value;
+            }
+        } catch {
+            // Ignore malformed or inaccessible session storage.
+        }
     }
 }

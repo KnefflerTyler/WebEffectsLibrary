@@ -1,4 +1,5 @@
 import { initPanelToggle } from '../../../shared/settings.js';
+import { SoundPlayer } from './SoundPlayer.js';
 
 /* ════════════════════════════════════════════════════════════════════════════
    main.js — UI controller for Maze Search Algorithms
@@ -8,6 +9,7 @@ import { initPanelToggle } from '../../../shared/settings.js';
 let maze     = null;
 let renderer = null;
 let animId   = null;
+const soundPlayer = new SoundPlayer();
 
 let animState        = 'IDLE';   // IDLE | RUNNING | PAUSED | DONE
 let animPhase        = 'visited'; // 'visited' | 'path' | 'complete'
@@ -18,6 +20,7 @@ let animPathCount    = 0;
 let animSpeed        = 5;
 let currentAlgKey    = 'ASTAR';
 let animCompletedAt  = 0;
+let lastSoundIndex   = -1;
 
 const PATH_COLOR_DRAWING  = '#ffd43b';
 const PATH_COLOR_COMPLETE = '#00e5ff';
@@ -275,6 +278,7 @@ function startRun() {
     animPathCount    = 0;
     animPhase        = 'visited';
     animState        = 'RUNNING';
+    lastSoundIndex   = -1;
 
     // Populate stats panel immediately (computed values, not animation frame)
     const info = ALG_INFO[currentAlgKey];
@@ -296,7 +300,9 @@ function animFrame() {
     if (animState !== 'RUNNING') return;
 
     if (animPhase === 'visited') {
+        const prevVisited = animVisitedCount;
         animVisitedCount = Math.min(animVisitedCount + animSpeed, animVisited.length);
+        playVisitedSound(prevVisited, animVisitedCount);
         const pct = Math.round(animVisitedCount / Math.max(1, animVisited.length) * 100);
         setStatus(`Exploring… ${pct}%`, 'exploring');
 
@@ -310,6 +316,7 @@ function animFrame() {
                 animPhase       = 'complete';
                 animPathCount   = animPath.length;
                 animCompletedAt = performance.now();
+                playPathCompleteSound();
                 setStatus(`\u2713 Path complete \u2014 ${animPath.length} steps`, 'complete');
             }
         }
@@ -350,6 +357,45 @@ function resetAnimState() {
     animVisitedCount = 0;
     animPathCount    = 0;
     animCompletedAt  = 0;
+    lastSoundIndex   = -1;
+}
+
+function getSearchStepDelayMs() {
+    // Convert visual speed slider into an approximate per-step delay for audio adaptation.
+    return Math.max(2, Math.round(240 / Math.max(1, animSpeed)));
+}
+
+function playVisitedSound(previousCount, nextCount) {
+    if (!maze || nextCount <= previousCount || animVisited.length === 0) return;
+
+    const sampleIndex = Math.max(0, nextCount - 1);
+    if (sampleIndex === lastSoundIndex) return;
+    lastSoundIndex = sampleIndex;
+
+    const cell = animVisited[sampleIndex];
+    if (!cell) return;
+
+    const value = cell.row * maze.cols + cell.col + 1;
+    const maxValue = Math.max(1, maze.cols * maze.rows);
+    soundPlayer.playHeight(value, 1, maxValue, {
+        stepDelayMs: getSearchStepDelayMs(),
+    }).catch(() => {});
+}
+
+function playPathCompleteSound() {
+    if (!maze || animPath.length === 0) return;
+
+    const maxValue = Math.max(1, maze.cols * maze.rows);
+    const midpoint = animPath[Math.floor(animPath.length / 2)] || animPath[0];
+    const end = animPath[animPath.length - 1];
+
+    const firstValue = midpoint.row * maze.cols + midpoint.col + 1;
+    const secondValue = end.row * maze.cols + end.col + 1;
+
+    soundPlayer.playHeight(firstValue, 1, maxValue, { stepDelayMs: 14 }).catch(() => {});
+    window.setTimeout(() => {
+        soundPlayer.playHeight(secondValue, 1, maxValue, { stepDelayMs: 14 }).catch(() => {});
+    }, 50);
 }
 
 function setBtnState(state) {

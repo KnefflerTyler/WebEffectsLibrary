@@ -64,7 +64,6 @@ export class SoundPlayer {
             return;
         }
 
-        // Marimba-ish body: inharmonic partials with short, woody decays.
         this._triggerPartial(context, {
             now,
             frequency,
@@ -95,7 +94,6 @@ export class SoundPlayer {
             reverbAmount: 0.5,
         });
 
-        // Brief mallet attack transient.
         this._triggerMalletNoise(context, now, frequency, baseGain * 0.22, 0.7);
     }
 
@@ -260,7 +258,6 @@ export class SoundPlayer {
                 const envelope = Math.pow(1 - t, decayPower);
                 const noise = (Math.random() * 2 - 1) * envelope;
                 const previous = i > 0 ? channelData[i - 1] : 0;
-                // Smooth the noise to avoid bright, metallic reverb tails.
                 channelData[i] = previous * 0.78 + noise * 0.22;
             }
         }

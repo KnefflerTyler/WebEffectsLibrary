@@ -7,6 +7,11 @@ const ALGORITHM_NAMES = {
     merge: 'Merge Sort',
     quick: 'Quick Sort',
     heap: 'Heap Sort',
+    shell: 'Shell Sort',
+    cocktail: 'Cocktail Shaker Sort',
+    comb: 'Comb Sort',
+    gnome: 'Gnome Sort',
+    oddEven: 'Odd-Even Sort',
 };
 
 export class SortingAlgorithms {
@@ -32,6 +37,16 @@ export class SortingAlgorithms {
                 return this.quickSortSteps(input);
             case 'heap':
                 return this.heapSortSteps(input);
+            case 'shell':
+                return this.shellSortSteps(input);
+            case 'cocktail':
+                return this.cocktailSortSteps(input);
+            case 'comb':
+                return this.combSortSteps(input);
+            case 'gnome':
+                return this.gnomeSortSteps(input);
+            case 'oddEven':
+                return this.oddEvenSortSteps(input);
             default:
                 return this.bubbleSortSteps(input);
         }
@@ -258,6 +273,168 @@ export class SortingAlgorithms {
         }
 
         steps.push({ type: 'markSortedRange', from: 0, to: n - 1, label: 'Heap sort complete' });
+        this._appendVerificationPass(steps, n);
+        return steps;
+    }
+
+    static shellSortSteps(input) {
+        const arr = input.slice();
+        const steps = [];
+        const n = arr.length;
+
+        for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
+            for (let i = gap; i < n; i++) {
+                const temp = arr[i];
+                let j = i;
+
+                while (j >= gap && arr[j - gap] > temp) {
+                    steps.push({ type: 'compare', indices: [j - gap, j], label: `Gap compare (${gap})` });
+                    arr[j] = arr[j - gap];
+                    steps.push({ type: 'write', index: j, value: arr[j - gap], label: 'Shifting by gap' });
+                    j -= gap;
+                }
+
+                if (j >= gap) {
+                    steps.push({ type: 'compare', indices: [j - gap, i], label: `Gap compare (${gap})` });
+                }
+
+                arr[j] = temp;
+                steps.push({ type: 'write', index: j, value: temp, label: 'Gap insertion' });
+            }
+            steps.push({ type: 'pass', label: `Gap ${gap} pass complete` });
+        }
+
+        steps.push({ type: 'markSortedRange', from: 0, to: n - 1, label: 'Shell sort complete' });
+        this._appendVerificationPass(steps, n);
+        return steps;
+    }
+
+    static cocktailSortSteps(input) {
+        const arr = input.slice();
+        const steps = [];
+        const n = arr.length;
+        let start = 0;
+        let end = n - 1;
+        let swapped = true;
+
+        while (swapped) {
+            swapped = false;
+            for (let i = start; i < end; i++) {
+                steps.push({ type: 'compare', indices: [i, i + 1], label: 'Forward sweep compare' });
+                if (arr[i] > arr[i + 1]) {
+                    [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+                    steps.push({ type: 'swap', indices: [i, i + 1], label: 'Forward sweep swap' });
+                    swapped = true;
+                }
+            }
+
+            steps.push({ type: 'markSortedIndex', index: end, label: 'Right edge fixed' });
+            if (!swapped) break;
+            swapped = false;
+            end--;
+
+            for (let i = end; i > start; i--) {
+                steps.push({ type: 'compare', indices: [i - 1, i], label: 'Backward sweep compare' });
+                if (arr[i - 1] > arr[i]) {
+                    [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+                    steps.push({ type: 'swap', indices: [i - 1, i], label: 'Backward sweep swap' });
+                    swapped = true;
+                }
+            }
+
+            steps.push({ type: 'markSortedIndex', index: start, label: 'Left edge fixed' });
+            start++;
+        }
+
+        steps.push({ type: 'markSortedRange', from: 0, to: n - 1, label: 'Cocktail shaker sort complete' });
+        this._appendVerificationPass(steps, n);
+        return steps;
+    }
+
+    static combSortSteps(input) {
+        const arr = input.slice();
+        const steps = [];
+        const n = arr.length;
+        let gap = n;
+        let swapped = true;
+        const shrink = 1.3;
+
+        while (gap > 1 || swapped) {
+            gap = Math.floor(gap / shrink);
+            if (gap < 1) gap = 1;
+            swapped = false;
+
+            for (let i = 0; i + gap < n; i++) {
+                steps.push({ type: 'compare', indices: [i, i + gap], label: `Comb compare (gap ${gap})` });
+                if (arr[i] > arr[i + gap]) {
+                    [arr[i], arr[i + gap]] = [arr[i + gap], arr[i]];
+                    steps.push({ type: 'swap', indices: [i, i + gap], label: 'Comb swap' });
+                    swapped = true;
+                }
+            }
+
+            steps.push({ type: 'pass', label: `Comb gap ${gap} pass complete` });
+        }
+
+        steps.push({ type: 'markSortedRange', from: 0, to: n - 1, label: 'Comb sort complete' });
+        this._appendVerificationPass(steps, n);
+        return steps;
+    }
+
+    static gnomeSortSteps(input) {
+        const arr = input.slice();
+        const steps = [];
+        const n = arr.length;
+        let index = 1;
+
+        while (index < n) {
+            steps.push({ type: 'compare', indices: [index - 1, index], label: 'Gnome compare' });
+            if (arr[index] >= arr[index - 1]) {
+                index++;
+            } else {
+                [arr[index], arr[index - 1]] = [arr[index - 1], arr[index]];
+                steps.push({ type: 'swap', indices: [index - 1, index], label: 'Gnome swap and step back' });
+                index--;
+                if (index === 0) index = 1;
+            }
+        }
+
+        steps.push({ type: 'markSortedRange', from: 0, to: n - 1, label: 'Gnome sort complete' });
+        this._appendVerificationPass(steps, n);
+        return steps;
+    }
+
+    static oddEvenSortSteps(input) {
+        const arr = input.slice();
+        const steps = [];
+        const n = arr.length;
+        let sorted = false;
+
+        while (!sorted) {
+            sorted = true;
+
+            for (let i = 1; i < n - 1; i += 2) {
+                steps.push({ type: 'compare', indices: [i, i + 1], label: 'Odd phase compare' });
+                if (arr[i] > arr[i + 1]) {
+                    [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+                    steps.push({ type: 'swap', indices: [i, i + 1], label: 'Odd phase swap' });
+                    sorted = false;
+                }
+            }
+
+            for (let i = 0; i < n - 1; i += 2) {
+                steps.push({ type: 'compare', indices: [i, i + 1], label: 'Even phase compare' });
+                if (arr[i] > arr[i + 1]) {
+                    [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+                    steps.push({ type: 'swap', indices: [i, i + 1], label: 'Even phase swap' });
+                    sorted = false;
+                }
+            }
+
+            steps.push({ type: 'pass', label: 'Odd-even pass complete' });
+        }
+
+        steps.push({ type: 'markSortedRange', from: 0, to: n - 1, label: 'Odd-even sort complete' });
         this._appendVerificationPass(steps, n);
         return steps;
     }
