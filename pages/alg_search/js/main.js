@@ -48,8 +48,10 @@ const statPathEl      = $('statPath');
 const statTimeEl      = $('statTime');
 const statComplexEl   = $('statComplexity');
 const statOptimalEl   = $('statOptimal');
+const statExitInfoEl  = $('statExitInfo');
 const batchAlgListEl  = $('batchAlgList');
 const batchIterEl     = $('batchIter');
+const batchPreviewModeEl = $('batchPreviewMode');
 const batchSizeSlider = $('batchSizeSlider');
 const batchSizeValEl  = $('batchSizeVal');
 const btnBatch        = $('btnBatch');
@@ -108,7 +110,9 @@ function init() {
         }
     }
 
+    buildSingleAlgList();
     loadSettings();
+    syncSingleAlgSelection();
     generateMaze();
     buildBatchAlgList();
 
@@ -226,6 +230,22 @@ function generateMaze() {
     redraw();
 }
 
+function buildSingleAlgList() {
+    algSelect.innerHTML = '';
+
+    for (const [key, info] of Object.entries(ALG_INFO)) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = `${info.name} - ${info.fullName}`;
+        algSelect.appendChild(option);
+    }
+}
+
+function syncSingleAlgSelection() {
+    if (!ALG_INFO[currentAlgKey]) currentAlgKey = 'ASTAR';
+    algSelect.value = currentAlgKey;
+}
+
 function redraw() {
     if (!maze) return;
     const pathColor = animPhase === 'complete' ? PATH_COLOR_COMPLETE : PATH_COLOR_DRAWING;
@@ -264,6 +284,7 @@ function startRun() {
     statComplexEl.textContent  = info.complexity;
     statOptimalEl.textContent  = info.optimal ? '✓ Yes' : '✗ No';
     statOptimalEl.className    = info.optimal ? 'stat-optimal-yes' : 'stat-optimal-no';
+    statExitInfoEl.textContent = info.exitInfo;
     singleStatsEl.classList.remove('hidden');
 
     setStatus('Exploring…', 'exploring');
@@ -370,8 +391,8 @@ async function startBatch() {
     const iterations = Math.max(1, Math.min(1000, parseInt(batchIterEl.value) || 100));
     const size       = +batchSizeSlider.value;
 
-    // ── 1. Race preview ────────────────────────────────────────────────────
-    await runRace(checked, size);
+    // ── 1. Sampled race preview ───────────────────────────────────────────
+    await runBatchPreview(checked, iterations, size);
 
     // ── 2. Headless batch iterations ──────────────────────────────────────
     btnBatch.disabled    = true;
@@ -395,8 +416,33 @@ async function startBatch() {
     showBatchResults(results, checked, iterations, size);
 }
 
+/* ── Batch preview ─────────────────────────────────────────────────────────── */
+function runBatchPreview(algKeys, iterations, size) {
+    const sampleCount = _batchPreviewCount(iterations, batchPreviewModeEl.value);
+    if (sampleCount <= 0) return Promise.resolve();
+
+    return new Promise(resolve => {
+        let index = 0;
+
+        const runNext = () => {
+            if (index >= sampleCount) {
+                raceOverlayEl.classList.add('hidden');
+                resolve();
+                return;
+            }
+
+            runRaceIteration(algKeys, size, index, sampleCount).then(() => {
+                index++;
+                runNext();
+            });
+        };
+
+        runNext();
+    });
+}
+
 /* ── Race preview ──────────────────────────────────────────────────────────── */
-function runRace(algKeys, size) {
+function runRaceIteration(algKeys, size, iterationIndex, iterationCount) {
     return new Promise(resolve => {
         // Build a shared maze for the race
         const raceMaze = new Maze(size, size);
@@ -415,7 +461,9 @@ function runRace(algKeys, size) {
         const cols  = n <= 3 ? n : n <= 4 ? 2 : n <= 6 ? 3 : 3;
         const TILE  = Math.max(120, Math.min(260, Math.floor((window.innerWidth * 0.9 - cols * 12) / cols)));
 
-        raceTitleEl.textContent = `Algorithm Race — ${size}×${size} maze`;
+        raceTitleEl.textContent = iterationCount > 1
+            ? `Batch Preview ${iterationIndex + 1}/${iterationCount} — ${size}×${size} maze`
+            : `Algorithm Race — ${size}×${size} maze`;
         raceGridEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
         raceGridEl.innerHTML = '';
 
@@ -474,7 +522,6 @@ function runRace(algKeys, size) {
             finish();
             // Hold briefly then close
             setTimeout(() => {
-                raceOverlayEl.classList.add('hidden');
                 resolve();
             }, 600);
         }
@@ -508,7 +555,6 @@ function runRace(algKeys, size) {
                 setTimeout(() => {
                     if (!skipped) {
                         skipped = true;
-                        raceOverlayEl.classList.add('hidden');
                         resolve();
                     }
                 }, 1800);
@@ -522,6 +568,20 @@ function runRace(algKeys, size) {
     });
 }
 
+function _batchPreviewCount(iterations, mode) {
+    if (mode === 'max') {
+        if (iterations <= 8) return iterations;
+        if (iterations <= 20) return 8;
+        if (iterations <= 100) return 10;
+        return 12;
+    }
+
+    if (iterations <= 3) return iterations;
+    if (iterations <= 12) return 3;
+    if (iterations <= 50) return 4;
+    return 5;
+}
+
 function showBatchResults(results, algKeys, iterations, size) {
     batchResultsEl.classList.remove('hidden');
 
@@ -529,7 +589,7 @@ function showBatchResults(results, algKeys, iterations, size) {
         `${iterations} iterations · ${size}×${size} maze · ${algKeys.map(k => ALG_INFO[k].name).join(', ')}`;
 
     /* ── Table ── */
-    const headers = ['Algorithm', 'Complexity', 'Optimal?', 'Avg Visited', 'Path Range', 'Avg Path', 'Avg Time'];
+    const headers = ['Algorithm', 'Complexity', 'Optimal?', 'Knows Exit?', 'Avg Visited', 'Path Range', 'Avg Path', 'Avg Time'];
     let html = `<table>
         <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
         <tbody>`;
@@ -546,6 +606,7 @@ function showBatchResults(results, algKeys, iterations, size) {
             </td>
             <td style="font-family:monospace;font-size:0.76rem">${info.complexity}</td>
             <td><span class="badge ${info.optimal ? 'badge-yes' : 'badge-no'}">${info.optimal ? '✓ Yes' : '✗ No'}</span></td>
+            <td style="font-size:0.74rem;color:var(--dim);max-width:220px">${info.exitInfo}</td>
             <td>${r.avgVisited}</td>
             <td style="font-size:0.76rem;color:var(--dim)">${r.minPath}–${r.maxPath}</td>
             <td>${r.avgPathLen}</td>
@@ -603,6 +664,7 @@ function saveSettings() {
         speed:           speedSlider.value,
         batchSize:       batchSizeSlider.value,
         batchIter:       batchIterEl.value,
+        batchPreviewMode: batchPreviewModeEl.value,
         dungMinRoom:     dungMinRoomSlider.value,
         dungMaxRoom:     dungMaxRoomSlider.value,
         dungExtraPaths:  dungExtraSlider.value,
@@ -624,10 +686,11 @@ function loadSettings() {
     if (data.mazeType)  { mazeTypeSelect.value = data.mazeType; updateDungeonVisibility(); }
     if (data.cols)      { colsSlider.value = data.cols;  colsValEl.textContent  = data.cols; }
     if (data.rows)      { rowsSlider.value = data.rows;  rowsValEl.textContent  = data.rows; }
-    if (data.algSelect) { algSelect.value = data.algSelect; currentAlgKey = data.algSelect; }
+    if (data.algSelect && ALG_INFO[data.algSelect]) currentAlgKey = data.algSelect;
     if (data.speed)     { speedSlider.value = data.speed; speedValEl.textContent = data.speed; animSpeed = +data.speed; }
     if (data.batchSize) { batchSizeSlider.value = data.batchSize; batchSizeValEl.textContent = data.batchSize; }
     if (data.batchIter) batchIterEl.value = data.batchIter;
+    if (data.batchPreviewMode === 'min' || data.batchPreviewMode === 'max') batchPreviewModeEl.value = data.batchPreviewMode;
     if (data.dungMinRoom     != null) { dungMinRoomSlider.value  = data.dungMinRoom;      dungMinRoomVal.textContent   = data.dungMinRoom; }
     if (data.dungMaxRoom     != null) { dungMaxRoomSlider.value  = data.dungMaxRoom;      dungMaxRoomVal.textContent   = data.dungMaxRoom; }
     if (data.dungExtraPaths  != null) { dungExtraSlider.value    = data.dungExtraPaths;   dungExtraVal.textContent     = data.dungExtraPaths; }

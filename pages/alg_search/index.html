@@ -143,9 +143,6 @@
           <option value="BFS">BFS &mdash; Breadth-First</option>
           <option value="DFS">DFS &mdash; Depth-First</option>
           <option value="ASTAR" selected>A* &mdash; A-Star</option>
-          <option value="DIJKSTRA">Dijkstra</option>
-          <option value="GREEDY">Greedy Best-First</option>
-          <option value="BIBFS">Bidirectional BFS</option>
         </select>
       </div>
 
@@ -169,6 +166,7 @@
         <div class="stat-row"><span>Compute time</span>  <span id="statTime">&mdash;</span></div>
         <div class="stat-row"><span>Complexity</span>    <span id="statComplexity">&mdash;</span></div>
         <div class="stat-row"><span>Optimal path?</span> <span id="statOptimal">&mdash;</span></div>
+        <div class="stat-row"><span>Knows exit?</span>   <span id="statExitInfo">&mdash;</span></div>
       </div>
     </div>
 
@@ -182,6 +180,14 @@
       <div class="sp-row" style="margin-top:8px">
         <span class="sp-label">Iterations</span>
         <input type="number" class="sp-number" id="batchIter" value="100" min="1" max="1000">
+      </div>
+
+      <div class="sp-row">
+        <span class="sp-label">Preview</span>
+        <select class="sp-select" id="batchPreviewMode">
+          <option value="min" selected>Min iterations shown</option>
+          <option value="max">Max iterations shown</option>
+        </select>
       </div>
 
       <div class="sp-row">

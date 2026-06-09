@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sorting Algorithms</title>
+  <link rel="stylesheet" href="../../shared/base.css">
+  <link rel="stylesheet" href="../../shared/settings.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="pageBackground">
+
+  <canvas id="sortCanvas"></canvas>
+
+  <div id="rendererBadge" class="renderer-badge">Canvas 2D</div>
+
+  <button class="sp-btn" id="spBtn" title="Settings" aria-label="Open settings">&#9881;</button>
+
+  <div class="sp-panel" id="spPanel" role="dialog" aria-label="Sorting visualizer settings">
+    <h2>Sorting Visualizer</h2>
+
+    <div class="sp-card">
+      <div class="sp-card-title">Array</div>
+
+      <div class="sp-row">
+        <span class="sp-label">Size</span>
+        <input type="range" class="sp-range" id="sizeSlider" min="12" max="160" step="1" value="64">
+        <span class="sp-val" id="sizeVal">64</span>
+      </div>
+
+      <div class="sp-row">
+        <span class="sp-label">Pattern</span>
+        <select class="sp-select" id="patternSelect">
+          <option value="random" selected>Random</option>
+          <option value="nearly">Nearly sorted</option>
+          <option value="reversed">Reversed</option>
+          <option value="few">Few unique values</option>
+        </select>
+      </div>
+
+      <button class="sp-apply" id="btnRandomize">&#8635; Randomize Array</button>
+    </div>
+
+    <div class="sp-card">
+      <div class="sp-card-title">Legend</div>
+      <div class="legend">
+        <div class="legend-item"><span class="legend-dot" style="background:#ff922b"></span>Current index</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#4ac7ff"></span>Comparison index</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#4a9eff"></span>Writing / moving</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#20c997"></span>Sorted</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#8b949e"></span>Unsorted</div>
+      </div>
+    </div>
+
+    <div class="sp-card">
+      <div class="sp-card-title">Single Run</div>
+
+      <div class="sp-row">
+        <span class="sp-label">Algorithm</span>
+        <select class="sp-select" id="algSelect"></select>
+      </div>
+
+      <div class="sp-row">
+        <span class="sp-label">Delay</span>
+        <input type="range" class="sp-range" id="speedSlider" min="10" max="220" step="1" value="70">
+        <span class="sp-val" id="speedVal">70 ms</span>
+      </div>
+
+      <div class="run-btn-row">
+        <button class="run-btn run-btn-primary" id="btnRun">&#9654; Run</button>
+        <button class="run-btn" id="btnPause" disabled>&#9208; Pause</button>
+        <button class="run-btn" id="btnReset">&#8635; Reset</button>
+      </div>
+
+      <div id="runStatus" class="run-status"></div>
+
+      <div id="singleStats" class="stats-box">
+        <div class="stat-row"><span>Comparisons</span><span id="statComparisons">0</span></div>
+        <div class="stat-row"><span>Swaps / writes</span><span id="statSwaps">0</span></div>
+        <div class="stat-row"><span>Passes</span><span id="statPasses">0</span></div>
+        <div class="stat-row"><span>Steps</span><span id="statSteps">0</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

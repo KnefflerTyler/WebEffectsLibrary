@@ -1,0 +1,133 @@
+/* Sorting visualizer page-specific styles */
+
+:root {
+  --bg: #0a0e14;
+  --panel: rgba(0, 0, 0, 0.92);
+  --text-dim: #8b949e;
+  --accent: #4a9eff;
+  --swap: #ff922b;
+  --sorted: #20c997;
+}
+
+#sortCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.run-btn-row {
+  display: flex;
+  gap: 5px;
+  margin: 8px 0 4px;
+}
+
+.run-btn {
+  flex: 1;
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.75);
+  font-size: 0.77rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.run-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.35);
+}
+
+.run-btn:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+
+.run-btn.run-btn-primary {
+  background: rgba(74,158,255,0.75);
+  border-color: rgba(74,158,255,0.9);
+  color: #fff;
+}
+
+.run-btn.run-btn-primary:hover:not(:disabled) {
+  background: rgba(58,142,224,0.9);
+}
+
+.run-status {
+  font-size: 0.74rem;
+  min-height: 15px;
+  text-align: center;
+  color: rgba(255,255,255,0.35);
+  margin: 3px 0;
+}
+
+.run-status.running { color: var(--accent); }
+.run-status.paused  { color: #ffd43b; }
+.run-status.done    { color: var(--sorted); font-weight: 700; }
+
+.stats-box {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+}
+
+.stat-row span:first-child { color: rgba(255,255,255,0.38); }
+.stat-row span:last-child  { color: rgba(255,255,255,0.75); font-weight: 600; }
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.74rem;
+  color: rgba(255,255,255,0.45);
+}
+
+.legend-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.renderer-badge {
+  position: fixed;
+  bottom: 14px;
+  right: 16px;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 3px 9px;
+  border-radius: 5px;
+  pointer-events: none;
+  z-index: 50;
+  background: rgba(139,148,158,0.12);
+  border: 1px solid rgba(139,148,158,0.28);
+  color: #8b949e;
+}
+
+.hidden {
+  display: none !important;
+}
