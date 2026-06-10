@@ -1,26 +1,162 @@
 # Web Effects Library
 
-A collection of interactive visual effects, each self-contained in its own directory.
+A growing collection of interactive browser-based visual effects, simulations, rendering experiments, and algorithm visualizers. Each demo is self-contained in its own directory and can be viewed directly in the browser.
 
-**Live site:** [https://tylerkneffler.github.io/WebEffectsLibrary/](https://tylerkneffler.github.io/WebEffectsLibrary/)
+**Live Demo:**
+https://tylerkneffler.github.io/WebEffectsLibrary/
 
-## Effects
+## Overview
 
-| Effect | Description |
-|---|---|
-| [Default Cube](https://tylerkneffler.github.io/WebEffectsLibrary/default_cube/) | Basic rotating cube with custom GLSL shaders |
-| [Galaxy](https://tylerkneffler.github.io/WebEffectsLibrary/galaxy/) | Celestial body simulation with stars, planets, and moons |
-| [Grid Breath](https://tylerkneffler.github.io/WebEffectsLibrary/grid_breath/) | Animated point grid with breathing effect |
-| [Shape Grid](https://tylerkneffler.github.io/WebEffectsLibrary/grid_shape/) | Ripple and spotlight effects on a line grid |
-| [3D Point Graph](https://tylerkneffler.github.io/WebEffectsLibrary/grid_3d_points/) | Interactive 3D point cloud with mouse interaction |
-| [Perlin Noise Mask](https://tylerkneffler.github.io/WebEffectsLibrary/perlin_noise_mask/) | Animated Perlin noise shader mask |
-| [OBJ Viewer](https://tylerkneffler.github.io/WebEffectsLibrary/obj_display/) | Upload and view `.obj`/`.mtl` models with multiple view modes |
-| [Parallax Horizontal](https://tylerkneffler.github.io/WebEffectsLibrary/Parallax_Horizontal/) | Horizontal multi-layer parallax scrolling |
-| [Parallax Vertical](https://tylerkneffler.github.io/WebEffectsLibrary/Parallax_Vertical/) | Vertical multi-layer parallax scrolling |
-| [Marching Cubes](https://tylerkneffler.github.io/WebEffectsLibrary/marching_cubes/) | Infinite smooth procedural terrain — GPU Perlin fBm displacement, chunk streaming, fog, fly camera |
-| [Hex Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/marching_hex/) | Same GPU-driven terrain as Marching Cubes but built from pointy-top hexagonal cells |
-| [Cubic Voxel Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/voxel_cubes/) | Blocky stepped terrain — GPU Perlin fBm quantized to discrete height steps, height/normal-based grass and dirt coloring |
-| [Hex Voxel Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/voxel_hex/) | Hexagonal cells with GPU Perlin fBm + voxel quantization — blocky stepped topology on a pointy-top hex grid |
-| [2D Particles](https://tylerkneffler.github.io/WebEffectsLibrary/2d_particals/) | GPU fireworks particle system with GLSL vertex/fragment shaders |
-| [2D Collisions](https://tylerkneffler.github.io/WebEffectsLibrary/2d_collisions/) | Real-time 2D physics collision simulation |
-| [Scroll Jacking Demo](https://tylerkneffler.github.io/WebEffectsLibrary/scrolljack_web_sample/) | Modern Apple-style scrolljacking showcase — 7 distinct effects: hero parallax exit, word reveal, feature morph, horizontal carousel, depth zoom, scroll-driven counters, and parallax CTA |
+This project serves as a sandbox for experimenting with real-time graphics, procedural generation, animation, physics simulations, networking concepts, and interactive UI effects using web technologies.
+
+The library includes examples built with JavaScript, HTML, CSS, WebGL, GLSL shaders, canvas rendering, WebRTC, and browser-based interaction APIs.
+
+## Technical Highlights
+
+* WebGL and GLSL shader-based rendering
+* Procedural terrain generation using GPU noise
+* Particle systems and physics simulations
+* Interactive 2D and 3D visualizations
+* Algorithm visualizers for search and sorting
+* Scroll-driven UI animation experiments
+* Peer-to-peer and collaborative browser demos
+* Self-contained effect directories for easy testing and expansion
+
+## Effects Library
+
+### WebGL, Shaders, and 3D Rendering
+
+| Effect                                                                                    | Description                                                       |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| [Default Cube](https://tylerkneffler.github.io/WebEffectsLibrary/default_cube/)           | Basic rotating cube rendered with custom GLSL shaders             |
+| [Galaxy](https://tylerkneffler.github.io/WebEffectsLibrary/galaxy/)                       | Celestial simulation with stars, planets, and moons               |
+| [3D Point Graph](https://tylerkneffler.github.io/WebEffectsLibrary/grid_3d_points/)       | Interactive 3D point cloud with mouse interaction                 |
+| [Perlin Noise Mask](https://tylerkneffler.github.io/WebEffectsLibrary/perlin_noise_mask/) | Animated Perlin noise shader mask                                 |
+| [OBJ Viewer](https://tylerkneffler.github.io/WebEffectsLibrary/obj_display/)              | Upload and view `.obj` and `.mtl` models with multiple view modes |
+
+### Procedural Terrain and Voxel Rendering
+
+| Effect                                                                                | Description                                                                                               |
+| ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [Marching Cubes](https://tylerkneffler.github.io/WebEffectsLibrary/marching_cubes/)   | Smooth procedural terrain with GPU Perlin fBm displacement, chunk streaming, fog, and fly camera controls |
+| [Hex Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/marching_hex/)        | GPU-driven procedural terrain built from pointy-top hexagonal cells                                       |
+| [Cubic Voxel Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/voxel_cubes/) | Blocky voxel-style terrain using GPU Perlin fBm quantized into discrete height steps                      |
+| [Hex Voxel Terrain](https://tylerkneffler.github.io/WebEffectsLibrary/voxel_hex/)     | Hexagonal voxel terrain with GPU noise and stepped terrain topology                                       |
+
+### Particles, Physics, and Simulations
+
+| Effect                                                                                       | Description                                                          |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| [2D Particles](https://tylerkneffler.github.io/WebEffectsLibrary/2d_particals/)              | GPU fireworks particle system using GLSL vertex and fragment shaders |
+| [2D Collisions](https://tylerkneffler.github.io/WebEffectsLibrary/2d_collisions/)            | Real-time 2D physics collision simulation                            |
+| [Cloth Simulation](https://tylerkneffler.github.io/WebEffectsLibrary/sim_cloth/)             | Interactive cloth physics simulation                                 |
+| [Fluid Simulation - 2D](https://tylerkneffler.github.io/WebEffectsLibrary/sim_fluid/)        | GPU-based 2D fluid simulation                                        |
+| [Fluid Simulation - 3D](https://tylerkneffler.github.io/WebEffectsLibrary/sim_fluid_3d/)     | 3D fluid simulation with volumetric rendering                        |
+| [Wind Tunnel Simulation](https://tylerkneffler.github.io/WebEffectsLibrary/sim_wind_tunnel/) | Flow field visualization with object interaction                     |
+
+### Grid and Animation Effects
+
+| Effect                                                                                        | Description                                        |
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| [Grid Breath](https://tylerkneffler.github.io/WebEffectsLibrary/grid_breath/)                 | Animated point grid with a breathing motion effect |
+| [Shape Grid](https://tylerkneffler.github.io/WebEffectsLibrary/grid_shape/)                   | Line grid with ripple and spotlight effects        |
+| [Parallax Horizontal](https://tylerkneffler.github.io/WebEffectsLibrary/Parallax_Horizontal/) | Horizontal multi-layer parallax scrolling          |
+| [Parallax Vertical](https://tylerkneffler.github.io/WebEffectsLibrary/Parallax_Vertical/)     | Vertical multi-layer parallax scrolling            |
+
+### Scroll-Driven UI Experiments
+
+| Effect                                                                                               | Description                                                                                                                                        |
+| ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [Scroll Jacking Demo](https://tylerkneffler.github.io/WebEffectsLibrary/scrolljack_web_sample/)      | Apple-style scroll-driven showcase with hero transitions, word reveal, feature morphing, carousel movement, depth zoom, counters, and parallax CTA |
+| [Scrolljack Carousel](https://tylerkneffler.github.io/WebEffectsLibrary/scrolljack_carousel/)        | Horizontal carousel variant for scroll-based UI interactions                                                                                       |
+| [Scrolljack Progress Bar](https://tylerkneffler.github.io/WebEffectsLibrary/scrolljack_progressbar/) | Scroll-driven progress bar and animation effects                                                                                                   |
+
+### Algorithms and Visualizers
+
+| Effect                                                                            | Description                                                        |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [Algorithm Search](https://tylerkneffler.github.io/WebEffectsLibrary/alg_search/) | Maze generation and graph search visualizations                    |
+| [Algorithm Sorting](https://tylerkneffler.github.io/WebEffectsLibrary/alg_sort/)  | Sorting algorithm visualizer with animated bars and audio feedback |
+
+### Networking and Collaboration Demos
+
+| Effect                                                                                        | Description                                           |
+| --------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| [Collaborative Drawing](https://tylerkneffler.github.io/WebEffectsLibrary/conn_drawing/)      | Real-time collaborative drawing canvas                |
+| [Multi-Mouse](https://tylerkneffler.github.io/WebEffectsLibrary/conn_mice/)                   | Multi-cursor demo for shared browser interactions     |
+| [P2P Chat](https://tylerkneffler.github.io/WebEffectsLibrary/conn_p2p_chat/)                  | Peer-to-peer chat demo using WebRTC                   |
+| [PeerJS Chat](https://tylerkneffler.github.io/WebEffectsLibrary/conn_peerjs_chat/)            | Browser chat demo using PeerJS signaling              |
+| [Connection Stress Test](https://tylerkneffler.github.io/WebEffectsLibrary/conn_stress_test/) | Network stress testing utilities and connection demos |
+| [Tic Tac Toe - P2P](https://tylerkneffler.github.io/WebEffectsLibrary/conn_ticktacktoe/)      | Peer-to-peer multiplayer Tic-Tac-Toe                  |
+
+### Experimental
+
+| Effect                                                        | Description                                 |
+| ------------------------------------------------------------- | ------------------------------------------- |
+| [RMR](https://tylerkneffler.github.io/WebEffectsLibrary/rmr/) | Experimental rendering and interaction demo |
+
+## Project Structure
+
+Each effect is organized into its own directory:
+
+```text
+WebEffectsLibrary/
+├── default_cube/
+├── galaxy/
+├── grid_breath/
+├── marching_cubes/
+├── sim_fluid/
+├── alg_search/
+├── conn_p2p_chat/
+└── ...
+```
+
+Most demos are designed to run independently, making it easy to test, modify, or extend individual experiments without affecting the rest of the library.
+
+## Technologies Used
+
+* JavaScript
+* HTML5
+* CSS3
+* Canvas API
+* WebGL
+* GLSL
+* WebRTC
+* PeerJS
+* GitHub Pages
+
+## Purpose
+
+The goal of this project is to explore advanced browser capabilities through practical, visual examples. It includes experiments in real-time rendering, GPU-based animation, procedural generation, simulation, user interaction, and browser-to-browser communication.
+
+This project also serves as a portfolio piece demonstrating front-end engineering, graphics programming, interactive design, and algorithm visualization.
+
+## Running Locally
+
+Clone the repository:
+
+```bash
+git clone https://github.com/TylerKneffler/WebEffectsLibrary.git
+```
+
+Open any effect directory and run it with a local development server.
+
+Example using Python:
+
+```bash
+python -m http.server 8000
+```
+
+Then open:
+
+```text
+http://localhost:8000
+```
+
+Some WebGL, module, or asset-based demos may require a local server rather than opening the HTML file directly in the browser.
+
+## Live Site
+
+View the full library here:
+
+https://tylerkneffler.github.io/WebEffectsLibrary/
