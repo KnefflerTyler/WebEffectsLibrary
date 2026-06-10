@@ -18,14 +18,14 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
     const THREE = await import(THREE_CDN);
     const cfg   = { ...DEFAULTS, ...options };
 
-    // â”€â”€ Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Container 
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`No element found with id "${containerId}"`);
     if (getComputedStyle(container).position === 'static') {
         container.style.position = 'relative';
     }
 
-    // â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Renderer 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x000000, 0);
@@ -37,20 +37,20 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
     canvas.style.zIndex   = '-1';
     container.appendChild(canvas);
 
-    // â”€â”€ Scene & orthographic camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Scene & orthographic camera 
     const scene  = new THREE.Scene();
 
     // The camera is rebuilt on every resize to keep 1 world unit = 1 grid step.
     let camera;
 
-    // â”€â”€ Grid geometry (rebuilt on resize) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Grid geometry (rebuilt on resize) 
     let points    = null; // THREE.Points
     let alphaBuf  = null; // Float32Array â€” internal lerped hover alpha (NOT the GPU buffer)
     let cols      = 0;
     let rows      = 0;
     let totalPts  = 0;
 
-    // â”€â”€ Mouse state (in world units) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Mouse state (in world units) 
     const mouse     = { wx: Infinity, wy: Infinity };
     let lastClientX = Infinity;
     let lastClientY = Infinity;
@@ -87,7 +87,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
     window.addEventListener('scroll', updateMouseWorld, { passive: true });
     container.addEventListener('scroll', updateMouseWorld, { passive: true });
 
-    // â”€â”€ Ripple state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Ripple state 
     const ripples = []; // { x, y, age }
     let mouseMoving   = false;
     let stopTimer     = null;
@@ -97,7 +97,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
         ripples.push({ x: mouse.wx, y: mouse.wy, age: 0 });
     }
 
-    // â”€â”€ Build / rebuild grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Build / rebuild grid 
     function buildGrid(w, h) {
         const { spacing, gridDensity, color, hoverColor, pointSize } = cfg;
 
@@ -170,7 +170,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
         renderer.setSize(w, h);
     }
 
-    // â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Resize 
     function onResize() {
         buildGrid(container.clientWidth, container.clientHeight);
     }
@@ -178,7 +178,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
     resizeObserver.observe(container);
     onResize();
 
-    // â”€â”€ Render loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Render loop 
     let rafId   = null;
     let running = true;
     let lastTime = performance.now();
@@ -262,7 +262,7 @@ export async function startGridBreath(containerId = 'pageBackground', options = 
 
     animate();
 
-    // â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Settings panel 
     (function initSettings() {
         const NS = 'gb:';
         if (!document.getElementById('spBtn')) return;

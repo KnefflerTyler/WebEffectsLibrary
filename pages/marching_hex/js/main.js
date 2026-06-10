@@ -6,7 +6,7 @@ import { bindDisplay, initPanelToggle, persistSettings } from '../../../shared/s
 
 const THREE = await import(THREE_CDN);
 
-// â”€â”€ Noise seed + permutation texture â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Noise seed + permutation texture 
 setSeed(CFG.noiseSeed);
 
 const permTex = new THREE.DataTexture(
@@ -19,7 +19,7 @@ permTex.magFilter  = THREE.NearestFilter;
 permTex.minFilter  = THREE.NearestFilter;
 permTex.needsUpdate = true;
 
-// â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Renderer 
 const container = document.getElementById('pageBackground');
 const renderer  = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
@@ -27,7 +27,7 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(CFG.fogColor);
 container.appendChild(renderer.domElement);
 
-// â”€â”€ Scene + camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Scene + camera 
 const scene  = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(
     CFG.fov,
@@ -37,7 +37,7 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, CFG.cameraHeight, 0);
 
-// â”€â”€ Shared terrain material â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Shared terrain material 
 const lightDir = new THREE.Vector3(...CFG.lightDir).normalize();
 
 const material = new THREE.ShaderMaterial({
@@ -64,10 +64,10 @@ const material = new THREE.ShaderMaterial({
     side: THREE.FrontSide,
 });
 
-// â”€â”€ Chunk manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Chunk manager 
 const chunkManager = new ChunkManager(scene, CFG, THREE, material);
 
-// â”€â”€ Camera state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Camera state 
 let camX = 0, camZ = 0;
 let yaw   = 0;
 let pitch = -0.35;
@@ -77,11 +77,11 @@ let controlMode = 'auto';
 
 const keys = new Set();
 
-// â”€â”€ Input â€” keyboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Input â€” keyboard 
 window.addEventListener('keydown', e => keys.add(e.code));
 window.addEventListener('keyup',   e => keys.delete(e.code));
 
-// â”€â”€ Input â€” mouse look (pointer lock) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Input â€” mouse look (pointer lock) 
 renderer.domElement.addEventListener('click', () => {
     if (controlMode === 'manual') renderer.domElement.requestPointerLock();
 });
@@ -101,14 +101,14 @@ function onMouseMove(e) {
     pitch  = Math.max(-1.2, Math.min(0.3, pitch));
 }
 
-// â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Resize 
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Settings panel 
 // Update slider value displays on drag (no engine effects until Apply)
 bindDisplay('cfgMoveSpeed',    'valMoveSpeed');
 bindDisplay('cfgViewDistance', 'valViewDistance');
@@ -189,7 +189,7 @@ document.getElementById('spApply')?.addEventListener('click', applySettings);
 
 initPanelToggle();
 
-// â”€â”€ Persist settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Persist settings 
 persistSettings('mh:', [
     'cfgMoveSpeed', 'cfgViewDistance', 'cfgChunkBudget', 'cfgCellSize', 'cfgNoiseScale',
     'cfgFogNear', 'cfgFogFar', 'cfgAmbient',
@@ -197,7 +197,7 @@ persistSettings('mh:', [
     'cfgControlMode', 'cfgWireframe',
 ], applySettings);
 
-// â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Animation loop 
 let prev = performance.now();
 
 (function animate() {

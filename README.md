@@ -89,12 +89,6 @@ The library includes examples built with JavaScript, HTML, CSS, WebGL, GLSL shad
 | [Connection Stress Test](https://tylerkneffler.github.io/WebEffectsLibrary/conn_stress_test/) | Network stress testing utilities and connection demos |
 | [Tic Tac Toe - P2P](https://tylerkneffler.github.io/WebEffectsLibrary/conn_ticktacktoe/)      | Peer-to-peer multiplayer Tic-Tac-Toe                  |
 
-### Experimental
-
-| Effect                                                        | Description                                 |
-| ------------------------------------------------------------- | ------------------------------------------- |
-| [RMR](https://tylerkneffler.github.io/WebEffectsLibrary/rmr/) | Experimental rendering and interaction demo |
-
 ## Project Structure
 
 Each effect is organized into its own directory:

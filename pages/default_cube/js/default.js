@@ -4,7 +4,7 @@ import { initPanelToggle } from '../../../shared/settings.js';
 
 const THREE = await import(THREE_CDN);
 
-// â”€â”€ Scene setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Scene setup 
 const container = document.getElementById('pageBackground');
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -16,7 +16,7 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.z = 4;
 
-// â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Config 
 const FACE_COLORS = [
     0xff4d6d,   // +X  â€” vivid pink-red
     0x4dc8ff,   // -X  â€” sky blue
@@ -30,7 +30,7 @@ const LIGHT_DIR   = new THREE.Vector3(5, 5, 5).normalize();
 const LIGHT_COLOR = new THREE.Color(0xffffff);
 const AMBIENT     = new THREE.Color(0x222233);
 
-// â”€â”€ Build per-face shader materials â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Build per-face shader materials 
 function makeFaceMaterial(hexColor) {
     const color = new THREE.Color(hexColor);
     return new THREE.ShaderMaterial({
@@ -50,25 +50,25 @@ const faceMaterials = DEFAULTS.SolidColor !== null
     ? Array(6).fill(null).map(() => makeFaceMaterial(DEFAULTS.SolidColor))
     : FACE_COLORS.map(makeFaceMaterial);
 
-// â”€â”€ Cube â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Cube 
 const geometry = new THREE.BoxGeometry(1.6, 1.6, 1.6);
 const cube = new THREE.Mesh(geometry, faceMaterials);
 scene.add(cube);
 
-// â”€â”€ Thin wireframe overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Thin wireframe overlay 
 const wireMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.18 });
 const wireGeo = new THREE.EdgesGeometry(geometry);
 const wireframe = new THREE.LineSegments(wireGeo, wireMat);
 cube.add(wireframe);
 
-// â”€â”€ Resize handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Resize handler 
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Animation loop 
 let speedX = 0.007;
 let speedY = 0.012;
 
@@ -81,7 +81,7 @@ let speedY = 0.012;
     renderer.render(scene, camera);
 })();
 
-// â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Settings panel 
 {
     const NS      = 'dc:';
     const spBtn   = document.getElementById('spBtn');

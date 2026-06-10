@@ -17,14 +17,14 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     const THREE = await import(THREE_CDN);
     const cfg   = { ...DEFAULTS, ...options };
 
-    // â”€â”€ Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Container 
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`No element found with id "${containerId}"`);
     if (getComputedStyle(container).position === 'static') {
         container.style.position = 'relative';
     }
 
-    // â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Renderer 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x000000, 0);
@@ -36,7 +36,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     canvas.style.zIndex   = '-1';
     container.appendChild(canvas);
 
-    // â”€â”€ Scene â€” orthographic camera, 1 world unit = 1 pixel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Scene â€” orthographic camera, 1 world unit = 1 pixel 
     const scene         = new THREE.Scene();
     let camera;
     let linesMesh       = null;
@@ -45,10 +45,10 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     let spotlightAgents = null;
     let canvasW = 0, canvasH = 0;
 
-    // â”€â”€ Sub-systems â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Sub-systems 
     const rippleSystem = new RippleSystem(cfg);
 
-    // â”€â”€ Mouse state (world / pixel coords) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Mouse state (world / pixel coords) 
     const mouse     = { wx: Infinity, wy: Infinity };
     let lastClientX = Infinity;
     let lastClientY = Infinity;
@@ -76,7 +76,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     });
     window.addEventListener('scroll', updateMouseWorld, { passive: true });
 
-    // â”€â”€ Build / rebuild â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Build / rebuild 
     function buildGrid(w, h) {
         canvasW = w;
         canvasH = h;
@@ -124,7 +124,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
         }
     }
 
-    // â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Resize 
     function onResize() {
         buildGrid(container.clientWidth, container.clientHeight);
     }
@@ -132,7 +132,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
     resizeObserver.observe(container);
     onResize();
 
-    // â”€â”€ Render loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Render loop 
     let rafId    = null;
     let running  = true;
     let lastTime = performance.now();
@@ -211,7 +211,7 @@ export async function startShapeGrid(containerId = 'pageBackground', options = {
 
     animate();
 
-    // â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Settings panel 
     (function initSettings() {
         const NS = 'sg:';
         if (!document.getElementById('spBtn')) return;

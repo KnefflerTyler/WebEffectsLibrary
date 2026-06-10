@@ -21,7 +21,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
     const THREE = await import(THREE_CDN);
     const cfg   = { ...DEFAULTS, ...options };
 
-    // â”€â”€ Container â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Container 
     const container = document.getElementById(containerId);
     if (!container) throw new Error(`No element found with id "${containerId}"`);
 
@@ -30,7 +30,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
         container.style.position = 'relative';
     }
 
-    // â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Renderer 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setClearColor(0x000000, 0);
@@ -44,7 +44,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
 
     renderer.setSize(container.clientWidth, container.clientHeight);
 
-    // â”€â”€ Scene & Camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Scene & Camera 
     const scene  = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
         70,
@@ -54,7 +54,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
     );
     camera.position.set(1, 1, 0);
 
-    // â”€â”€ Point material â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Point material 
     const uFarDist = cfg.numSlabs * cfg.spacing;
 
     const pointMaterial = new THREE.ShaderMaterial({
@@ -69,7 +69,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
         },
     });
 
-    // â”€â”€ Slab manager â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Slab manager 
     const pointMask   = cfg.pointMask   ?? [1];
     const dirSequence = cfg.dirSequence ?? null;
 
@@ -81,7 +81,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
         pointMask,
     });
 
-    // â”€â”€ Mouse lines (commented out â€” swap back in to use) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Mouse lines (commented out â€” swap back in to use) 
     // const mouseLines = new MouseLines(
     //     THREE, scene, camera, canvas, container,
     //     slabManager.slabs,
@@ -94,7 +94,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
     //     },
     // );
 
-    // â”€â”€ Mouse web â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Mouse web 
     const mouseLines = new MouseWeb(
         THREE, scene, camera, canvas, container,
         slabManager.slabs,
@@ -111,7 +111,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
         },
     );
 
-    // â”€â”€ Resize â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Resize 
     function onResize() {
         camera.aspect = container.clientWidth / container.clientHeight;
         camera.updateProjectionMatrix();
@@ -121,7 +121,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
     resizeObserver.observe(container);
     onResize();
 
-    // â”€â”€ Render loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Render loop 
     const clock   = new THREE.Clock();
     let rafId     = null;
     let running   = true;
@@ -149,7 +149,7 @@ export async function startPointGrid(containerId = 'pageBackground', options = {
     window.__pgMouseLines = mouseLines;
     window.__pgPointMat   = pointMaterial;
 
-    // â”€â”€ Public API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    //  Public API 
     function stop() {
         running = false;
         if (rafId !== null) cancelAnimationFrame(rafId);
@@ -183,7 +183,7 @@ window.startPointGrid = startPointGrid;
 // The DOM is ready by the time module scripts execute.
 const _instance = startPointGrid('pageBackground');
 
-// â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Settings panel 
 
 (async function initSettings() {
     const NS = 'pg:';

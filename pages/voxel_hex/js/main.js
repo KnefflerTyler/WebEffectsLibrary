@@ -9,7 +9,7 @@ const THREE = await import(THREE_CDN);
 // Seed the permutation table used by buildHexVoxelMesh on the CPU.
 setSeed(CFG.noiseSeed);
 
-// â”€â”€ Renderer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Renderer 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
@@ -21,14 +21,14 @@ window.addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
 });
 
-// â”€â”€ Scene / Camera â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Scene / Camera 
 const scene  = new THREE.Scene();
 scene.background = new THREE.Color(CFG.fogColor);
 const camera = new THREE.PerspectiveCamera(CFG.fov, innerWidth / innerHeight, 0.1, 2000);
 let camX = 0, camY = CFG.cameraHeight, camZ = 0;
 camera.position.set(camX, camY, camZ);
 
-// â”€â”€ Terrain material â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Terrain material 
 const lightDir = new THREE.Vector3(...CFG.lightDir).normalize();
 
 const material = new THREE.ShaderMaterial({
@@ -52,11 +52,11 @@ const material = new THREE.ShaderMaterial({
     },
 });
 
-// â”€â”€ Chunk streaming â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Chunk streaming 
 const chunkManager = new ChunkManager(scene, CFG, THREE, material);
 chunkManager.update(camX, camZ);
 
-// â”€â”€ Camera controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Camera controls 
 let yaw = 0, pitch = -0.35;
 let controlMode = 'auto';
 
@@ -87,7 +87,7 @@ document.addEventListener('mousemove', e => {
     pitch  = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, pitch));
 });
 
-// â”€â”€ Settings panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Settings panel 
 function updateCameraFar() {
     const tileW = CFG.chunkCols * Math.sqrt(3) * CFG.hexSize;
     const tileH = CFG.chunkRows * 1.5 * CFG.hexSize;
@@ -171,7 +171,7 @@ document.getElementById('spApply')?.addEventListener('click', applySettings);
 // Settings panel toggle
 initPanelToggle();
 
-// â”€â”€ Persist settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Persist settings 
 persistSettings('vh:', [
     'cfgMoveSpeed', 'cfgViewDistance', 'cfgChunkBudget', 'cfgHexSize', 'cfgHeightStep', 'cfgNoiseScale',
     'cfgFogNear', 'cfgFogFar', 'cfgAmbient', 'cfgBrightness',
@@ -179,7 +179,7 @@ persistSettings('vh:', [
     'cfgControlMode', 'cfgWireframe',
 ], applySettings);
 
-// â”€â”€ Animation loop â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Animation loop 
 let prev = performance.now();
 
 (function animate() {
