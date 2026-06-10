@@ -47,7 +47,7 @@ The library includes examples built with JavaScript, HTML, CSS, WebGL, GLSL shad
 
 | Effect                                                                                       | Description                                                          |
 | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| [2D Particles](https://tylerkneffler.github.io/WebEffectsLibrary/2d_particals/)              | GPU fireworks particle system using GLSL vertex and fragment shaders |
+| [2D Particles](https://tylerkneffler.github.io/WebEffectsLibrary/2d_particles/)              | GPU fireworks particle system using GLSL vertex and fragment shaders |
 | [2D Collisions](https://tylerkneffler.github.io/WebEffectsLibrary/2d_collisions/)            | Real-time 2D physics collision simulation                            |
 | [Cloth Simulation](https://tylerkneffler.github.io/WebEffectsLibrary/sim_cloth/)             | Interactive cloth physics simulation                                 |
 | [Fluid Simulation - 2D](https://tylerkneffler.github.io/WebEffectsLibrary/sim_fluid/)        | GPU-based 2D fluid simulation                                        |
