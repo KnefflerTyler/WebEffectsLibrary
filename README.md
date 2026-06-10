@@ -24,13 +24,3 @@ A collection of interactive visual effects, each self-contained in its own direc
 | [2D Particles](https://tylerkneffler.github.io/WebEffectsLibrary/2d_particals/) | GPU fireworks particle system with GLSL vertex/fragment shaders |
 | [2D Collisions](https://tylerkneffler.github.io/WebEffectsLibrary/2d_collisions/) | Real-time 2D physics collision simulation |
 | [Scroll Jacking Demo](https://tylerkneffler.github.io/WebEffectsLibrary/scrolljack_web_sample/) | Modern Apple-style scrolljacking showcase — 7 distinct effects: hero parallax exit, word reveal, feature morph, horizontal carousel, depth zoom, scroll-driven counters, and parallax CTA |
-
-## Running Locally
-
-A local dev server is required (browsers block `fetch()` on `file://` URLs due to CORS):
-
-```bash
-npx serve .
-```
-
-Then open `http://localhost:3000`.
