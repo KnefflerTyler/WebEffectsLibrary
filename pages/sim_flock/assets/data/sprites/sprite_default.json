@@ -1,9 +1,9 @@
 
 {
 	"image": "../../images/sprite.png",
-	"cols": 1,
-	"rows": 1,
+	"cols": 2,
+	"rows": 2,
 	"animations": {
-		"default": { "row": 0, "startCol": 0, "endCol": 0, "fps": 1, "loop": true }
+		"default": { "row": 0, "startCol": 0, "endCol": 1, "fps": 10, "loop": true }
 	}
 }
