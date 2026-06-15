@@ -37,17 +37,18 @@ self.addEventListener('fetch', (e) => {
 
   e.respondWith(
     caches.open(CACHE).then(async cache => {
-      const cached      = await cache.match(e.request);
-      const networkFetch = fetch(e.request);
-
-      // Update cache in background — silently swallow any network errors
-      // so a failed revalidation never surfaces as an unhandled rejection.
-      networkFetch
-        .then(r => { if (r.ok) cache.put(e.request, r.clone()); })
-        .catch(() => {});
+      const cached = await cache.match(e.request);
+      const networkFetch = fetch(e.request)
+        .then(r => {
+          if (r.ok) cache.put(e.request, r.clone());
+          return r;
+        })
+        .catch(() => null);
 
       // Serve from cache immediately; fall back to live network if uncached.
-      return cached || networkFetch;
+      // If network fetch fails, return cached response or a 504 Response.
+      const networkResponse = await networkFetch;
+      return cached || networkResponse || new Response('Gateway Timeout', { status: 504, statusText: 'Gateway Timeout' });
     })
   );
 });

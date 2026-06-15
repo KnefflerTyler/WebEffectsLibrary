@@ -51,6 +51,13 @@ export async function loadSpriteFromJSON(jsonUrl) {
 
     const sprite = new Sprite({ sheetCols: cols, sheetRows: rows });
 
+    // Propagate optional template-level metadata into the sprite instance
+    // so callers (and applyTemplate) can access it. Supported keys:
+    //  - scale: optional render scale applied when template is used
+    //  - resolveStrength: optional default resolveStrength for colliders
+    sprite.templateScale = (typeof data.scale === 'number') ? data.scale : (data.scale ? Number(data.scale) : 1);
+    if (data.resolveStrength !== undefined) sprite.templateResolveStrength = Number(data.resolveStrength);
+
     // Load image if provided
     let image = null;
     if (imagePath) {
@@ -91,6 +98,17 @@ export async function loadSpriteFromJSON(jsonUrl) {
         sprite.addAnimation(defaultAnim);
     }
 
+    // Preserve collider info from JSON (if present). If no collider was
+    // specified but an image is available, create a sensible default collider
+    // (circle) sized to the sprite cell dimensions.
+    if (data.collider) {
+        sprite.templateCollider = data.collider;
+    } else if (image) {
+        const cellW = Math.floor(image.width / cols) || 8;
+        const cellH = Math.floor(image.height / rows) || 8;
+        sprite.templateCollider = { type: 'circle', radius: Math.max(cellW, cellH) / 2 };
+    }
+
     return { sprite, image };
 }
 
@@ -101,6 +119,8 @@ export async function createSimpleSprite(imageUrl) {
     const anim = new SpriteAnimation({ name: 'default', row: 0, startCol: 0, endCol: 0, fps: 1, loop: true });
     sprite.addAnimation(anim);
     sprite.setAnimation('default');
+    // default template scale
+    sprite.templateScale = 1;
     return { sprite, image };
 }
 

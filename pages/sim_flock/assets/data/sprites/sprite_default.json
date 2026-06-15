@@ -1,9 +1,17 @@
 
 {
 	"image": "../../images/sprite.png",
-	"cols": 2,
-	"rows": 2,
+    "scale": 0.05,
+	"resolveStrength": 400,
+	"collider": {
+		"type": "circle",
+		"radius": 150,
+		"offsetX": 0,
+		"offsetY": 0
+	},
+	"cols": 1,
+	"rows": 1,
 	"animations": {
-		"default": { "row": 0, "startCol": 0, "endCol": 1, "fps": 10, "loop": true }
+		"default": { "row": 0, "startCol": 0, "endCol": 0, "fps": 1, "loop": true }
 	}
 }
