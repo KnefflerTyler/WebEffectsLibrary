@@ -2,9 +2,9 @@
 {
 	"image": "../../images/sprite.png",
     "scale": 0.05,
-	"resolveStrength": 400,
+	"resolveStrength": 10,
 	"collider": {
-		"type": "circle",
+		"type": "square",
 		"radius": 150,
 		"offsetX": 0,
 		"offsetY": 0

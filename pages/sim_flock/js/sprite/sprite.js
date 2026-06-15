@@ -79,9 +79,17 @@ export class Sprite {
 
         // Handle collisions locally: move this sprite away and apply impulse
         if (this.collider) {
-            const others = colliders.filter(c => c && c !== this.collider);
+            // Filter to only nearby colliders to avoid unnecessary checks
+            const others = colliders.filter(c => {
+                if (!c || c === this.collider) return false;
+                const dx = this.x - (c.sprite?.x ?? 0);
+                const dy = this.y - (c.sprite?.y ?? 0);
+                const distSq = dx * dx + dy * dy;
+                const maxDist = (this.collider.radius + (c.radius ?? 4)) * 1.5; // Add 50% margin
+                return distSq <= maxDist * maxDist;
+            });
+            
             for (const other of others) {
-                if (!other) continue;
                 if (!this.collider.intersects(other)) continue;
 
                 const apos = this.collider.worldPos();
@@ -106,7 +114,7 @@ export class Sprite {
                 this.y += ny * overlap;
 
                 // Apply velocity impulse based on the other collider's resolveStrength
-                const strength = other.resolveStrength ?? 400;
+                const strength = other.resolveStrength ?? 1;
                 const impulse = strength * overlap * dt;
                 this.vx += nx * impulse;
                 this.vy += ny * impulse;
