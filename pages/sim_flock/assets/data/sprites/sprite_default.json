@@ -1,17 +1,19 @@
 
 {
-	"image": "../../images/sprite.png",
-    "scale": 0.05,
-	"resolveStrength": 10,
+	"image": "../../images/slime_idle1.png",
+    "scale": 1,
+	"resolveStrength": 1,
 	"collider": {
 		"type": "square",
-		"radius": 150,
-		"offsetX": 0,
-		"offsetY": 0
+		"radius": 20,
+		"width": 18,
+		"height": 18,
+		"offsetX": -7,
+		"offsetY": 3
 	},
-	"cols": 1,
-	"rows": 1,
+	"cols": 2,
+	"rows": 7,
 	"animations": {
-		"default": { "row": 0, "startCol": 0, "endCol": 0, "fps": 1, "loop": true }
+		"default": { "row": 0, "startCol": 0, "endCol": 1, "fps": 5, "loop": true }
 	}
 }

@@ -111,7 +111,6 @@ export default class GameManager {
         this.distantUpdateInterval = 5; // frames between updates for distant sprites
         
         // Extreme-scale optimizations (10k+ sprites)
-        this.disableCollisionsThreshold = 5000; // disable collisions above this sprite count
         this.partialSortSize = 1000; // only sort top N sprites (rest get randomized priority)
         this.maxCollisionChecks = 200; // max sprites that check collisions per frame
     }
@@ -134,7 +133,7 @@ export default class GameManager {
 
         // Extreme-scale optimization: disable collisions if sprite count too high
         const spriteCount = (this.flock && this.flock.sprites) ? this.flock.sprites.length : this.sprites.length;
-        const useCollisions = spriteCount < this.disableCollisionsThreshold;
+        const useCollisions = true;
         
         // Collect colliders once per frame (only if enabled)
         const colliders = useCollisions ? this.sprites.map(s => s.collider).filter(Boolean) : [];

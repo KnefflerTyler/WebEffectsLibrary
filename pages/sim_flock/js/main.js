@@ -1,34 +1,5 @@
 'use strict';
 
-// High-Performance Sprite System - Optimized for thousands of sprites
-//
-// Performance Tuning Guide:
-// 
-// For 100-500 sprites:
-//   count: 100-500, weightBudget: 50-100
-//
-// For 500-2000 sprites:
-//   count: 500-2000, weightBudget: 100-200
-//   Enable: renderer.enableCulling = true
-//
-// For 2000-5000 sprites:
-//   count: 2000-5000, weightBudget: 200-500
-//   Enable: game.distanceCulling = true
-//   Increase: game.maxUpdateDistance = 1500
-//
-// For 5000-10000 sprites:
-//   count: 5000-10000, weightBudget: 500-1000
-//   Collisions: automatically disabled above 5000
-//   Enable: renderer.useBatching = true
-//   Reduce: attraction slightly for stability
-//
-// For 10000+ sprites:
-//   count: 10000+, weightBudget: 1000-2000
-//   Set: game.partialSortSize = 500 (only sort top 500)
-//   Set: game.disableCollisionsThreshold = 3000
-//   Set: game.maxUpdateDistance = 1000 (aggressive culling)
-//   Consider: reducing drag, simplifying physics
-//
 // Debug performance: window.showPerfStats = true (logs FPS + culling + draw calls)
 
 import { CanvasRenderer } from './canvasRenderer.js';
@@ -45,11 +16,11 @@ const renderer = new CanvasRenderer(canvasElement);
 const flock = new Flock({
     width: renderer.width,
     height: renderer.height,
-    count: 1000, // Now optimized for 10,000+ sprites
+    count: 10, 
     radius: 2,
     color: '#ffffff',
-    attraction: 800, // Slightly reduced for stability at scale
-    drag: 0.94, // Increased damping
+    attraction: 200, 
+    drag: 0.94,
     maxSpeed: 500
 });
 
@@ -144,7 +115,6 @@ const game = new GameManager({
 // Optimize for extreme scale
 if (flock.sprites.length > 5000) {
     game.partialSortSize = 500; // Only sort top 500
-    game.disableCollisionsThreshold = 5000; // Disable collisions above 5k
     game.maxUpdateDistance = 1200; // Aggressive culling
     game.distantUpdateInterval = 10; // Update distant sprites every 10 frames
     renderer.useBatching = true; // Enable batched rendering

@@ -73,60 +73,135 @@ export class Sprite {
         // If colliders list not provided, just update animation timer
         if (!colliders) return;
 
-        // Move by current velocity
-        this.x += this.vx * dt;
-        this.y += this.vy * dt;
+        // No collider: normal movement
+        if (!this.collider) {
+            this.x += this.vx * dt;
+            this.y += this.vy * dt;
+            return;
+        }
 
-        // Handle collisions locally: move this sprite away and apply impulse
-        if (this.collider) {
-            // Filter to only nearby colliders to avoid unnecessary checks
-            const others = colliders.filter(c => {
-                if (!c || c === this.collider) return false;
-                const dx = this.x - (c.sprite?.x ?? 0);
-                const dy = this.y - (c.sprite?.y ?? 0);
-                const distSq = dx * dx + dy * dy;
-                const maxDist = (this.collider.radius + (c.radius ?? 4)) * 1.5; // Add 50% margin
-                return distSq <= maxDist * maxDist;
-            });
-            
-            for (const other of others) {
-                if (!this.collider.intersects(other)) continue;
+        // 1. Predictive collision handling before committing movement
+        const predicted = this._predictMovement(dt, colliders);
 
-                const apos = this.collider.worldPos();
-                const bpos = other.worldPos();
-                let dx = apos.x - bpos.x;
-                let dy = apos.y - bpos.y;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist === 0) {
-                    dx = (Math.random() - 0.5) * 1e-3;
-                    dy = (Math.random() - 0.5) * 1e-3;
-                    dist = Math.sqrt(dx * dx + dy * dy) || 1e-3;
-                }
-                const nx = dx / dist;
-                const ny = dy / dist;
+        this.x = predicted.x;
+        this.y = predicted.y;
+        this.vx = predicted.vx;
+        this.vy = predicted.vy;
 
-                // Compute overlap (circle-only, simplified)
-                const overlap = (this.collider.radius + (other.radius || 4)) - dist;
-                if (overlap <= 0) continue;
+        // 2. Keep previous/current collision handling after movement
+        const others = colliders.filter(c => {
+            if (!c || c === this.collider) return false;
 
-                // Move this sprite away by the overlap amount
-                this.x += nx * overlap;
-                this.y += ny * overlap;
+            const dx = this.x - (c.sprite?.x ?? 0);
+            const dy = this.y - (c.sprite?.y ?? 0);
+            const distSq = dx * dx + dy * dy;
 
-                // Apply velocity impulse based on the other collider's resolveStrength
-                const strength = other.resolveStrength ?? 1;
-                const impulse = strength * overlap * dt;
-                this.vx += nx * impulse;
-                this.vy += ny * impulse;
+            const maxDist = (this.collider.radius + (c.radius ?? 4)) * 1.5;
+            return distSq <= maxDist * maxDist;
+        });
 
-                // Emit collision callback for this collider
-                const impulseVec = { x: nx * impulse, y: ny * impulse };
-                for (const cb of this.collider._callbacks.collision) cb(other, impulseVec);
+        for (const other of others) {
+            if (!this.collider.intersects(other)) continue;
+
+            const apos = this.collider.worldPos();
+            const bpos = other.worldPos();
+
+            let dx = apos.x - bpos.x;
+            let dy = apos.y - bpos.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist === 0) {
+                dx = (Math.random() - 0.5) * 1e-3;
+                dy = (Math.random() - 0.5) * 1e-3;
+                dist = Math.sqrt(dx * dx + dy * dy) || 1e-3;
             }
 
-            // Update enter/stay/exit triggers
-            this.collider.checkAgainst(others);
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            const overlap = (this.collider.radius + (other.radius || 4)) - dist;
+            if (overlap <= 0) continue;
+
+            // Previous behavior: resolve current overlap
+            this.x += nx * overlap;
+            this.y += ny * overlap;
+
+            // Previous behavior: apply impulse
+            const strength = other.resolveStrength ?? 1;
+            const impulse = strength * overlap * dt;
+
+            this.vx += nx * impulse;
+            this.vy += ny * impulse;
+
+            const impulseVec = {
+                x: nx * impulse,
+                y: ny * impulse
+            };
+
+            for (const cb of this.collider._callbacks.collision) {
+                cb(other, impulseVec);
+            }
         }
+
+        // 3. Keep trigger behavior
+        this.collider.checkAgainst(others);
+    }
+
+    _predictMovement(dt, colliders) {
+        let nextX = this.x + this.vx * dt;
+        let nextY = this.y + this.vy * dt;
+        let nextVx = this.vx;
+        let nextVy = this.vy;
+
+        const selfRadius = this.collider.radius ?? 4;
+
+        for (const other of colliders) {
+            if (!other || other === this.collider) continue;
+
+            const otherPos = other.worldPos();
+            const otherRadius = other.radius ?? 4;
+
+            const dx = nextX - otherPos.x;
+            const dy = nextY - otherPos.y;
+            let dist = Math.sqrt(dx * dx + dy * dy);
+
+            const minDist = selfRadius + otherRadius;
+
+            // Predicted position does not collide
+            if (dist >= minDist) continue;
+
+            if (dist === 0) {
+                dist = 0.0001;
+            }
+
+            const nx = dx / dist;
+            const ny = dy / dist;
+
+            const overlap = minDist - dist;
+
+            // Move this sprite out of the predicted collision
+            nextX += nx * overlap;
+            nextY += ny * overlap;
+
+            // Remove velocity going into the collider
+            const velocityIntoCollider = nextVx * nx + nextVy * ny;
+
+            if (velocityIntoCollider < 0) {
+                const stopStrength = other.predictiveResolveStrength
+                    ?? other.resolveStrength
+                    ?? 1;
+
+                nextVx -= velocityIntoCollider * nx * stopStrength;
+                nextVy -= velocityIntoCollider * ny * stopStrength;
+            }
+        }
+
+        return {
+            x: nextX,
+            y: nextY,
+            vx: nextVx,
+            vy: nextVy
+        };
     }
 
     // Returns a plain object of uniforms that can be merged into a
@@ -295,14 +370,30 @@ export class Sprite {
             // Debug: draw collider outlines when enabled (no image path)
             if (this.collider && Sprite.debugColliders) {
                 const pos = this.collider.worldPos();
+
                 ctx.save();
                 ctx.strokeStyle = 'rgba(255,0,0,0.9)';
                 ctx.lineWidth = 1;
                 ctx.setLineDash([4, 2]);
-                const r = this.collider.radius ?? Math.max(this.width, this.height) / 2 ?? 4;
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-                ctx.stroke();
+
+                if (this.collider.type === 'square' || this.collider.type === 'rect') {
+                    const w = this.collider.width ?? this.width ?? 8;
+                    const h = this.collider.height ?? this.height ?? 8;
+
+                    ctx.strokeRect(
+                        pos.x - w / 2,
+                        pos.y - h / 2,
+                        w,
+                        h
+                    );
+                } else {
+                    const r = this.collider.radius ?? Math.max(this.width, this.height) / 2 ?? 4;
+
+                    ctx.beginPath();
+                    ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
                 ctx.restore();
             }
         }
