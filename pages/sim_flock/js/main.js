@@ -20,7 +20,7 @@ const flock = new Flock({
     radius: 2,
     color: '#ffffff',
     attraction: 200, 
-    drag: 0.94,
+    drag: 0.99,
     maxSpeed: 500
 });
 
