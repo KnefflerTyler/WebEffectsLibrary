@@ -5,23 +5,6 @@ A growing collection of interactive browser-based visual effects, simulations, r
 **Live Demo:**
 https://tylerkneffler.github.io/WebEffectsLibrary/
 
-## Overview
-
-This project serves as a sandbox for experimenting with real-time graphics, procedural generation, animation, physics simulations, networking concepts, and interactive UI effects using web technologies.
-
-The library includes examples built with JavaScript, HTML, CSS, WebGL, GLSL shaders, canvas rendering, WebRTC, and browser-based interaction APIs.
-
-## Technical Highlights
-
-* WebGL and GLSL shader-based rendering
-* Procedural terrain generation using GPU noise
-* Particle systems and physics simulations
-* Interactive 2D and 3D visualizations
-* Algorithm visualizers for search and sorting
-* Scroll-driven UI animation experiments
-* Peer-to-peer and collaborative browser demos
-* Self-contained effect directories for easy testing and expansion
-
 ## Effects Library
 
 ### WebGL, Shaders, and 3D Rendering
@@ -89,24 +72,6 @@ The library includes examples built with JavaScript, HTML, CSS, WebGL, GLSL shad
 | [Connection Stress Test](https://tylerkneffler.github.io/WebEffectsLibrary/conn_stress_test/) | Network stress testing utilities and connection demos |
 | [Tic Tac Toe - P2P](https://tylerkneffler.github.io/WebEffectsLibrary/conn_ticktacktoe/)      | Peer-to-peer multiplayer Tic-Tac-Toe                  |
 
-## Project Structure
-
-Each effect is organized into its own directory:
-
-```text
-WebEffectsLibrary/
-├── default_cube/
-├── galaxy/
-├── grid_breath/
-├── marching_cubes/
-├── sim_fluid/
-├── alg_search/
-├── conn_p2p_chat/
-└── ...
-```
-
-Most demos are designed to run independently, making it easy to test, modify, or extend individual experiments without affecting the rest of the library.
-
 ## Technologies Used
 
 * JavaScript
@@ -118,12 +83,6 @@ Most demos are designed to run independently, making it easy to test, modify, or
 * WebRTC
 * PeerJS
 * GitHub Pages
-
-## Purpose
-
-The goal of this project is to explore advanced browser capabilities through practical, visual examples. It includes experiments in real-time rendering, GPU-based animation, procedural generation, simulation, user interaction, and browser-to-browser communication.
-
-This project also serves as a portfolio piece demonstrating front-end engineering, graphics programming, interactive design, and algorithm visualization.
 
 ## Running Locally
 
