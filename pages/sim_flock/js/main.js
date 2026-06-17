@@ -16,10 +16,10 @@ const renderer = new CanvasRenderer(canvasElement);
 const flock = new Flock({
     width: renderer.width,
     height: renderer.height,
-    count: 100, 
+    count: 1000, 
     radius: 2,
     color: '#ffffff',
-    attraction: 200, 
+    attraction: 500, 
     drag: 0.99,
     maxSpeed: 500
 });

@@ -1,14 +1,14 @@
 
 {
 	"image": "../../images/slime_idle1.png",
-    "scale": 0.5,
-	"resolveStrength": 1,
+    "scale": 0.75,
+	"resolveStrength": 0.1,
 	"collider": {
 		"type": "square",
 		"radius": 20,
-		"width": 13,
-		"height": 13,
-		"offsetX": -2,
+		"width": 18,
+		"height": 18,
+		"offsetX": -5,
 		"offsetY": 3
 	},
 	"cols": 2,
