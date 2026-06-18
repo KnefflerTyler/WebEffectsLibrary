@@ -27,7 +27,7 @@ function getInitialRendererType() {
     }
 
     // Default renderer
-    return 'canvas';
+    return 'webgl';
 }
 
 let rendererType = getInitialRendererType();
@@ -92,7 +92,7 @@ function isUsingWebGL() {
 const flock = new Flock({
     width: renderer.width,
     height: renderer.height,
-    count: 10,
+    count: 1000,
     radius: 2,
     color: '#ffffff',
     attraction: 500,
@@ -103,7 +103,7 @@ const flock = new Flock({
     collisions: true,
     avoidance: true,
     gridCellSize: 64,
-    collisionIterations: 3,
+    collisionIterations: 1,
     positionalCorrection: 1,
     collisionEvents: false
 });
@@ -267,17 +267,6 @@ const game = new GameManager({
     maxQueueAge: 0.05,
 });
 
-// Optimize for extreme scale
-if (flock.sprites.length > 5000) {
-    game.partialSortSize = 500;
-    game.maxUpdateDistance = 1200;
-    game.distantUpdateInterval = 10;
-
-    // CanvasRenderer-only property.
-    if (rendererType === 'canvas' && 'useBatching' in renderer) {
-        renderer.useBatching = true;
-    }
-}
 
 // ------------------------------------------------------------
 // Events

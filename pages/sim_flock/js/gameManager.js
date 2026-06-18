@@ -16,34 +16,6 @@ export default class GameManager {
         this.sprites = sprites;
         this.target = target || { x: 0, y: 0 };
         this.flock = flock || null;
-
-        this.basePriority = (s, g) => {
-            const tx = g.target.x ?? 0;
-            const ty = g.target.y ?? 0;
-
-            const dx = (s.x ?? 0) - tx;
-            const dy = (s.y ?? 0) - ty;
-
-            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-
-            return 1 / (1 + dist);
-        };
-
-        this.costFunction = () => 1;
-
-        this.weightFunction = (s, g, now) => {
-            const base = g.basePriority(s, g) || 0;
-            const last = s._lastUpdateTime || 0;
-            const age = Math.max(0, now - last);
-
-            const norm = g.maxQueueAge > 0
-                ? age / g.maxQueueAge
-                : age;
-
-            const ageFactor = Math.pow(1 + norm, 4);
-
-            return base * ageFactor;
-        };
     }
 
     getSpritesList() {

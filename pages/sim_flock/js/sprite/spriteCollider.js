@@ -1,86 +1,132 @@
 'use strict';
 
-// SpriteCollider — attach one instance to a `Sprite` to provide
-// collision detection and trigger events (`enter`, `stay`, `exit`).
-// Supports 'circle' and 'square' AABB collision types.
+// SpriteCollider owns narrowphase collision logic:
+// - circle/circle
+// - square/square AABB
+// - circle/square
+// - hard position separation
+// - impulse-based velocity transfer
+// - optional friction/restitution
+// - enter/stay/exit/collision callbacks
+
 export default class SpriteCollider {
     constructor(sprite, options = {}) {
         this.sprite = sprite;
 
-        // 'circle' or 'square'
-        this.type = options.type || 'circle';
+        this.type = this.normalizeType(options.type || 'circle');
 
-        const sW = Number(sprite.width) || 0;
-        const sH = Number(sprite.height) || 0;
+        this.offsetX = Number(options.offsetX) || 0;
+        this.offsetY = Number(options.offsetY) || 0;
+
+        this.resolve = options.resolve !== undefined ? !!options.resolve : true;
+        this.static = options.static !== undefined ? !!options.static : false;
+
+        // Compatibility with older config.
+        // Do not use this for hard position separation.
+        this.resolveStrength = options.resolveStrength ?? 1;
+
+        this.mass = options.mass ?? 1;
+        this.invMass = this.static ? 0 : 1 / Math.max(0.0001, this.mass);
+
+        // 0 = no bounce, 1 = very bouncy.
+        // For flock sprites, keep this very low.
+        this.restitution = options.restitution ?? 0.02;
+
+        // 0 = can slide/move together freely.
+        // Increase slightly only if you want contact friction.
+        this.friction = options.friction ?? 0;
+
+        const spriteWidth =
+            Number(sprite.width) ||
+            Number(sprite.renderWidth) ||
+            Number(sprite.size) ||
+            0;
+
+        const spriteHeight =
+            Number(sprite.height) ||
+            Number(sprite.renderHeight) ||
+            Number(sprite.size) ||
+            0;
 
         if (this.type === 'circle') {
-            const defaultRadius = Math.max(sW, sH) > 0
-                ? Math.max(sW, sH) / 2
-                : 4;
-
-            this.radius = options.radius !== undefined
-                ? options.radius
-                : defaultRadius;
-        } else if (this.type === 'square') {
-            this.halfWidth = options.width !== undefined
-                ? options.width / 2
-                : sW > 0
-                    ? sW / 2
+            const defaultRadius =
+                Math.max(spriteWidth, spriteHeight) > 0
+                    ? Math.max(spriteWidth, spriteHeight) * 0.5
                     : 4;
 
-            this.halfHeight = options.height !== undefined
-                ? options.height / 2
-                : sH > 0
-                    ? sH / 2
-                    : 4;
+            this.radius =
+                options.radius !== undefined
+                    ? Number(options.radius)
+                    : defaultRadius;
 
-            // Useful for broad-phase checks or fallback behavior
+            this.width = this.radius * 2;
+            this.height = this.radius * 2;
+
+            this.halfWidth = this.radius;
+            this.halfHeight = this.radius;
+        } else {
+            const width =
+                options.width !== undefined
+                    ? Number(options.width)
+                    : spriteWidth > 0
+                        ? spriteWidth
+                        : 8;
+
+            const height =
+                options.height !== undefined
+                    ? Number(options.height)
+                    : spriteHeight > 0
+                        ? spriteHeight
+                        : 8;
+
+            this.width = width;
+            this.height = height;
+
+            this.halfWidth = width * 0.5;
+            this.halfHeight = height * 0.5;
+
+            // Broadphase fallback radius.
             this.radius = Math.sqrt(
                 this.halfWidth * this.halfWidth +
                 this.halfHeight * this.halfHeight
             );
-        } else {
-            console.warn(`Unknown collider type "${this.type}", falling back to circle.`);
-
-            this.type = 'circle';
-
-            const defaultRadius = Math.max(sW, sH) > 0
-                ? Math.max(sW, sH) / 2
-                : 4;
-
-            this.radius = options.radius !== undefined
-                ? options.radius
-                : defaultRadius;
         }
-
-        // Local offset from sprite position
-        this.offsetX = options.offsetX || 0;
-        this.offsetY = options.offsetY || 0;
-
-        // Whether this collider should physically push away from collisions
-        this.resolve = options.resolve !== undefined ? !!options.resolve : true;
-
-        // Whether this collider is immovable/static.
-        // Example: walls should usually be static.
-        this.static = options.static !== undefined ? !!options.static : false;
-
-        // Optional multiplier for physical push
-        this.resolveStrength = options.resolveStrength ?? 1;
 
         this._callbacks = {
             enter: new Set(),
             stay: new Set(),
             exit: new Set(),
-            collision: new Set(),
+            collision: new Set()
         };
 
         this._prev = new Set();
+        this._now = new Set();
+    }
+
+    normalizeType(type) {
+        if (type === 'square' || type === 'rect' || type === 'rectangle') {
+            return 'square';
+        }
+
+        if (type === 'circle') {
+            return 'circle';
+        }
+
+        console.warn(`Unknown collider type "${type}", falling back to circle.`);
+        return 'circle';
+    }
+
+    sync() {
+        // Position is derived from sprite + offset.
+        // Keep this method so CollisionWorld can sync colliders generically.
     }
 
     on(event, cb) {
         if (this._callbacks[event]) {
             this._callbacks[event].add(cb);
         }
+
+        return () => this.off(event, cb);
     }
 
     off(event, cb) {
@@ -89,122 +135,145 @@ export default class SpriteCollider {
         }
     }
 
+    clear() {
+        this._callbacks.enter.clear();
+        this._callbacks.stay.clear();
+        this._callbacks.exit.clear();
+        this._callbacks.collision.clear();
+
+        this._prev.clear();
+        this._now.clear();
+    }
+
     worldPos() {
         return {
             x: (this.sprite.x || 0) + this.offsetX,
-            y: (this.sprite.y || 0) + this.offsetY,
+            y: (this.sprite.y || 0) + this.offsetY
+        };
+    }
+
+    isCircle() {
+        return this.type === 'circle';
+    }
+
+    isSquare() {
+        return this.type === 'square';
+    }
+
+    getBounds() {
+        const pos = this.worldPos();
+
+        if (this.isSquare()) {
+            return {
+                minX: pos.x - this.halfWidth,
+                minY: pos.y - this.halfHeight,
+                maxX: pos.x + this.halfWidth,
+                maxY: pos.y + this.halfHeight
+            };
+        }
+
+        return {
+            minX: pos.x - this.radius,
+            minY: pos.y - this.radius,
+            maxX: pos.x + this.radius,
+            maxY: pos.y + this.radius
         };
     }
 
     intersects(other) {
         if (!other) return false;
 
-        const aPos = this.worldPos();
-        const bPos = other.worldPos();
-
-        // Circle-circle
-        if (this.type === 'circle' && other.type === 'circle') {
-            const dx = aPos.x - bPos.x;
-            const dy = aPos.y - bPos.y;
-            const r = this.radius + (other.radius || 4);
-
-            return dx * dx + dy * dy <= r * r;
-        }
-
-        // Square-square AABB
-        if (this.type === 'square' && other.type === 'square') {
-            return (
-                Math.abs(aPos.x - bPos.x) <= this.halfWidth + other.halfWidth &&
-                Math.abs(aPos.y - bPos.y) <= this.halfHeight + other.halfHeight
-            );
-        }
-
-        // Circle-square
-        const circle = this.type === 'circle' ? this : other;
-        const square = this.type === 'square' ? this : other;
-
-        const cPos = circle.worldPos();
-        const sPos = square.worldPos();
-
-        const closestX = Math.max(
-            sPos.x - square.halfWidth,
-            Math.min(cPos.x, sPos.x + square.halfWidth)
-        );
-
-        const closestY = Math.max(
-            sPos.y - square.halfHeight,
-            Math.min(cPos.y, sPos.y + square.halfHeight)
-        );
-
-        const dx = cPos.x - closestX;
-        const dy = cPos.y - closestY;
-
-        return dx * dx + dy * dy <= circle.radius * circle.radius;
+        const info = this.collisionInfo(other);
+        return !!info && info.depth > 0;
     }
 
-    // Returns collision information for resolving overlap.
-    // normal points from `other` toward `this`.
     collisionInfo(other) {
-        if (!other || !this.intersects(other)) return null;
+        if (!other) return null;
 
-        const aPos = this.worldPos();
-        const bPos = other.worldPos();
+        if (this.isCircle() && other.isCircle()) {
+            return this.circleCircleInfo(other);
+        }
 
-        const dx = aPos.x - bPos.x;
-        const dy = aPos.y - bPos.y;
+        if (this.isSquare() && other.isSquare()) {
+            return this.squareSquareInfo(other);
+        }
 
-        // Square-square AABB resolution
-        if (this.type === 'square' && other.type === 'square') {
-            const overlapX = this.halfWidth + other.halfWidth - Math.abs(dx);
-            const overlapY = this.halfHeight + other.halfHeight - Math.abs(dy);
+        return this.circleSquareInfo(other);
+    }
 
-            if (overlapX <= 0 || overlapY <= 0) return null;
+    circleCircleInfo(other) {
+        const a = this.worldPos();
+        const b = other.worldPos();
 
-            if (overlapX < overlapY) {
-                return {
-                    normal: {
-                        x: dx < 0 ? -1 : 1,
-                        y: 0,
-                    },
-                    depth: overlapX,
-                };
-            }
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
 
+        let distSq = dx * dx + dy * dy;
+
+        const minDist = this.radius + other.radius;
+
+        if (distSq >= minDist * minDist) {
+            return null;
+        }
+
+        if (distSq <= 0.000001) {
+            const idA = this.sprite?._flockId ?? 1;
+            const idB = other.sprite?._flockId ?? 2;
+            const angle = (idA * 12.9898 + idB * 78.233) % (Math.PI * 2);
+
+            dx = Math.cos(angle);
+            dy = Math.sin(angle);
+            distSq = 1;
+        }
+
+        const dist = Math.sqrt(distSq);
+
+        return {
+            normal: {
+                x: dx / dist,
+                y: dy / dist
+            },
+            depth: minDist - dist
+        };
+    }
+
+    squareSquareInfo(other) {
+        const a = this.worldPos();
+        const b = other.worldPos();
+
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+
+        const overlapX = this.halfWidth + other.halfWidth - Math.abs(dx);
+        if (overlapX <= 0) return null;
+
+        const overlapY = this.halfHeight + other.halfHeight - Math.abs(dy);
+        if (overlapY <= 0) return null;
+
+        if (overlapX < overlapY) {
             return {
                 normal: {
-                    x: 0,
-                    y: dy < 0 ? -1 : 1,
+                    x: dx < 0 ? -1 : 1,
+                    y: 0
                 },
-                depth: overlapY,
+                depth: overlapX
             };
         }
 
-        // Circle-circle resolution
-        if (this.type === 'circle' && other.type === 'circle') {
-            const distSq = dx * dx + dy * dy;
-            const r = this.radius + other.radius;
+        return {
+            normal: {
+                x: 0,
+                y: dy < 0 ? -1 : 1
+            },
+            depth: overlapY
+        };
+    }
 
-            if (distSq <= 0) {
-                return {
-                    normal: { x: 1, y: 0 },
-                    depth: r,
-                };
-            }
+    circleSquareInfo(other) {
+        const thisIsCircle = this.isCircle();
 
-            const dist = Math.sqrt(distSq);
-
-            return {
-                normal: {
-                    x: dx / dist,
-                    y: dy / dist,
-                },
-                depth: r - dist,
-            };
-        }
-
-        // Circle-square resolution
-        const circle = this.type === 'circle' ? this : other;
-        const square = this.type === 'square' ? this : other;
+        const circle = thisIsCircle ? this : other;
+        const square = thisIsCircle ? other : this;
 
         const cPos = circle.worldPos();
         const sPos = square.worldPos();
@@ -224,25 +293,25 @@ export default class SpriteCollider {
 
         const distSq = nx * nx + ny * ny;
 
-        let info;
+        let depth = 0;
 
-        if (distSq <= 0) {
+        if (distSq <= 0.000001) {
             // Circle center is inside the square.
-            // Push toward the nearest edge.
+            // Push toward nearest edge.
             const left = Math.abs(cPos.x - (sPos.x - square.halfWidth));
             const right = Math.abs((sPos.x + square.halfWidth) - cPos.x);
             const top = Math.abs(cPos.y - (sPos.y - square.halfHeight));
             const bottom = Math.abs((sPos.y + square.halfHeight) - cPos.y);
 
-            const min = Math.min(left, right, top, bottom);
+            const minEdge = Math.min(left, right, top, bottom);
 
-            if (min === left) {
+            if (minEdge === left) {
                 nx = -1;
                 ny = 0;
-            } else if (min === right) {
+            } else if (minEdge === right) {
                 nx = 1;
                 ny = 0;
-            } else if (min === top) {
+            } else if (minEdge === top) {
                 nx = 0;
                 ny = -1;
             } else {
@@ -250,200 +319,294 @@ export default class SpriteCollider {
                 ny = 1;
             }
 
-            info = {
-                normal: { x: nx, y: ny },
-                depth: circle.radius + min,
-            };
+            depth = circle.radius + minEdge;
         } else {
             const dist = Math.sqrt(distSq);
 
-            info = {
-                normal: {
-                    x: nx / dist,
-                    y: ny / dist,
-                },
-                depth: circle.radius - dist,
+            if (dist >= circle.radius) {
+                return null;
+            }
+
+            nx /= dist;
+            ny /= dist;
+
+            depth = circle.radius - dist;
+        }
+
+        // nx/ny currently points from square toward circle.
+        // collisionInfo must return normal from other -> this.
+        if (thisIsCircle) {
+            return {
+                normal: { x: nx, y: ny },
+                depth
             };
         }
 
-        // collisionInfo should always return a normal from `other` toward `this`.
-        // The circle-square math naturally points from square to circle.
-        // If `this` is the square, flip it.
-        if (this.type === 'square') {
-            info.normal.x *= -1;
-            info.normal.y *= -1;
-        }
-
-        return info;
+        return {
+            normal: { x: -nx, y: -ny },
+            depth
+        };
     }
-    
-    resolveCollision(other) {
+
+    resolveCollision(other, options = {}) {
         if (!this.resolve || !other || !other.resolve) return false;
 
         const info = this.collisionInfo(other);
         if (!info || info.depth <= 0) return false;
 
+        const slop = options.collisionSlop ?? 0;
+        const depth = info.depth - slop;
+
+        if (depth <= 0) return false;
+
         const nx = info.normal.x;
         const ny = info.normal.y;
 
-        const pushX = nx * info.depth * this.resolveStrength;
-        const pushY = ny * info.depth * this.resolveStrength;
+        const thisStatic = !!this.static;
+        const otherStatic = !!other.static;
 
-        const thisStatic = this.static;
-        const otherStatic = other.static;
+        if (thisStatic && otherStatic) return false;
 
-        // If both are static, do nothing.
-        if (thisStatic && otherStatic) {
-            return false;
-        }
+        this.applyPositionCorrection(other, nx, ny, depth, options);
+        this.applyCollisionImpulse(other, nx, ny, options);
+        this.emitCollision(other, info);
 
-        // -----------------------------
-        // 1. POSITION SEPARATION
-        // -----------------------------
+        return true;
+    }
 
-        if (thisStatic && !otherStatic) {
-            other.sprite.x -= pushX;
-            other.sprite.y -= pushY;
-        } else if (!thisStatic && otherStatic) {
-            this.sprite.x += pushX;
-            this.sprite.y += pushY;
-        } else {
-            this.sprite.x += pushX * 0.5;
-            this.sprite.y += pushY * 0.5;
-
-            other.sprite.x -= pushX * 0.5;
-            other.sprite.y -= pushY * 0.5;
-        }
-
-        // -----------------------------
-        // 2. VELOCITY BLOCKING
-        // -----------------------------
-        // This is the missing part.
-        // Remove velocity that points into the other collider.
-
+    applyPositionCorrection(other, nx, ny, depth, options = {}) {
         const a = this.sprite;
         const b = other.sprite;
+
+        const thisStatic = !!this.static;
+        const otherStatic = !!other.static;
+
+        // Hard separation by default.
+        // percentage can be lowered if correction is too sharp.
+        const percent = options.positionCorrectionPercent ?? 1;
+
+        const correction = depth * percent;
+
+        const pushX = nx * correction;
+        const pushY = ny * correction;
+
+        if (thisStatic && !otherStatic) {
+            b.x -= pushX;
+            b.y -= pushY;
+        } else if (!thisStatic && otherStatic) {
+            a.x += pushX;
+            a.y += pushY;
+        } else if (!thisStatic && !otherStatic) {
+            const invMassA = this.invMass;
+            const invMassB = other.invMass;
+            const invMassSum = invMassA + invMassB || 1;
+
+            const ratioA = invMassA / invMassSum;
+            const ratioB = invMassB / invMassSum;
+
+            a.x += pushX * ratioA;
+            a.y += pushY * ratioA;
+
+            b.x -= pushX * ratioB;
+            b.y -= pushY * ratioB;
+        }
+    }
+
+    applyCollisionImpulse(other, nx, ny, options = {}) {
+        const a = this.sprite;
+        const b = other.sprite;
+
+        const thisStatic = !!this.static;
+        const otherStatic = !!other.static;
+
+        if (thisStatic && otherStatic) return;
 
         const avx = a.vx || 0;
         const avy = a.vy || 0;
         const bvx = b.vx || 0;
         const bvy = b.vy || 0;
 
-        // Relative velocity from other -> this
+        // Relative velocity from other -> this.
         const rvx = avx - bvx;
         const rvy = avy - bvy;
 
-        // Velocity along collision normal
+        // Normal points from other toward this.
+        // Negative means closing into each other.
+        // Zero means moving together.
+        // Positive means separating.
         const velAlongNormal = rvx * nx + rvy * ny;
 
-        // If velAlongNormal > 0, they are already separating.
-        // If <= 0, they are moving into each other.
-        if (velAlongNormal < 0) {
-            const restitution = 0; // 0 = no bounce, just stop
+        const epsilon = options.contactEpsilon ?? 0.0001;
 
-            let impulse = -(1 + restitution) * velAlongNormal;
-
-            if (!thisStatic && !otherStatic) {
-                impulse *= 0.5;
-            }
-
-            const impulseX = impulse * nx;
-            const impulseY = impulse * ny;
-
-            if (thisStatic && !otherStatic) {
-                b.vx -= impulseX;
-                b.vy -= impulseY;
-            } else if (!thisStatic && otherStatic) {
-                a.vx += impulseX;
-                a.vy += impulseY;
-            } else {
-                a.vx += impulseX;
-                a.vy += impulseY;
-
-                b.vx -= impulseX;
-                b.vy -= impulseY;
-            }
+        if (velAlongNormal > -epsilon) {
+            this.applyFrictionImpulse(other, nx, ny, 0, options);
+            return;
         }
 
-        // Optional: reduce sliding/jitter slightly
-        const damping = 0.98;
+        const restitution =
+            options.restitution ??
+            Math.min(this.restitution ?? 0, other.restitution ?? 0);
+
+        const invMassA = thisStatic ? 0 : this.invMass;
+        const invMassB = otherStatic ? 0 : other.invMass;
+
+        const invMassSum = invMassA + invMassB;
+        if (invMassSum <= 0) return;
+
+        // Physics impulse scalar.
+        const j = -(1 + restitution) * velAlongNormal / invMassSum;
+
+        const impulseX = j * nx;
+        const impulseY = j * ny;
 
         if (!thisStatic) {
-            a.vx *= damping;
-            a.vy *= damping;
+            a.vx += impulseX * invMassA;
+            a.vy += impulseY * invMassA;
         }
 
         if (!otherStatic) {
-            b.vx *= damping;
-            b.vy *= damping;
+            b.vx -= impulseX * invMassB;
+            b.vy -= impulseY * invMassB;
         }
 
+        this.applyFrictionImpulse(other, nx, ny, j, options);
+    }
+
+    applyFrictionImpulse(other, nx, ny, normalImpulse = 0, options = {}) {
+        const friction =
+            options.friction ??
+            Math.min(this.friction ?? 0, other.friction ?? 0);
+
+        if (friction <= 0) return;
+
+        const a = this.sprite;
+        const b = other.sprite;
+
+        const thisStatic = !!this.static;
+        const otherStatic = !!other.static;
+
+        if (thisStatic && otherStatic) return;
+
+        const avx = a.vx || 0;
+        const avy = a.vy || 0;
+        const bvx = b.vx || 0;
+        const bvy = b.vy || 0;
+
+        const rvx = avx - bvx;
+        const rvy = avy - bvy;
+
+        const normalSpeed = rvx * nx + rvy * ny;
+
+        let tx = rvx - normalSpeed * nx;
+        let ty = rvy - normalSpeed * ny;
+
+        const tangentLenSq = tx * tx + ty * ty;
+        if (tangentLenSq <= 0.000001) return;
+
+        const tangentLen = Math.sqrt(tangentLenSq);
+
+        tx /= tangentLen;
+        ty /= tangentLen;
+
+        const tangentSpeed = rvx * tx + rvy * ty;
+
+        const invMassA = thisStatic ? 0 : this.invMass;
+        const invMassB = otherStatic ? 0 : other.invMass;
+
+        const invMassSum = invMassA + invMassB;
+        if (invMassSum <= 0) return;
+
+        let jt = -tangentSpeed / invMassSum;
+
+        // Coulomb-style clamp.
+        // If normalImpulse is 0 because objects are resting/moving together,
+        // still allow a tiny friction cap so sliding can settle if wanted.
+        const maxFriction =
+            normalImpulse > 0
+                ? normalImpulse * friction
+                : friction;
+
+        jt = Math.max(-maxFriction, Math.min(maxFriction, jt));
+
+        const impulseX = jt * tx;
+        const impulseY = jt * ty;
+
+        if (!thisStatic) {
+            a.vx += impulseX * invMassA;
+            a.vy += impulseY * invMassA;
+        }
+
+        if (!otherStatic) {
+            b.vx -= impulseX * invMassB;
+            b.vy -= impulseY * invMassB;
+        }
+    }
+
+    emitCollision(other, info) {
         for (const cb of this._callbacks.collision) {
             cb(other, this, info);
         }
 
-        for (const cb of other._callbacks.collision) {
-            cb(this, other, {
-                normal: {
-                    x: -info.normal.x,
-                    y: -info.normal.y,
-                },
-                depth: info.depth,
-            });
-        }
+        const flipped = {
+            normal: {
+                x: -info.normal.x,
+                y: -info.normal.y
+            },
+            depth: info.depth
+        };
 
-        return true;
+        for (const cb of other._callbacks.collision) {
+            cb(this, other, flipped);
+        }
     }
 
-    checkAgainst(others) {
-        const now = new Set();
+    trackAgainst(other) {
+        if (!other || other === this) return;
 
-        for (const other of others) {
-            if (!other || other === this) continue;
+        const hit = this.intersects(other);
 
-            const hit = this.intersects(other);
-
-            if (hit) {
-                now.add(other);
-            }
-
-            const was = this._prev.has(other);
-
-            if (hit && !was) {
-                for (const cb of this._callbacks.enter) {
-                    cb(other, this);
-                }
-            } else if (hit && was) {
-                for (const cb of this._callbacks.stay) {
-                    cb(other, this);
-                }
-            } else if (!hit && was) {
-                for (const cb of this._callbacks.exit) {
-                    cb(other, this);
-                }
-            }
+        if (hit) {
+            this._now.add(other);
         }
 
+        const was = this._prev.has(other);
+
+        if (hit && !was) {
+            for (const cb of this._callbacks.enter) {
+                cb(other, this);
+            }
+        } else if (hit && was) {
+            for (const cb of this._callbacks.stay) {
+                cb(other, this);
+            }
+        }
+    }
+
+    finishEventFrame() {
         for (const prev of this._prev) {
-            if (!now.has(prev)) {
+            if (!this._now.has(prev)) {
                 for (const cb of this._callbacks.exit) {
                     cb(prev, this);
                 }
             }
         }
 
-        this._prev = now;
+        this._prev = this._now;
+        this._now = new Set();
+    }
+
+    checkAgainst(others) {
+        this._now.clear();
+
+        for (const other of others) {
+            if (!other || other === this) continue;
+            this.trackAgainst(other);
+        }
+
+        this.finishEventFrame();
     }
 
     update(others) {
         this.checkAgainst(others);
-    }
-
-    clear() {
-        this._callbacks.enter.clear();
-        this._callbacks.stay.clear();
-        this._callbacks.exit.clear();
-        this._callbacks.collision.clear();
-        this._prev.clear();
     }
 }
