@@ -31,12 +31,12 @@ function getInitialRendererType() {
 }
 
 let rendererType = getInitialRendererType();
-let renderer = createRenderer(rendererType);
+let renderer = await createRenderer(rendererType);
 
-function createRenderer(type) {
+async function createRenderer(type) {
     if (type === 'webgl') {
         try {
-            return new WebGLRenderer(canvasElement, {
+            return await WebGLRenderer.create(canvasElement, {
                 enableCulling: true,
                 cullMargin: 80,
                 maxInstancesPerBatch: 20000,
@@ -52,10 +52,16 @@ function createRenderer(type) {
         }
     }
 
-    return new CanvasRenderer(canvasElement);
+    return new CanvasRenderer(canvasElement, {
+        enableCulling: true,
+        cullMargin: 80,
+        useBatching: true,
+        batchThreshold: 300,
+        useFastImagePath: true
+    });
 }
 
-function setRendererType(type) {
+async function setRendererType(type) {
     if (type !== 'canvas' && type !== 'webgl') return;
     if (type === rendererType) return;
 
@@ -67,7 +73,7 @@ function setRendererType(type) {
     rendererType = type;
     localStorage.setItem(RENDERER_STORAGE_KEY, rendererType);
 
-    renderer = createRenderer(rendererType);
+    renderer = await createRenderer(rendererType);
 
     flock.resize(renderer.width, renderer.height);
     game.setTarget(flock.target.x, flock.target.y);
@@ -86,11 +92,11 @@ function isUsingWebGL() {
 const flock = new Flock({
     width: renderer.width,
     height: renderer.height,
-    count: 1000,
+    count: 10,
     radius: 2,
     color: '#ffffff',
     attraction: 500,
-    drag: 0.99,
+    drag: 0.92,
     maxSpeed: 500,
 
     // Spatial hash / collision settings

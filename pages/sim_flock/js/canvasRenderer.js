@@ -434,6 +434,27 @@ export class CanvasRenderer {
     }
 
     getSpriteSheetData(sprite) {
+        // Best source: your Sprite class already exposes shader-style animation uniforms.
+        if (sprite && typeof sprite.getUniforms === 'function') {
+            const u = sprite.getUniforms();
+
+            if (u && Object.keys(u).length > 0) {
+                return {
+                    cols: u.uCols ?? 1,
+                    rows: u.uRows ?? 1,
+                    row: u.uRow ?? 0,
+                    startCol: u.uStartCol ?? 0,
+                    endCol: u.uEndCol ?? ((u.uCols ?? 1) - 1),
+                    animSpeed: u.uAnimSpeed ?? 0,
+
+                    // Canvas uses elapsed seconds directly.
+                    time: u.uTime ?? sprite.elapsed ?? 0,
+                    frameOffset: u.uFrameOffset ?? 0
+                };
+            }
+        }
+
+        // Fallback for raw objects that are not Sprite instances.
         const cols =
             sprite.sheetCols ??
             sprite.cols ??
@@ -473,12 +494,6 @@ export class CanvasRenderer {
             sprite.uAnimSpeed ??
             0;
 
-        const frameOffset =
-            sprite.frameOffset ??
-            sprite.uFrameOffset ??
-            sprite._flockId ??
-            0;
-
         return {
             cols,
             rows,
@@ -486,7 +501,8 @@ export class CanvasRenderer {
             startCol,
             endCol,
             animSpeed,
-            frameOffset
+            time: sprite.elapsed ?? 0,
+            frameOffset: sprite.frameOffset ?? sprite.uFrameOffset ?? 0
         };
     }
 
@@ -516,10 +532,8 @@ export class CanvasRenderer {
 
         const frameCount = Math.max(1, endC - startC + 1);
 
-        const time = performance.now() / 1000;
-
         const localFrame = Math.floor(
-            this.mod(time * sheet.animSpeed + sheet.frameOffset, frameCount)
+            this.mod(sheet.time * sheet.animSpeed + sheet.frameOffset, frameCount)
         );
 
         const frame = startC + localFrame;

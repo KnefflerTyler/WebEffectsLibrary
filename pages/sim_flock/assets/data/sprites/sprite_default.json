@@ -1,7 +1,7 @@
 
 {
 	"image": "../../images/slime_idle1.png",
-    "scale": 0.75,
+    "scale": 0.85,
 	"resolveStrength": 0.1,
 	"collider": {
 		"type": "square",

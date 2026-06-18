@@ -1,6 +1,9 @@
 'use strict';
 
 import Sprite from './sprite/sprite.js';
+import { loadGLSL } from '../../../shared/loadGLSL.js';
+
+const base = new URL('../glsl/', import.meta.url);
 
 export class WebGLRenderer {
     constructor(canvas, options = {}) {
@@ -31,9 +34,15 @@ export class WebGLRenderer {
         this.backgroundColor = options.backgroundColor ?? [0.04, 0.05, 0.08, 1.0];
         this.alphaCutoff = options.alphaCutoff ?? 0.01;
 
-        // Main bool check. You can set renderer.debugColliders = true/false.
-        // It also respects Sprite.debugColliders for compatibility.
         this.debugColliders = options.debugColliders ?? false;
+
+        this.vertexShaderPath =
+            options.vertexShaderPath ??
+            new URL('sprite_instanced.vert.glsl', base);
+
+        this.fragmentShaderPath =
+            options.fragmentShaderPath ??
+            new URL('sprite_instanced.frag.glsl', base);
 
         this.stats = {
             totalSprites: 0,
@@ -66,26 +75,46 @@ export class WebGLRenderer {
 
             10 endCol
             11 animSpeed
-            12 frameOffset
+            12 animTime
+            13 frameOffset
         */
-        this.floatsPerInstance = 13;
-        this.instanceData = new Float32Array(this.maxInstancesPerBatch * this.floatsPerInstance);
+        this.floatsPerInstance = 14;
+        this.instanceData = new Float32Array(
+            this.maxInstancesPerBatch * this.floatsPerInstance
+        );
 
         this.program = null;
         this.vao = null;
         this.vertexBuffer = null;
         this.indexBuffer = null;
         this.instanceBuffer = null;
-
         this.uniforms = {};
 
         this.debugCanvas = null;
         this.debugCtx = null;
         this.ownsDebugCanvas = false;
 
+        this.initialized = false;
+
         this.initDebugCanvas(options.debugCanvas ?? null);
-        this.initGL();
+    }
+
+    static async create(canvas, options = {}) {
+        const renderer = new WebGLRenderer(canvas, options);
+        await renderer.init();
+        return renderer;
+    }
+
+    async init() {
+        const vertexSource = await loadGLSL(this.vertexShaderPath);
+        const fragmentSource = await loadGLSL(this.fragmentShaderPath);
+
+        this.initGL(vertexSource, fragmentSource);
         this.resize();
+
+        this.initialized = true;
+
+        return this;
     }
 
     initDebugCanvas(existingCanvas = null) {
@@ -111,133 +140,21 @@ export class WebGLRenderer {
         this.debugCanvas.style.zIndex = '10';
     }
 
-    initGL() {
+    initGL(vertexSource, fragmentSource) {
         const gl = this.gl;
-
-        const vertexSource = `#version 300 es
-        precision mediump float;
-
-        layout(location = 0) in vec2 aCorner;
-
-        // x, y, width, height
-        layout(location = 1) in vec4 aTransform;
-
-        // rotation, alpha
-        layout(location = 2) in vec2 aRotAlpha;
-
-        // cols, rows, row, startCol
-        layout(location = 3) in vec4 aSheetA;
-
-        // endCol, animSpeed, frameOffset
-        layout(location = 4) in vec3 aSheetB;
-
-        uniform vec2 uResolution;
-
-        out vec2 vUv;
-        out float vAlpha;
-        out vec4 vSheetA;
-        out vec3 vSheetB;
-
-        void main() {
-            vec2 pos = aTransform.xy;
-            vec2 size = aTransform.zw;
-
-            float rotation = aRotAlpha.x;
-            float alpha = aRotAlpha.y;
-
-            vec2 centered = aCorner - vec2(0.5);
-
-            float c = cos(rotation);
-            float s = sin(rotation);
-
-            vec2 local = centered * size;
-
-            vec2 rotated = vec2(
-                local.x * c - local.y * s,
-                local.x * s + local.y * c
-            );
-
-            vec2 world = pos + rotated;
-
-            vec2 zeroToOne = world / uResolution;
-            vec2 zeroToTwo = zeroToOne * 2.0;
-            vec2 clip = zeroToTwo - 1.0;
-
-            gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
-
-            vUv = aCorner;
-            vAlpha = alpha;
-            vSheetA = aSheetA;
-            vSheetB = aSheetB;
-        }
-        `;
-
-        const fragmentSource = `#version 300 es
-        precision mediump float;
-
-        in vec2 vUv;
-        in float vAlpha;
-
-        // cols, rows, row, startCol
-        in vec4 vSheetA;
-
-        // endCol, animSpeed, frameOffset
-        in vec3 vSheetB;
-
-        uniform sampler2D uTexture;
-        uniform float uTime;
-        uniform float uAlphaCutoff;
-
-        out vec4 outColor;
-
-        void main() {
-            float uCols = vSheetA.x;
-            float uRows = vSheetA.y;
-            float uRow = vSheetA.z;
-            float uStartCol = vSheetA.w;
-
-            float uEndCol = vSheetB.x;
-            float uAnimSpeed = vSheetB.y;
-            float uFrameOffset = vSheetB.z;
-
-            float cols = max(1.0, uCols);
-            float rows = max(1.0, uRows);
-
-            float startC = clamp(uStartCol, 0.0, cols - 1.0);
-            float endC = clamp(uEndCol, 0.0, cols - 1.0);
-            float frameCount = max(1.0, endC - startC + 1.0);
-
-            float localFrame = floor(mod(uTime * uAnimSpeed + uFrameOffset, frameCount));
-            float frame = startC + localFrame;
-
-            vec2 cell = vec2(1.0 / cols, 1.0 / rows);
-
-            float r = clamp(uRow, 0.0, rows - 1.0);
-            vec2 offset = vec2(frame * cell.x, r * cell.y);
-
-            vec2 uv = offset + vUv * cell;
-
-            vec4 color = texture(uTexture, uv);
-            color.a *= vAlpha;
-
-            if (color.a <= uAlphaCutoff) {
-                discard;
-            }
-
-            outColor = color;
-        }
-        `;
 
         const vertexShader = this.createShader(gl.VERTEX_SHADER, vertexSource);
         const fragmentShader = this.createShader(gl.FRAGMENT_SHADER, fragmentSource);
 
         this.program = this.createProgram(vertexShader, fragmentShader);
 
+        gl.deleteShader(vertexShader);
+        gl.deleteShader(fragmentShader);
+
         gl.useProgram(this.program);
 
         this.uniforms.uResolution = gl.getUniformLocation(this.program, 'uResolution');
         this.uniforms.uTexture = gl.getUniformLocation(this.program, 'uTexture');
-        this.uniforms.uTime = gl.getUniformLocation(this.program, 'uTime');
         this.uniforms.uAlphaCutoff = gl.getUniformLocation(this.program, 'uAlphaCutoff');
 
         this.vao = gl.createVertexArray();
@@ -315,11 +232,11 @@ export class WebGLRenderer {
         );
         gl.vertexAttribDivisor(3, 1);
 
-        // location 4: endCol, animSpeed, frameOffset
+        // location 4: endCol, animSpeed, animTime, frameOffset
         gl.enableVertexAttribArray(4);
         gl.vertexAttribPointer(
             4,
-            3,
+            4,
             gl.FLOAT,
             false,
             stride,
@@ -405,6 +322,8 @@ export class WebGLRenderer {
     }
 
     render(sprites = []) {
+        if (!this.initialized) return;
+
         const gl = this.gl;
 
         const stats = this.stats;
@@ -472,7 +391,6 @@ export class WebGLRenderer {
         gl.bindVertexArray(this.vao);
 
         gl.uniform2f(this.uniforms.uResolution, this.width, this.height);
-        gl.uniform1f(this.uniforms.uTime, performance.now() / 1000);
         gl.uniform1f(this.uniforms.uAlphaCutoff, this.alphaCutoff);
 
         gl.activeTexture(gl.TEXTURE0);
@@ -532,8 +450,11 @@ export class WebGLRenderer {
 
             const sheet = this.getSpriteSheetData(sprite);
 
-            const cellWidth = imageWidth / Math.max(1, sheet.cols);
-            const cellHeight = imageHeight / Math.max(1, sheet.rows);
+            const cols = Math.max(1, sheet.cols);
+            const rows = Math.max(1, sheet.rows);
+
+            const cellWidth = imageWidth / cols;
+            const cellHeight = imageHeight / rows;
 
             const width =
                 sprite.width ||
@@ -564,11 +485,29 @@ export class WebGLRenderer {
 
             data[ptr++] = sheet.endCol;
             data[ptr++] = sheet.animSpeed;
+            data[ptr++] = sheet.animTime;
             data[ptr++] = sheet.frameOffset;
         }
     }
 
     getSpriteSheetData(sprite) {
+        if (sprite && typeof sprite.getUniforms === 'function') {
+            const u = sprite.getUniforms();
+
+            if (u && Object.keys(u).length > 0) {
+                return {
+                    cols: u.uCols ?? 1,
+                    rows: u.uRows ?? 1,
+                    row: u.uRow ?? 0,
+                    startCol: u.uStartCol ?? 0,
+                    endCol: u.uEndCol ?? ((u.uCols ?? 1) - 1),
+                    animSpeed: u.uAnimSpeed ?? 0,
+                    animTime: u.uTime ?? sprite.elapsed ?? 0,
+                    frameOffset: u.uFrameOffset ?? 0
+                };
+            }
+        }
+
         const cols =
             sprite.sheetCols ??
             sprite.cols ??
@@ -608,12 +547,6 @@ export class WebGLRenderer {
             sprite.uAnimSpeed ??
             0;
 
-        const frameOffset =
-            sprite.frameOffset ??
-            sprite.uFrameOffset ??
-            sprite._flockId ??
-            0;
-
         return {
             cols,
             rows,
@@ -621,7 +554,8 @@ export class WebGLRenderer {
             startCol,
             endCol,
             animSpeed,
-            frameOffset
+            animTime: sprite.elapsed ?? 0,
+            frameOffset: sprite.frameOffset ?? sprite.uFrameOffset ?? 0
         };
     }
 
@@ -826,7 +760,7 @@ export class WebGLRenderer {
             y: collider.y ?? sprite.y ?? 0
         };
     }
-    
+
     getColliderWidth(sprite, collider) {
         const width =
             collider.width ??
@@ -867,6 +801,7 @@ export class WebGLRenderer {
 
         return radius || 8;
     }
+
     getStats() {
         return { ...this.stats };
     }
