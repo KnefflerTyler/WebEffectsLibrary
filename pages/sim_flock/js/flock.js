@@ -22,8 +22,8 @@ export class Flock {
             drag: options.drag ?? 0.88,
             maxSpeed: options.maxSpeed ?? 220,
 
-            settleSpeed: options.settleSpeed ?? 10,
-            targetStopRadius: options.targetStopRadius ?? 48,
+            settleSpeed: options.settleSpeed ?? 16,
+            targetStopRadius: options.targetStopRadius ?? 16,
 
             radius: options.radius ?? 8,
             color: options.color ?? '#ffffff',
