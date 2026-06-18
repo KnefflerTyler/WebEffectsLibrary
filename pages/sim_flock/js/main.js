@@ -27,7 +27,7 @@ function getInitialRendererType() {
     }
 
     // Default renderer
-    return 'webgl';
+    return 'canvas';
 }
 
 let rendererType = getInitialRendererType();
@@ -102,7 +102,7 @@ const flock = new Flock({
     // Spatial hash / collision settings
     collisions: true,
     avoidance: true,
-    gridCellSize: 64,
+    gridCellSize: 16,
     collisionIterations: 1,
     positionalCorrection: 1,
     collisionEvents: false

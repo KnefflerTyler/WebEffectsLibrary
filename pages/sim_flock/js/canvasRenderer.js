@@ -353,6 +353,22 @@ export class CanvasRenderer {
     }
 
     drawSingleColliderOutline(ctx, sprite, collider) {
+        if (!collider) return;
+
+        // Best source: exact collider bounds.
+        if (typeof collider.getBounds === 'function') {
+            const b = collider.getBounds();
+
+            ctx.strokeRect(
+                b.minX,
+                b.minY,
+                b.maxX - b.minX,
+                b.maxY - b.minY
+            );
+
+            return;
+        }
+
         const pos = this.getColliderWorldPosition(sprite, collider);
         const type = collider.type;
 
@@ -391,42 +407,30 @@ export class CanvasRenderer {
     getColliderWidth(sprite, collider) {
         const width =
             collider.width ??
-            ((collider.halfWidth ?? 0) * 2);
+            (collider.halfWidth !== undefined ? collider.halfWidth * 2 : undefined);
 
-        return (
-            width ||
-            sprite.width ||
-            sprite.renderWidth ||
-            sprite.size ||
-            16
-        );
+        return width ?? 16;
     }
 
     getColliderHeight(sprite, collider) {
         const height =
             collider.height ??
-            ((collider.halfHeight ?? 0) * 2);
+            (collider.halfHeight !== undefined ? collider.halfHeight * 2 : undefined);
 
-        return (
-            height ||
-            sprite.height ||
-            sprite.renderHeight ||
-            sprite.size ||
-            16
-        );
+        return height ?? 16;
     }
 
     getColliderRadius(sprite, collider) {
-        const spriteSize = Math.max(
-            sprite.width || sprite.renderWidth || sprite.size || 0,
-            sprite.height || sprite.renderHeight || sprite.size || 0
-        );
+        if (collider.type === 'square' || collider.type === 'rect' || collider.type === 'rectangle') {
+            // Do not use square collider radius for debug drawing.
+            // Square radius is diagonal/broadphase size.
+            return Math.max(
+                this.getColliderWidth(sprite, collider),
+                this.getColliderHeight(sprite, collider)
+            ) * 0.5;
+        }
 
-        const radius =
-            collider.radius ??
-            spriteSize * 0.5;
-
-        return radius || 8;
+        return collider.radius ?? 8;
     }
 
     getSpriteImage(sprite) {
