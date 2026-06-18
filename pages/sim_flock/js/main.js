@@ -1,8 +1,10 @@
 'use strict';
 
-// Debug performance: window.showPerfStats = true (logs FPS + culling + draw calls)
+// Debug performance: window.showPerfStats = true
 
 import { CanvasRenderer } from './canvasRenderer.js';
+import { WebGLRenderer } from './webglRenderer.js';
+
 import { Flock } from './flock.js';
 import { DEFAULTS } from './config.js';
 import Sprite from './sprite/sprite.js';
@@ -11,42 +13,175 @@ import GameManager from './gameManager.js';
 
 const canvasElement = document.getElementById('canvas');
 
-const renderer = new CanvasRenderer(canvasElement);
+// ------------------------------------------------------------
+// Renderer setting
+// ------------------------------------------------------------
+
+const RENDERER_STORAGE_KEY = 'sim_flock:cfgRenderer';
+
+function getInitialRendererType() {
+    const stored = localStorage.getItem(RENDERER_STORAGE_KEY);
+
+    if (stored === 'canvas' || stored === 'webgl') {
+        return stored;
+    }
+
+    // Default renderer
+    return 'canvas';
+}
+
+let rendererType = getInitialRendererType();
+let renderer = createRenderer(rendererType);
+
+function createRenderer(type) {
+    if (type === 'webgl') {
+        try {
+            return new WebGLRenderer(canvasElement, {
+                enableCulling: true,
+                cullMargin: 80,
+                maxInstancesPerBatch: 20000,
+                backgroundColor: [0.04, 0.05, 0.08, 1.0]
+            });
+        } catch (e) {
+            console.warn('[main] WebGLRenderer failed. Falling back to CanvasRenderer.', e);
+
+            rendererType = 'canvas';
+            localStorage.setItem(RENDERER_STORAGE_KEY, 'canvas');
+
+            return new CanvasRenderer(canvasElement);
+        }
+    }
+
+    return new CanvasRenderer(canvasElement);
+}
+
+function setRendererType(type) {
+    if (type !== 'canvas' && type !== 'webgl') return;
+    if (type === rendererType) return;
+
+    // Clean up old renderer if supported
+    if (renderer && typeof renderer.destroy === 'function') {
+        renderer.destroy();
+    }
+
+    rendererType = type;
+    localStorage.setItem(RENDERER_STORAGE_KEY, rendererType);
+
+    renderer = createRenderer(rendererType);
+
+    flock.resize(renderer.width, renderer.height);
+    game.setTarget(flock.target.x, flock.target.y);
+
+    updateRendererDependentSettings();
+}
+
+function isUsingWebGL() {
+    return rendererType === 'webgl';
+}
+
+// ------------------------------------------------------------
+// Flock
+// ------------------------------------------------------------
 
 const flock = new Flock({
     width: renderer.width,
     height: renderer.height,
-    count: 1000, 
+    count: 1000,
     radius: 2,
     color: '#ffffff',
-    attraction: 500, 
+    attraction: 500,
     drag: 0.99,
-    maxSpeed: 500
+    maxSpeed: 500,
+
+    // Spatial hash / collision settings
+    collisions: true,
+    avoidance: true,
+    gridCellSize: 64,
+    collisionIterations: 3,
+    positionalCorrection: 1,
+    collisionEvents: false
 });
 
+// ------------------------------------------------------------
 // Settings panel wiring
+// ------------------------------------------------------------
+
 initPanelToggle();
+
+// Renderer select setting
 {
-    const key = 'sim_flock:cfgDebugColliders';
-    const el = document.getElementById('cfgDebugColliders');
+    const el = document.getElementById('cfgRenderer');
+
     if (el) {
-        // initialize from localStorage
-        const stored = localStorage.getItem(key);
-        if (stored !== null) el.checked = stored === 'true';
-        Sprite.debugColliders = el.checked;
+        el.value = rendererType;
+
         el.addEventListener('change', () => {
-            Sprite.debugColliders = el.checked;
-            localStorage.setItem(key, el.checked);
+            setRendererType(el.value);
         });
     }
 }
+
+// Debug collider setting
+const debugColliderKey = 'sim_flock:cfgDebugColliders';
+const debugColliderEl = document.getElementById('cfgDebugColliders');
+
+function updateRendererDependentSettings() {
+    if (!debugColliderEl) return;
+
+    if (isUsingWebGL()) {
+        // WebGLRenderer bypasses sprite.draw(ctx), so Canvas debug collider drawing will not show.
+        Sprite.debugColliders = false;
+        debugColliderEl.checked = false;
+        debugColliderEl.disabled = true;
+        return;
+    }
+
+    debugColliderEl.disabled = false;
+
+    const stored = localStorage.getItem(debugColliderKey);
+    if (stored !== null) {
+        debugColliderEl.checked = stored === 'true';
+    }
+
+    Sprite.debugColliders = debugColliderEl.checked;
+}
+
+{
+    if (debugColliderEl) {
+        const stored = localStorage.getItem(debugColliderKey);
+
+        if (stored !== null) {
+            debugColliderEl.checked = stored === 'true';
+        }
+
+        debugColliderEl.addEventListener('change', () => {
+            if (isUsingWebGL()) {
+                Sprite.debugColliders = false;
+                debugColliderEl.checked = false;
+                localStorage.setItem(debugColliderKey, 'false');
+                return;
+            }
+
+            Sprite.debugColliders = debugColliderEl.checked;
+            localStorage.setItem(debugColliderKey, debugColliderEl.checked);
+        });
+    }
+}
+
+// ------------------------------------------------------------
 // Pause/start button wiring
+// ------------------------------------------------------------
+
 let paused = false;
+
 {
     const key = 'sim_flock:cfgPause';
     const btn = document.getElementById('cfgPauseBtn');
     const stored = localStorage.getItem(key);
-    if (stored !== null) paused = stored === 'true';
+
+    if (stored !== null) {
+        paused = stored === 'true';
+    }
 
     function updateBtn() {
         if (!btn) return;
@@ -59,33 +194,35 @@ let paused = false;
         btn.addEventListener('click', () => {
             paused = !paused;
             localStorage.setItem(key, paused);
-            if (!paused) lastTime = performance.now();
+
+            if (!paused) {
+                lastTime = performance.now();
+            }
+
             updateBtn();
         });
     }
 }
 
-// Default sprites load their own template and image in `DefaultSprite`.
-// Keep canvas hidden until assets load
+// Apply debug collider state after renderer is known
+updateRendererDependentSettings();
+
+// ------------------------------------------------------------
+// Loading overlay
+// ------------------------------------------------------------
+
 const loadingOverlay = document.getElementById('loadingOverlay');
 const loadingText = document.getElementById('loadingText');
 const loadingBar = document.getElementById('loadingBar');
 
-window.addEventListener('resize', () => {
-    renderer.resize();
-    flock.resize(renderer.width, renderer.height);
-    game.setTarget(flock.target.x, flock.target.y);
-});
-
-// Wait for all sprite.ready promises (if present) before showing canvas
 async function waitForSpritesLoad() {
-    // Wait for flock's shared template to load (instead of 10k individual sprite loads)
     if (flock.templateReady) {
         if (loadingText) loadingText.textContent = 'Loading sprite template...';
         if (loadingBar) loadingBar.style.width = '50%';
-        
+
         try {
             await flock.templateReady;
+
             if (loadingBar) loadingBar.style.width = '100%';
             if (loadingText) loadingText.textContent = 'Loading complete!';
         } catch (e) {
@@ -93,32 +230,58 @@ async function waitForSpritesLoad() {
         }
     }
 
-    // Small delay to show 100%
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // Hide overlay and show canvas
-    if (loadingOverlay) loadingOverlay.style.display = 'none';
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+
     canvasElement.style.display = '';
 }
 
-waitForSpritesLoad().catch(e => { console.warn('waitForSpritesLoad failed', e); if (loadingOverlay) loadingOverlay.style.display = 'none'; canvasElement.style.display = ''; });
+waitForSpritesLoad().catch(e => {
+    console.warn('waitForSpritesLoad failed', e);
 
-// Game instance: schedule updates for sprites so rendering isn't blocked
-const game = new GameManager({ 
-    sprites: flock.sprites, 
-    target: flock.target, 
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+    }
+
+    canvasElement.style.display = '';
+});
+
+// ------------------------------------------------------------
+// Game instance
+// ------------------------------------------------------------
+
+const game = new GameManager({
+    sprites: flock.sprites,
+    target: flock.target,
     flock,
-    weightBudget: 1000, // High budget for 10k sprites (updates ~10% per frame)
-    maxQueueAge: 0.05, // Allow sprites to wait up to 3 frames
+    weightBudget: 1000,
+    maxQueueAge: 0.05,
 });
 
 // Optimize for extreme scale
 if (flock.sprites.length > 5000) {
-    game.partialSortSize = 500; // Only sort top 500
-    game.maxUpdateDistance = 1200; // Aggressive culling
-    game.distantUpdateInterval = 10; // Update distant sprites every 10 frames
-    renderer.useBatching = true; // Enable batched rendering
+    game.partialSortSize = 500;
+    game.maxUpdateDistance = 1200;
+    game.distantUpdateInterval = 10;
+
+    // CanvasRenderer-only property.
+    if (rendererType === 'canvas' && 'useBatching' in renderer) {
+        renderer.useBatching = true;
+    }
 }
+
+// ------------------------------------------------------------
+// Events
+// ------------------------------------------------------------
+
+window.addEventListener('resize', () => {
+    renderer.resize();
+    flock.resize(renderer.width, renderer.height);
+    game.setTarget(flock.target.x, flock.target.y);
+});
 
 window.addEventListener('pointermove', event => {
     const rect = canvasElement.getBoundingClientRect();
@@ -129,6 +292,10 @@ window.addEventListener('pointermove', event => {
     flock.setTarget(x, y);
     game.setTarget(x, y);
 });
+
+// ------------------------------------------------------------
+// Animation loop
+// ------------------------------------------------------------
 
 let lastTime = performance.now();
 let frameCount = 0;
@@ -144,8 +311,8 @@ function animate() {
     // Prevent huge jumps if the tab was inactive
     dt = Math.min(dt, 0.033);
 
-    // Update FPS counter
     frameCount++;
+
     if (now - lastFpsUpdate >= 1000) {
         fps = Math.round(frameCount * 1000 / (now - lastFpsUpdate));
         frameCount = 0;
@@ -153,18 +320,27 @@ function animate() {
     }
 
     if (!paused) {
-        // Game schedules and runs per-sprite updates using weighted queue
         game.update(dt);
     }
 
-    // Always render so the frame stays visible when paused
     renderer.render(game.sprites);
 
-    // Optional: Log performance stats periodically (disable in production)
-    if (typeof window.showPerfStats !== 'undefined' && window.showPerfStats && frameCount === 0) {
-        const stats = renderer.getStats();
-        const drawCalls = stats.drawCalls || '?';
-        console.log(`FPS: ${fps} | Total: ${stats.totalSprites} | Rendered: ${stats.renderedSprites} | Culled: ${stats.culledSprites} | Draws: ${drawCalls}`);
+    if (
+        typeof window.showPerfStats !== 'undefined' &&
+        window.showPerfStats &&
+        frameCount === 0
+    ) {
+        const stats = renderer.getStats ? renderer.getStats() : {};
+
+        console.log(
+            `Renderer: ${rendererType} | ` +
+            `FPS: ${fps} | ` +
+            `Total: ${stats.totalSprites ?? '?'} | ` +
+            `Rendered: ${stats.renderedSprites ?? '?'} | ` +
+            `Culled: ${stats.culledSprites ?? '?'} | ` +
+            `Draws: ${stats.drawCalls ?? '?'} | ` +
+            `Batches: ${stats.batches ?? '?'}`
+        );
     }
 
     requestAnimationFrame(animate);

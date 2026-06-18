@@ -34,16 +34,30 @@ export class Flock {
             avoidancePadding: options.avoidancePadding ?? 4,
 
             // Higher = smoother but slower
-            collisionIterations: options.collisionIterations ?? 2,
+            collisionIterations: options.collisionIterations ?? 3,
 
-            // Spatial grid cell size for neighbor lookup
+            // Keep this at least as large as the largest collider diameter.
+            // If radius is 8, 64/96 is fine.
             gridCellSize: options.gridCellSize ?? 96,
+
+            // Direct positional collision correction.
+            // 1 = full correction. Lower values are softer but can allow overlap.
+            positionalCorrection: options.positionalCorrection ?? 1,
+
+            // Tiny allowed overlap to reduce jitter.
+            collisionSlop: options.collisionSlop ?? 0.01,
+
+            // Collision event checking can be expensive for thousands of sprites.
+            collisionEvents: options.collisionEvents ?? false,
         };
 
         this.sharedTemplate = null;
         this.sharedImage = null;
 
+        // Spatial hash state. Reused every frame to avoid allocations.
         this._grid = new Map();
+        this._neighborSprites = [];
+        this._neighborColliders = [];
 
         this.templateReady = this.loadSharedTemplate();
 
@@ -86,6 +100,9 @@ export class Flock {
                 sheetRows: 1,
             });
 
+            // Numeric id used by collision code/debugging.
+            s._flockId = i;
+
             this.applyDefaultCollider(s);
 
             this.sprites.push(s);
@@ -114,6 +131,8 @@ export class Flock {
                     static: false,
                 });
             }
+
+            this.syncColliderPosition(sprite);
         } catch (e) {
             console.warn('Failed to set sprite collider', e);
         }
@@ -140,6 +159,7 @@ export class Flock {
 
                 // Do NOT call applyDefaultCollider here.
                 // The JSON collider from applyTemplate should remain active.
+                this.syncColliderPosition(s);
             } else {
                 s.setImage(image);
 
@@ -153,9 +173,12 @@ export class Flock {
     }
 
     update(dt) {
+        // Avoid huge physics steps after tab switching/debug pauses.
+        dt = Math.min(dt, 1 / 30);
+
         // 1. Apply target/mouse attraction
-        for (const sprite of this.sprites) {
-            this.applyForces(sprite, dt);
+        for (let i = 0; i < this.sprites.length; i++) {
+            this.applyForces(this.sprites[i], dt);
         }
 
         // 2. Prevent sprites from moving into each other before movement
@@ -164,22 +187,29 @@ export class Flock {
         }
 
         // 3. Move sprites
-        for (const sprite of this.sprites) {
+        for (let i = 0; i < this.sprites.length; i++) {
+            const sprite = this.sprites[i];
+
             sprite.update(dt);
+            this.syncColliderPosition(sprite);
         }
 
         // 4. Keep sprites inside screen bounds
-        for (const sprite of this.sprites) {
-            this.keepInBounds(sprite);
+        for (let i = 0; i < this.sprites.length; i++) {
+            this.keepInBounds(this.sprites[i]);
         }
 
-        // 5. Final correction for any remaining overlaps
+        // 5. Final correction for any remaining overlaps.
+        // This now uses spatial hashing, not all-pairs collision.
         if (this.settings.collisions) {
             this.resolveCollisions();
         }
 
-        // 6. Fire enter/stay/exit events
-        this.updateCollisionEvents();
+        // 6. Optional enter/stay/exit events.
+        // Disabled by default because event tracking can be expensive at 1000+ sprites.
+        if (this.settings.collisionEvents) {
+            this.updateCollisionEvents();
+        }
     }
 
     applyCollisionAvoidance(dt) {
@@ -189,14 +219,19 @@ export class Flock {
         const padding = this.settings.avoidancePadding;
         const strength = this.settings.avoidanceStrength;
 
-        for (const sprite of this.sprites) {
+        for (let i = 0; i < this.sprites.length; i++) {
+            const sprite = this.sprites[i];
             if (!sprite.collider || sprite.collider.static) continue;
 
-            const neighbors = this.getNearbySprites(sprite);
+            const neighbors = this.getNearbySprites(sprite, this._neighborSprites);
 
-            for (const other of neighbors) {
+            for (let n = 0; n < neighbors.length; n++) {
+                const other = neighbors[n];
                 if (!other || other === sprite) continue;
                 if (!other.collider) continue;
+
+                // Only handle each pair once.
+                if ((sprite._flockId ?? 0) > (other._flockId ?? 0)) continue;
 
                 const rA = this.getCollisionRadius(sprite);
                 const rB = this.getCollisionRadius(other);
@@ -216,9 +251,10 @@ export class Flock {
                 let distSq = dx * dx + dy * dy;
 
                 if (distSq <= 0.000001) {
-                    dx = Math.random() - 0.5;
-                    dy = Math.random() - 0.5;
-                    distSq = dx * dx + dy * dy || 1;
+                    const angle = ((sprite._flockId ?? i) * 12.9898) % (Math.PI * 2);
+                    dx = Math.cos(angle);
+                    dy = Math.sin(angle);
+                    distSq = 1;
                 }
 
                 const dist = Math.sqrt(distSq);
@@ -291,6 +327,19 @@ export class Flock {
             b.vx -= nx * impulse;
             b.vy -= ny * impulse;
         }
+
+        this.limitSpeed(a);
+        this.limitSpeed(b);
+    }
+
+    // Fast deterministic numeric hash for grid coordinates.
+    // Hash collisions are acceptable; they only create extra narrowphase checks.
+    hashCell(cx, cy) {
+        return ((cx * 73856093) ^ (cy * 19349663)) | 0;
+    }
+
+    cellCoord(value) {
+        return Math.floor(value / this.settings.gridCellSize);
     }
 
     buildSpatialGrid() {
@@ -298,10 +347,15 @@ export class Flock {
 
         const cellSize = this.settings.gridCellSize;
 
-        for (const sprite of this.sprites) {
+        for (let i = 0; i < this.sprites.length; i++) {
+            const sprite = this.sprites[i];
+            if (!sprite.collider) continue;
+
+            // Center-cell insert is fast and avoids duplicate pairs.
+            // Use a cell size >= the largest collider diameter.
             const cx = Math.floor(sprite.x / cellSize);
             const cy = Math.floor(sprite.y / cellSize);
-            const key = `${cx},${cy}`;
+            const key = this.hashCell(cx, cy);
 
             let bucket = this._grid.get(key);
 
@@ -314,29 +368,28 @@ export class Flock {
         }
     }
 
-    getNearbySprites(sprite) {
-        const result = [];
+    getNearbySprites(sprite, out = this._neighborSprites) {
+        out.length = 0;
 
-        const cellSize = this.settings.gridCellSize;
-
-        const cx = Math.floor(sprite.x / cellSize);
-        const cy = Math.floor(sprite.y / cellSize);
+        const cx = this.cellCoord(sprite.x);
+        const cy = this.cellCoord(sprite.y);
 
         for (let y = cy - 1; y <= cy + 1; y++) {
             for (let x = cx - 1; x <= cx + 1; x++) {
-                const bucket = this._grid.get(`${x},${y}`);
+                const bucket = this._grid.get(this.hashCell(x, y));
 
                 if (!bucket) continue;
 
-                for (const other of bucket) {
+                for (let i = 0; i < bucket.length; i++) {
+                    const other = bucket[i];
                     if (other !== sprite) {
-                        result.push(other);
+                        out.push(other);
                     }
                 }
             }
         }
 
-        return result;
+        return out;
     }
 
     getCollisionRadius(sprite) {
@@ -346,37 +399,198 @@ export class Flock {
             return this.settings.radius ?? 4;
         }
 
-        if (c.type === 'square' || c.type === 'rect') {
+        if (c.type === 'square' || c.type === 'rect' || c.type === 'rectangle') {
             return Math.max(
-                c.halfWidth ?? sprite.width / 2 ?? this.settings.radius,
-                c.halfHeight ?? sprite.height / 2 ?? this.settings.radius
+                c.halfWidth ?? (c.width ?? sprite.width ?? this.settings.radius * 2) * 0.5,
+                c.halfHeight ?? (c.height ?? sprite.height ?? this.settings.radius * 2) * 0.5
             );
         }
 
         return c.radius ?? this.settings.radius ?? 4;
     }
 
-    resolveCollisions() {
-        const colliders = this.sprites
-            .map(sprite => sprite.collider)
-            .filter(Boolean);
+    getColliderHalfWidth(sprite) {
+        const c = sprite.collider;
+        return c?.halfWidth ?? (c?.width ?? sprite.width ?? this.settings.radius * 2) * 0.5;
+    }
 
-        for (let iteration = 0; iteration < this.settings.collisionIterations; iteration++) {
-            for (let i = 0; i < colliders.length; i++) {
-                for (let j = i + 1; j < colliders.length; j++) {
-                    colliders[i].resolveCollision(colliders[j]);
+    getColliderHalfHeight(sprite) {
+        const c = sprite.collider;
+        return c?.halfHeight ?? (c?.height ?? sprite.height ?? this.settings.radius * 2) * 0.5;
+    }
+
+    isRectCollider(sprite) {
+        const type = sprite.collider?.type;
+        return type === 'square' || type === 'rect' || type === 'rectangle';
+    }
+
+    syncColliderPosition(sprite) {
+        const c = sprite.collider;
+        if (!c) return;
+
+        // Some collider implementations compute world position from owner.
+        // These assignments also support colliders that store x/y directly.
+        if ('x' in c) c.x = sprite.x;
+        if ('y' in c) c.y = sprite.y;
+    }
+
+    moveSprite(sprite, dx, dy) {
+        if (!sprite || sprite.collider?.static) return;
+
+        sprite.x += dx;
+        sprite.y += dy;
+
+        this.syncColliderPosition(sprite);
+    }
+
+    resolveCollisions() {
+        const iterations = this.settings.collisionIterations;
+
+        for (let iteration = 0; iteration < iterations; iteration++) {
+            // Rebuild each iteration because the previous pass changed positions.
+            this.buildSpatialGrid();
+
+            for (let i = 0; i < this.sprites.length; i++) {
+                const a = this.sprites[i];
+                if (!a.collider) continue;
+
+                const neighbors = this.getNearbySprites(a, this._neighborSprites);
+
+                for (let n = 0; n < neighbors.length; n++) {
+                    const b = neighbors[n];
+                    if (!b.collider || a === b) continue;
+
+                    // Only solve each pair once.
+                    if ((a._flockId ?? 0) > (b._flockId ?? 0)) continue;
+
+                    this.solvePairPosition(a, b);
                 }
             }
         }
     }
 
-    updateCollisionEvents() {
-        const colliders = this.sprites
-            .map(sprite => sprite.collider)
-            .filter(Boolean);
+    solvePairPosition(a, b) {
+        if (this.isRectCollider(a) || this.isRectCollider(b)) {
+            // Use AABB for square/rect colliders.
+            // Mixed circle/rect can be added later; for now this keeps square collider behavior stable.
+            return this.solveAabbPair(a, b);
+        }
 
-        for (const collider of colliders) {
-            collider.checkAgainst(colliders);
+        return this.solveCirclePair(a, b);
+    }
+
+    solveCirclePair(a, b) {
+        const rA = this.getCollisionRadius(a);
+        const rB = this.getCollisionRadius(b);
+        const minDist = rA + rB;
+
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        let distSq = dx * dx + dy * dy;
+
+        if (distSq <= 0.000001) {
+            const angle = ((a._flockId ?? 1) * 12.9898 + (b._flockId ?? 2) * 78.233) % (Math.PI * 2);
+            dx = Math.cos(angle);
+            dy = Math.sin(angle);
+            distSq = 1;
+        }
+
+        if (distSq >= minDist * minDist) return false;
+
+        const dist = Math.sqrt(distSq);
+        const nx = dx / dist;
+        const ny = dy / dist;
+
+        const rawOverlap = minDist - dist;
+        const overlap = Math.max(0, rawOverlap - this.settings.collisionSlop);
+
+        if (overlap <= 0) return false;
+
+        this.applyPositionCorrection(a, b, nx, ny, overlap);
+
+        // Stop them from immediately moving back into each other.
+        this.removeClosingVelocity(a, b, nx, ny);
+
+        return true;
+    }
+
+    solveAabbPair(a, b) {
+        const aHalfW = this.getColliderHalfWidth(a);
+        const aHalfH = this.getColliderHalfHeight(a);
+        const bHalfW = this.getColliderHalfWidth(b);
+        const bHalfH = this.getColliderHalfHeight(b);
+
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+
+        const overlapX = aHalfW + bHalfW - Math.abs(dx);
+        if (overlapX <= 0) return false;
+
+        const overlapY = aHalfH + bHalfH - Math.abs(dy);
+        if (overlapY <= 0) return false;
+
+        let nx = 0;
+        let ny = 0;
+        let overlap = 0;
+
+        if (overlapX < overlapY) {
+            nx = dx < 0 ? -1 : 1;
+            overlap = Math.max(0, overlapX - this.settings.collisionSlop);
+        } else {
+            ny = dy < 0 ? -1 : 1;
+            overlap = Math.max(0, overlapY - this.settings.collisionSlop);
+        }
+
+        if (overlap <= 0) return false;
+
+        this.applyPositionCorrection(a, b, nx, ny, overlap);
+        this.removeClosingVelocity(a, b, nx, ny);
+
+        return true;
+    }
+    
+    applyPositionCorrection(a, b, nx, ny, overlap) {
+        const ca = a.collider;
+        const cb = b.collider;
+
+        const aStatic = !!ca?.static;
+        const bStatic = !!cb?.static;
+
+        if (aStatic && bStatic) return;
+
+        // HARD POSITIONAL SEPARATION:
+        // Do not use resolveStrength here.
+        // This correction moves objects fully outside of overlap.
+        const correction = overlap;
+
+        if (!aStatic && !bStatic) {
+            this.moveSprite(a, nx * correction * 0.5, ny * correction * 0.5);
+            this.moveSprite(b, -nx * correction * 0.5, -ny * correction * 0.5);
+        } else if (!aStatic && bStatic) {
+            this.moveSprite(a, nx * correction, ny * correction);
+        } else if (aStatic && !bStatic) {
+            this.moveSprite(b, -nx * correction, -ny * correction);
+        }
+    }
+
+    updateCollisionEvents() {
+        // Spatial event pass. This avoids all-pairs checkAgainst(colliders).
+        this.buildSpatialGrid();
+
+        for (let i = 0; i < this.sprites.length; i++) {
+            const sprite = this.sprites[i];
+            const collider = sprite.collider;
+            if (!collider || typeof collider.checkAgainst !== 'function') continue;
+
+            const neighbors = this.getNearbySprites(sprite, this._neighborSprites);
+            this._neighborColliders.length = 0;
+
+            for (let n = 0; n < neighbors.length; n++) {
+                const otherCollider = neighbors[n].collider;
+                if (otherCollider) this._neighborColliders.push(otherCollider);
+            }
+
+            collider.checkAgainst(this._neighborColliders);
         }
     }
 
@@ -402,6 +616,8 @@ export class Flock {
             sprite.y = this.height - r;
             sprite.vy = -Math.abs(sprite.vy || 0);
         }
+
+        this.syncColliderPosition(sprite);
     }
 
     applyForces(p, dt) {
@@ -429,20 +645,22 @@ export class Flock {
     }
 
     limitSpeed(p) {
-        const speedSq = p.vx * p.vx + p.vy * p.vy;
+        const vx = p.vx || 0;
+        const vy = p.vy || 0;
+        const speedSq = vx * vx + vy * vy;
         const maxSpeed = this.settings.maxSpeed;
 
         if (speedSq > maxSpeed * maxSpeed) {
             const speed = Math.sqrt(speedSq);
 
-            p.vx = (p.vx / speed) * maxSpeed;
-            p.vy = (p.vy / speed) * maxSpeed;
+            p.vx = (vx / speed) * maxSpeed;
+            p.vy = (vy / speed) * maxSpeed;
         }
     }
 
     draw(ctx) {
-        for (const sprite of this.sprites) {
-            sprite.draw(ctx);
+        for (let i = 0; i < this.sprites.length; i++) {
+            this.sprites[i].draw(ctx);
         }
     }
 }
