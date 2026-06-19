@@ -2,14 +2,14 @@
 
 // Debug performance: window.showPerfStats = true
 
-import { CanvasRenderer } from './canvasRenderer.js';
+import { CanvasRenderer } from './renderers/canvasRenderer.js';
 import { WebGLRenderer } from './webglRenderer.js';
 
-import { Flock } from './flock.js';
+import { FlockManager } from './managers/flockManager.js';
 import { DEFAULTS } from './config.js';
 import Sprite from './sprite/sprite.js';
 import { initPanelToggle } from '../../../shared/settings.js';
-import GameManager from './gameManager.js';
+import GameManager from './managers/gameManager.js';
 
 const canvasElement = document.getElementById('canvas');
 
@@ -89,7 +89,7 @@ function isUsingWebGL() {
 // Flock
 // ------------------------------------------------------------
 
-const flock = new Flock({
+const flock = new FlockManager({
     width: renderer.width,
     height: renderer.height,
     count: 1000,

@@ -1,10 +1,10 @@
 'use strict';
 
-import DefaultSprite from './sprite/sprites/default_sprite.js';
-import { loadSpriteFromJSON } from './sprite/spriteLoader.js';
-import CollisionWorld from './physics/collisionWorld.js';
+import DefaultSprite from '../sprite/sprites/default_sprite.js';
+import { loadSpriteFromJSON } from '../sprite/spriteLoader.js';
+import CollisionWorld from '../physics/collisionWorld.js';
 
-export class Flock {
+export class FlockManager {
     constructor(options = {}) {
         this.width = options.width ?? window.innerWidth;
         this.height = options.height ?? window.innerHeight;
@@ -332,4 +332,4 @@ export class Flock {
     }
 }
 
-export default Flock;
+export default FlockManager;

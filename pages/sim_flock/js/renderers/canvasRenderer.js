@@ -1,6 +1,6 @@
 'use strict';
 
-import Sprite from './sprite/sprite.js';
+import Sprite from '../sprite/sprite.js';
 
 export class CanvasRenderer {
     constructor(canvas, options = {}) {
