@@ -18,7 +18,7 @@ const session = new P2PSession({
 
   onReady: ({ id, roomCode, role, name }) => {
     if (role === 'host') world.addHost(id, name);
-    ui.showGame(roomCode);
+    ui.showGame(roomCode, role);
     ui.updatePlayerCount(world.players.size);
   },
 
@@ -48,11 +48,13 @@ const ui = new GameUI({
 });
 
 function update(dt, now) {
-  world.update(dt);
   const state = world.movePlayer(session.localId, input.getMovement(), dt);
-  if (!state || now - lastNetworkSend < 1000 / NETWORK_HZ) return;
-  lastNetworkSend = now;
-  session.sendLocalState(state);
+  world.update(dt);
+
+  if (state && now - lastNetworkSend >= 1000 / NETWORK_HZ) {
+    lastNetworkSend = now;
+    session.sendLocalState(state);
+  }
 }
 
 function animate(now) {

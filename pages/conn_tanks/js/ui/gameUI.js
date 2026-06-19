@@ -6,43 +6,33 @@ export class GameUI {
       menuStatus: document.getElementById('menu-status'),
       roomCode: document.getElementById('room-code'),
       connectionStatus: document.getElementById('connection-status'),
-      playerName: document.getElementById('player-name'),
-      joinControls: document.getElementById('join-controls'),
-      roomCodeInput: document.getElementById('room-code-input')
+      playerName: document.getElementById('player-name')
     };
 
     document.getElementById('host-button').addEventListener('click', () => {
       this.setMenuStatus('Creating room…');
       onHost?.(this.playerName);
     });
-    document.getElementById('show-join-button').addEventListener('click', () => this.showJoin());
-    document.getElementById('join-button').addEventListener('click', () => {
-      const roomCode = this.parseRoomCode(this.elements.roomCodeInput.value.trim());
-      if (!roomCode) return;
-      this.setMenuStatus('Connecting…');
-      onJoin?.(roomCode, this.playerName);
-    });
     this.elements.roomCode.addEventListener('click', () => this.copyRoomLink());
 
-    const joinCode = new URLSearchParams(location.search).get('join');
-    if (joinCode) this.showJoin(joinCode);
+    const inviteCode = new URLSearchParams(location.search).get('join')?.trim();
+    if (inviteCode) {
+      document.getElementById('host-button').disabled = true;
+      this.elements.playerName.disabled = true;
+      this.setMenuStatus('Connecting to host…');
+      onJoin?.(inviteCode, this.playerName);
+    }
   }
 
   get playerName() {
     return this.elements.playerName.value.trim() || 'Player';
   }
 
-  showJoin(roomCode = '') {
-    this.elements.joinControls.classList.remove('hidden');
-    this.elements.roomCodeInput.value = roomCode;
-    this.elements.roomCodeInput.focus();
-  }
-
-  showGame(code) {
+  showGame(code, role) {
     this.elements.menu.classList.add('hidden');
     this.elements.hud.classList.remove('hidden');
-    this.elements.roomCode.textContent = `Room: ${code.slice(0, 10)}…`;
     this.elements.roomCode.dataset.code = code;
+    this.elements.roomCode.classList.toggle('hidden', role !== 'host');
   }
 
   updatePlayerCount(count) {
@@ -58,20 +48,15 @@ export class GameUI {
     this.elements.menuStatus.textContent = message;
   }
 
-  parseRoomCode(raw) {
-    try {
-      return new URL(raw).searchParams.get('join') || raw;
-    } catch {
-      return raw;
-    }
-  }
-
   async copyRoomLink() {
     const code = this.elements.roomCode.dataset.code;
     if (!code) return;
-    const link = `${location.origin}${location.pathname}?join=${code}`;
+    const link = new URL(location.href);
+    link.search = '';
+    link.hash = '';
+    link.searchParams.set('join', code);
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(link.href);
       const oldText = this.elements.roomCode.textContent;
       this.elements.roomCode.textContent = 'Link copied!';
       setTimeout(() => { this.elements.roomCode.textContent = oldText; }, 1200);

@@ -50,10 +50,10 @@ export class GameManager {
     const x = Number(state.x);
     const y = Number(state.y);
     const rotation = Number(state.rotation);
-    player.applyState({
-      x: clamp(Number.isFinite(x) ? x : player.x, PLAYER_BOUNDS.minX, PLAYER_BOUNDS.maxX),
-      y: clamp(Number.isFinite(y) ? y : player.y, PLAYER_BOUNDS.minY, PLAYER_BOUNDS.maxY),
-      rotation: Number.isFinite(rotation) ? rotation : player.rotation
+    player.move({
+      x: clamp(Number.isFinite(x) ? x : player.targetX, PLAYER_BOUNDS.minX, PLAYER_BOUNDS.maxX),
+      y: clamp(Number.isFinite(y) ? y : player.targetY, PLAYER_BOUNDS.minY, PLAYER_BOUNDS.maxY),
+      rotation: Number.isFinite(rotation) ? rotation : player.targetRotation
     });
     return true;
   }
@@ -73,17 +73,21 @@ export class GameManager {
     const player = this.players.get(id);
     if (!player || (!movement.x && !movement.y)) return null;
 
-    player.x = clamp(
-      player.x + movement.x * PLAYER_SPEED * dt,
+    const x = clamp(
+      player.targetX + movement.x * PLAYER_SPEED * dt,
       PLAYER_BOUNDS.minX,
       PLAYER_BOUNDS.maxX
     );
-    player.y = clamp(
-      player.y + movement.y * PLAYER_SPEED * dt,
+    const y = clamp(
+      player.targetY + movement.y * PLAYER_SPEED * dt,
       PLAYER_BOUNDS.minY,
       PLAYER_BOUNDS.maxY
     );
-    player.rotation = Math.atan2(movement.y, movement.x) + Math.PI / 2;
+    player.move({
+      x,
+      y,
+      rotation: Math.atan2(movement.y, movement.x) + Math.PI / 2
+    });
     return player.serialize();
   }
 

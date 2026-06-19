@@ -33,10 +33,9 @@ input { width: 100%; padding: 0 13px; outline: none; }
 input:focus { border-color: #68d493; }
 button { padding: 0 16px; cursor: pointer; background: #2d9e5b; border-color: #44bc72; font-weight: 750; }
 button:hover { filter: brightness(1.1); }
-button.secondary { background: #243128; border-color: #405644; }
-.actions, .join-controls { display: flex; gap: 10px; margin-top: 12px; }
+button:disabled { cursor: default; filter: grayscale(.65); opacity: .65; }
+.actions { display: flex; gap: 10px; margin-top: 12px; }
 .actions button { flex: 1; }
-.join-controls input { flex: 1; }
 .status { min-height: 20px; margin: 14px 0 0; color: #f4c86b; font-size: 13px; }
 
 #hud {

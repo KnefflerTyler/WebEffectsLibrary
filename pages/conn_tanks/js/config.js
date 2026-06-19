@@ -1,5 +1,6 @@
 export const PLAYER_SPEED = 0.34;
 export const PLAYER_SIZE = 54;
+export const PLAYER_MOVE_SMOOTHING = 14;
 export const NETWORK_HZ = 24;
 
 export const PLAYER_BOUNDS = {

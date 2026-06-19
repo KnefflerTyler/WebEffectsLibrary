@@ -13,22 +13,17 @@
     <section class="card">
       <p class="eyebrow">P2P WebGL demo</p>
       <h1>Connected Tanks</h1>
-      <p class="subtitle">Create a room or join a friend, then drive with WASD.</p>
+      <p class="subtitle">Create a room, share its invite link, then drive with WASD.</p>
       <input id="player-name" maxlength="18" placeholder="Your name" value="Player">
       <div class="actions">
         <button id="host-button">Create room</button>
-        <button id="show-join-button" class="secondary">Join room</button>
-      </div>
-      <div id="join-controls" class="join-controls hidden">
-        <input id="room-code-input" placeholder="Paste room code">
-        <button id="join-button">Join</button>
       </div>
       <p id="menu-status" class="status"></p>
     </section>
   </main>
 
   <header id="hud" class="hidden">
-    <button id="room-code" title="Copy room link">Connecting…</button>
+    <button id="room-code" title="Copy invite link">Copy invite link</button>
     <span id="connection-status">Waiting for players</span>
     <span class="controls">WASD to drive</span>
   </header>
