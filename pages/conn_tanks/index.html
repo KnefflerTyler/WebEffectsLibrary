@@ -1,53 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Under Construction</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: Arial, sans-serif;
-            background: #f4f4f4;
-            color: #222;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 600px;
-        }
-
-        h1 {
-            font-size: 48px;
-            margin-bottom: 15px;
-        }
-
-        p {
-            font-size: 20px;
-            line-height: 1.5;
-            color: #555;
-        }
-
-        .icon {
-            font-size: 72px;
-            margin-bottom: 20px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connected Tanks</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="icon">🚧</div>
-        <h1>Under Construction</h1>
-        <p>This page is currently being worked on. Please check back soon.</p>
-    </div>
+  <canvas id="game-canvas" aria-label="Connected Tanks game"></canvas>
+
+  <main id="menu" class="overlay">
+    <section class="card">
+      <p class="eyebrow">P2P WebGL demo</p>
+      <h1>Connected Tanks</h1>
+      <p class="subtitle">Create a room or join a friend, then drive with WASD.</p>
+      <input id="player-name" maxlength="18" placeholder="Your name" value="Player">
+      <div class="actions">
+        <button id="host-button">Create room</button>
+        <button id="show-join-button" class="secondary">Join room</button>
+      </div>
+      <div id="join-controls" class="join-controls hidden">
+        <input id="room-code-input" placeholder="Paste room code">
+        <button id="join-button">Join</button>
+      </div>
+      <p id="menu-status" class="status"></p>
+    </section>
+  </main>
+
+  <header id="hud" class="hidden">
+    <button id="room-code" title="Copy room link">Connecting…</button>
+    <span id="connection-status">Waiting for players</span>
+    <span class="controls">WASD to drive</span>
+  </header>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
