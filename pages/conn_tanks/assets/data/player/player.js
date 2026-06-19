@@ -1,4 +1,11 @@
-import { PLAYER_MOVE_SMOOTHING, PLAYER_SIZE } from '../../../js/config.js';
+import { 
+  DEFAULT_PLAYER_SPEED, 
+  DEFAULT_PLAYER_SPEED_SCALER,
+  DEFAULT_PLAYER_ROTATION_SPEED, 
+  DEFAULT_PLAYER_ROTATION_SPEED_SCALER,
+  DEFAULT_PLAYER_SIZE, 
+  DEFAULT_PLAYER_SIZE_SCALER
+} from '../../../js/config.js';
 import Sprite from '../../../js/objects/sprites/sprite.js';
 import SpriteAnimation from '../../../js/objects/sprites/spriteAnimation.js';
 
@@ -11,15 +18,20 @@ export class Player extends Sprite {
     
     super({
       ...options,
-      width: options.width ?? PLAYER_SIZE,
-      height: options.height ?? PLAYER_SIZE,
       image: options.image ?? playerImage,
       sheetCols: 2,
       sheetRows: 7
     });
 
+    this.size = options.size ?? DEFAULT_PLAYER_SIZE;
+    this.move_speed = options.move_speed ?? DEFAULT_PLAYER_SPEED;
+    this.rotation_speed = options.rotation_speed ?? DEFAULT_PLAYER_ROTATION_SPEED;
+
     this.addAnimation(new SpriteAnimation({ name: 'default', row: 3, startCol: 0, endCol: 1, fps: 5, loop: true }));
     this.setAnimation('default');
+
+    this.width = this.size * DEFAULT_PLAYER_SIZE_SCALER;
+    this.height = this.size * DEFAULT_PLAYER_SIZE_SCALER;
 
     this.targetX = this.x;
     this.targetY = this.y;
@@ -33,15 +45,16 @@ export class Player extends Sprite {
 
     if (!Number.isFinite(dt) || dt <= 0) return;
 
-    const amount = 1 - Math.exp(-PLAYER_MOVE_SMOOTHING * dt);
-    this.x += (this.targetX - this.x) * amount;
-    this.y += (this.targetY - this.y) * amount;
+    const moveAmount = 1 - Math.exp((-this.move_speed * DEFAULT_PLAYER_SPEED_SCALER) * dt);
+    const rotationAmount = 1 - Math.exp((-this.rotation_speed * DEFAULT_PLAYER_ROTATION_SPEED_SCALER) * dt);
+    this.x += (this.targetX - this.x) * moveAmount;
+    this.y += (this.targetY - this.y) * moveAmount;
 
     const rotationDelta = Math.atan2(
       Math.sin(this.targetRotation - this.rotation),
       Math.cos(this.targetRotation - this.rotation)
     );
-    this.rotation += rotationDelta * amount;
+    this.rotation += rotationDelta * rotationAmount;
 
     if (Math.abs(this.targetX - this.x) < 0.00001) this.x = this.targetX;
     if (Math.abs(this.targetY - this.y) < 0.00001) this.y = this.targetY;

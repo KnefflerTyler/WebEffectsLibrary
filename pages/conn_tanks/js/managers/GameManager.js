@@ -1,4 +1,4 @@
-import { PLAYER_BOUNDS, PLAYER_COLORS, PLAYER_SPEED } from '../config.js';
+import { PLAYER_BOUNDS, PLAYER_COLORS } from '../config.js';
 import Player from '../../assets/data/player/player.js';
 
 function clamp(value, min, max) {
@@ -74,12 +74,12 @@ export class GameManager {
     if (!player || (!movement.x && !movement.y)) return null;
 
     const x = clamp(
-      player.targetX + movement.x * PLAYER_SPEED * dt,
+      player.targetX + movement.x * player.move_speed * dt,
       PLAYER_BOUNDS.minX,
       PLAYER_BOUNDS.maxX
     );
     const y = clamp(
-      player.targetY + movement.y * PLAYER_SPEED * dt,
+      player.targetY + movement.y * player.move_speed * dt,
       PLAYER_BOUNDS.minY,
       PLAYER_BOUNDS.maxY
     );
