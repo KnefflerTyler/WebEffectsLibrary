@@ -1,9 +1,12 @@
 export const DEFAULT_PLAYER_SPEED = 1;
 export const DEFAULT_PLAYER_SPEED_SCALER = 0.34;
+
 export const DEFAULT_PLAYER_ROTATION_SPEED = 1;
 export const DEFAULT_PLAYER_ROTATION_SPEED_SCALER = 0.14;
+
 export const DEFAULT_PLAYER_SIZE = 1;
 export const DEFAULT_PLAYER_SIZE_SCALER = 54;
+
 export const NETWORK_HZ = 24;
 
 export const PLAYER_BOUNDS = {
