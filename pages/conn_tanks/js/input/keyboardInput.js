@@ -18,14 +18,10 @@ export class KeyboardInput {
   }
 
   getMovement() {
-    let x = Number(this.keys.has('KeyD')) - Number(this.keys.has('KeyA'));
-    let y = Number(this.keys.has('KeyS')) - Number(this.keys.has('KeyW'));
-    const length = Math.hypot(x, y);
-    if (length) {
-      x /= length;
-      y /= length;
-    }
-    return { x, y };
+    return {
+      throttle: Number(this.keys.has('KeyW')) - Number(this.keys.has('KeyS')),
+      turn: Number(this.keys.has('KeyD')) - Number(this.keys.has('KeyA'))
+    };
   }
 
   destroy() {

@@ -1,4 +1,9 @@
-import { PLAYER_BOUNDS, PLAYER_COLORS } from '../config.js';
+import {
+  DEFAULT_PLAYER_ROTATION_SPEED_SCALER,
+  DEFAULT_PLAYER_SPEED_SCALER,
+  PLAYER_BOUNDS,
+  PLAYER_COLORS
+} from '../config.js';
 import Player from '../../assets/data/player/player.js';
 
 function clamp(value, min, max) {
@@ -71,23 +76,35 @@ export class GameManager {
 
   movePlayer(id, movement, dt) {
     const player = this.players.get(id);
-    if (!player || (!movement.x && !movement.y)) return null;
+    if (!player || !movement || !Number.isFinite(dt) || dt <= 0) return null;
 
+    const throttle = Math.max(-1, Math.min(1, Number(movement.throttle) || 0));
+    const turn = Math.max(-1, Math.min(1, Number(movement.turn) || 0));
+    const stoppedMoving = player.isMoving && !throttle;
+    const stoppedTurning = player.isTurning && !turn;
+
+    player.isMoving = Boolean(throttle);
+    player.isTurning = Boolean(turn);
+
+    if (!throttle) player.stopMoving();
+    if (!turn) player.stopTurning();
+    if (!throttle && !turn && !stoppedMoving && !stoppedTurning) return null;
+
+    const rotation = player.targetRotation
+      + turn * player.rotation_speed * DEFAULT_PLAYER_ROTATION_SPEED_SCALER * dt;
+    const distance = throttle * player.move_speed * DEFAULT_PLAYER_SPEED_SCALER * dt;
     const x = clamp(
-      player.targetX + movement.x * player.move_speed * dt,
+      player.targetX + Math.sin(rotation) * distance,
       PLAYER_BOUNDS.minX,
       PLAYER_BOUNDS.maxX
     );
     const y = clamp(
-      player.targetY + movement.y * player.move_speed * dt,
+      player.targetY - Math.cos(rotation) * distance,
       PLAYER_BOUNDS.minY,
       PLAYER_BOUNDS.maxY
     );
-    player.move({
-      x,
-      y,
-      rotation: Math.atan2(movement.y, movement.x) + Math.PI / 2
-    });
+
+    player.move({ x, y, rotation });
     return player.serialize();
   }
 

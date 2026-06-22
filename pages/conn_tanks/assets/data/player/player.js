@@ -1,10 +1,10 @@
 import { 
   DEFAULT_PLAYER_SPEED, 
-  DEFAULT_PLAYER_SPEED_SCALER,
   DEFAULT_PLAYER_ROTATION_SPEED, 
-  DEFAULT_PLAYER_ROTATION_SPEED_SCALER,
   DEFAULT_PLAYER_SIZE, 
-  DEFAULT_PLAYER_SIZE_SCALER
+  DEFAULT_PLAYER_SIZE_SCALER,
+  PLAYER_MOVE_RESPONSE,
+  PLAYER_ROTATION_RESPONSE
 } from '../../../js/config.js';
 import Sprite from '../../../js/objects/sprites/sprite.js';
 import SpriteAnimation from '../../../js/objects/sprites/spriteAnimation.js';
@@ -36,6 +36,8 @@ export class Player extends Sprite {
     this.targetX = this.x;
     this.targetY = this.y;
     this.targetRotation = this.rotation;
+    this.isMoving = false;
+    this.isTurning = false;
   }
 
   move({ x, y, rotation } = {}, dt = 0) {
@@ -45,8 +47,8 @@ export class Player extends Sprite {
 
     if (!Number.isFinite(dt) || dt <= 0) return;
 
-    const moveAmount = 1 - Math.exp((-this.move_speed * DEFAULT_PLAYER_SPEED_SCALER) * dt);
-    const rotationAmount = 1 - Math.exp((-this.rotation_speed * DEFAULT_PLAYER_ROTATION_SPEED_SCALER) * dt);
+    const moveAmount = 1 - Math.exp(-this.move_speed * PLAYER_MOVE_RESPONSE * dt);
+    const rotationAmount = 1 - Math.exp(-this.rotation_speed * PLAYER_ROTATION_RESPONSE * dt);
     this.x += (this.targetX - this.x) * moveAmount;
     this.y += (this.targetY - this.y) * moveAmount;
 
@@ -59,6 +61,15 @@ export class Player extends Sprite {
     if (Math.abs(this.targetX - this.x) < 0.00001) this.x = this.targetX;
     if (Math.abs(this.targetY - this.y) < 0.00001) this.y = this.targetY;
     if (Math.abs(rotationDelta) < 0.0001) this.rotation = this.targetRotation;
+  }
+
+  stopMoving() {
+    this.targetX = this.x;
+    this.targetY = this.y;
+  }
+
+  stopTurning() {
+    this.targetRotation = this.rotation;
   }
 
   applyState(state) {
