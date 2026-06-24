@@ -23,6 +23,17 @@ body {
 .eyebrow { margin: 0 0 8px; color: #71d99b; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
 h1 { margin: 0; font-size: clamp(30px, 8vw, 46px); letter-spacing: -.04em; }
 .subtitle { margin: 10px 0 24px; color: #9caf9e; line-height: 1.5; }
+.wip-panel {
+  margin: 0 0 18px; padding: 14px; border: 1px solid #2f4132;
+  border-radius: 8px; background: #101711; color: #b8c9ba;
+}
+.wip-panel strong {
+  display: block; margin-bottom: 4px; color: #edf6ed; font-size: 13px;
+}
+.wip-panel p {
+  margin: 0 0 12px; color: #9caf9e; font-size: 14px; line-height: 1.45;
+}
+.wip-panel p:last-child { margin-bottom: 0; }
 
 input, button {
   min-height: 44px; border: 1px solid #3b503e; border-radius: 9px;
