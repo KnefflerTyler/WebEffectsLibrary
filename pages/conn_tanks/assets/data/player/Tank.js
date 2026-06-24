@@ -9,35 +9,72 @@ import {
 import Sprite from '../../../js/objects/sprites/sprite.js';
 import SpriteAnimation from '../../../js/objects/sprites/spriteAnimation.js';
 
+function createPlayerImage() {
+  const image = new Image();
+  image.src = new URL('../../images/slime_idle1.png', import.meta.url).href;
+  return image;
+}
 
-
-export class Player extends Sprite {
+export class Tank {
   constructor(options = {}) {
-    const playerImage = new Image();
-    playerImage.src = new URL('../../images/slime_idle1.png', import.meta.url).href;
-    
-    super({
-      ...options,
-      image: options.image ?? playerImage,
+    this.id = options.id ?? '';
+    this.name = options.name ?? '';
+    this.color = options.color ?? '#ffffff';
+    this.x = options.x ?? 0.5;
+    this.y = options.y ?? 0.5;
+    this.rotation = options.rotation ?? 0;
+
+    this.bottomSprite = new Sprite({
+      id: `${this.id}:bottom`,
+      x: this.x,
+      y: this.y,
+      rotation: this.rotation,
+      image: options.image ?? createPlayerImage(),
       sheetCols: 2,
       sheetRows: 7
+    });
+    this.topSprite = new Sprite({
+      id: `${this.id}:top`,
+      x: this.x,
+      y: this.y,
+      rotation: this.rotation,
+      image: null
     });
 
     this.size = options.size ?? DEFAULT_PLAYER_SIZE;
     this.move_speed = options.move_speed ?? DEFAULT_PLAYER_SPEED;
     this.rotation_speed = options.rotation_speed ?? DEFAULT_PLAYER_ROTATION_SPEED;
 
-    this.addAnimation(new SpriteAnimation({ name: 'default', row: 3, startCol: 0, endCol: 1, fps: 5, loop: true }));
-    this.setAnimation('default');
+    this.bottomSprite.addAnimation(new SpriteAnimation({ name: 'default', row: 3, startCol: 0, endCol: 1, fps: 5, loop: true }));
+    this.bottomSprite.setAnimation('default');
 
-    this.width = this.size * DEFAULT_PLAYER_SIZE_SCALER;
-    this.height = this.size * DEFAULT_PLAYER_SIZE_SCALER;
+    const spriteSize = this.size * DEFAULT_PLAYER_SIZE_SCALER;
+    this.bottomSprite.width = spriteSize;
+    this.bottomSprite.height = spriteSize;
+    this.topSprite.width = spriteSize;
+    this.topSprite.height = spriteSize;
 
     this.targetX = this.x;
     this.targetY = this.y;
     this.targetRotation = this.rotation;
+    this.aimRotation = this.rotation;
     this.isMoving = false;
     this.isTurning = false;
+    this.syncSprites();
+  }
+
+  get sprites() {
+    return [this.bottomSprite, this.topSprite];
+  }
+
+  syncSprites() {
+    this.bottomSprite.x = this.x;
+    this.bottomSprite.y = this.y;
+    this.bottomSprite.rotation = this.rotation;
+
+    this.topSprite.x = this.x;
+    this.topSprite.y = this.y;
+    this.topSprite.rotation = this.aimRotation;
   }
 
   move({ x, y, rotation } = {}, dt = 0) {
@@ -61,6 +98,8 @@ export class Player extends Sprite {
     if (Math.abs(this.targetX - this.x) < 0.00001) this.x = this.targetX;
     if (Math.abs(this.targetY - this.y) < 0.00001) this.y = this.targetY;
     if (Math.abs(rotationDelta) < 0.0001) this.rotation = this.targetRotation;
+
+    this.syncSprites();
   }
 
   stopMoving() {
@@ -76,8 +115,29 @@ export class Player extends Sprite {
     this.move(state);
   }
 
+  aimAt(target) {
+    if (!target) return;
+    this.aimRotation = this.getRotationTo(target);
+    this.syncSprites();
+  }
+
+  getRotationTo(target) {
+    return Math.atan2(target.x - this.x, -(target.y - this.y));
+  }
+
+  getAimDebugLine(length = 0.18) {
+    return {
+      start: { x: this.x, y: this.y },
+      end: {
+        x: this.x + Math.sin(this.aimRotation) * length,
+        y: this.y - Math.cos(this.aimRotation) * length
+      }
+    };
+  }
+
   update(dt) {
-    super.update(dt);
+    this.bottomSprite.update(dt);
+    this.topSprite.update(dt);
     this.move(undefined, dt);
   }
 
@@ -87,4 +147,4 @@ export class Player extends Sprite {
   }
 }
 
-export default Player;
+export default Tank;

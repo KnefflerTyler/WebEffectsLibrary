@@ -1,6 +1,7 @@
 import { NETWORK_HZ } from './config.js';
 import Game from './managers/GameManager.js';
 import KeyboardInput from './input/keyboardInput.js';
+import MouseInput from './input/mouseInput.js';
 import P2PSession from './network/p2pSession.js';
 import WebGLRenderer from './renderer/webglRenderer.js';
 import GameUI from './ui/gameUI.js';
@@ -9,6 +10,7 @@ const canvas = document.getElementById('game-canvas');
 const renderer = await WebGLRenderer.create(canvas);
 const world = new Game();
 const input = new KeyboardInput();
+const mouse = new MouseInput(canvas);
 
 let lastTime = performance.now();
 let lastNetworkSend = 0;
@@ -49,6 +51,9 @@ const ui = new GameUI({
 
 function update(dt, now) {
   const state = world.movePlayer(session.localId, input.getMovement(), dt);
+  world.updateAim(session.localId, mouse.getPosition());
+  const click = mouse.consumePrimaryClick();
+  if (click) world.fireProjectile(session.localId, click);
   world.update(dt);
 
   if (state && now - lastNetworkSend >= 1000 / NETWORK_HZ) {
@@ -61,7 +66,9 @@ function animate(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.05);
   lastTime = now;
   update(dt, now);
-  renderer.render(world.sprites);
+  renderer.render(world.sprites, {
+    debugLines: [world.getAimDebugLine(session.localId)].filter(Boolean)
+  });
   requestAnimationFrame(animate);
 }
 

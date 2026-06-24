@@ -4,7 +4,8 @@ import {
   PLAYER_BOUNDS,
   PLAYER_COLORS
 } from '../config.js';
-import Player from '../../assets/data/player/player.js';
+import Player from '../../assets/data/player/Tank.js';
+import Projectile from '../../assets/data/Projectile/Projectile.js';
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -13,10 +14,14 @@ function clamp(value, min, max) {
 export class GameManager {
   constructor() {
     this.players = new Map();
+    this.projectiles = [];
   }
 
   get sprites() {
-    return [...this.players.values()];
+    return [
+      ...[...this.players.values()].flatMap(player => player.sprites),
+      ...this.projectiles
+    ];
   }
 
   addPlayer(data) {
@@ -108,12 +113,39 @@ export class GameManager {
     return player.serialize();
   }
 
+  updateAim(id, target) {
+    const player = this.players.get(id);
+    if (!player || !target) return null;
+    player.aimAt(target);
+    return player;
+  }
+
+  getAimDebugLine(id) {
+    return this.players.get(id)?.getAimDebugLine() ?? null;
+  }
+
+  fireProjectile(id, target) {
+    const player = this.players.get(id);
+    if (!player || !target) return null;
+
+    const projectile = new Projectile({
+      id: `${id}:projectile:${performance.now()}`,
+      x: player.x,
+      y: player.y,
+      rotation: player.getRotationTo(target)
+    });
+    this.projectiles.push(projectile);
+    return projectile;
+  }
+
   update(dt) {
     for (const player of this.players.values()) player.update(dt);
+    for (const projectile of this.projectiles) projectile.update(dt);
+    this.projectiles = this.projectiles.filter(projectile => !projectile.expired);
   }
 
   serialize() {
-    return this.sprites.map(player => player.serialize());
+    return [...this.players.values()].map(player => player.serialize());
   }
 }
 

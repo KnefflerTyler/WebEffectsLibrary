@@ -1,6 +1,24 @@
 import { loadGLSL } from '../../../../shared/loadGLSL.js';
 
 const shaderBase = new URL('../../glsl/', import.meta.url);
+const lineVertexSource = `#version 300 es
+layout(location = 0) in vec2 aPosition;
+uniform vec2 uResolution;
+
+void main() {
+  vec2 clip = aPosition / uResolution * 2.0 - 1.0;
+  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
+}
+`;
+const lineFragmentSource = `#version 300 es
+precision mediump float;
+uniform vec4 uColor;
+out vec4 outColor;
+
+void main() {
+  outColor = uColor;
+}
+`;
 
 export class WebGLRenderer {
   constructor(canvas) {
@@ -23,6 +41,7 @@ export class WebGLRenderer {
     ]);
 
     this.program = this.createProgram(vertex, fragment);
+    this.lineProgram = this.createProgram(lineVertexSource, lineFragmentSource);
     this.uniforms = {
       center: this.gl.getUniformLocation(this.program, 'uCenter'),
       size: this.gl.getUniformLocation(this.program, 'uSize'),
@@ -30,6 +49,10 @@ export class WebGLRenderer {
       rotation: this.gl.getUniformLocation(this.program, 'uRotation'),
       texture: this.gl.getUniformLocation(this.program, 'uTexture'),
       frame: this.gl.getUniformLocation(this.program, 'uFrame')
+    };
+    this.lineUniforms = {
+      resolution: this.gl.getUniformLocation(this.lineProgram, 'uResolution'),
+      color: this.gl.getUniformLocation(this.lineProgram, 'uColor')
     };
 
     const vertices = new Float32Array([
@@ -46,6 +69,13 @@ export class WebGLRenderer {
     this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, 16, 0);
     this.gl.enableVertexAttribArray(1);
     this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, 16, 8);
+
+    this.lineVao = this.gl.createVertexArray();
+    this.gl.bindVertexArray(this.lineVao);
+    this.lineBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.lineBuffer);
+    this.gl.enableVertexAttribArray(0);
+    this.gl.vertexAttribPointer(0, 2, this.gl.FLOAT, false, 8, 0);
 
     this.gl.enable(this.gl.BLEND);
     this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
@@ -66,7 +96,7 @@ export class WebGLRenderer {
     this.gl.viewport(0, 0, width, height);
   }
 
-  render(sprites) {
+  render(sprites, { debugLines = [] } = {}) {
     const gl = this.gl;
     this.resize();
     gl.clearColor(.055, .085, .06, 1);
@@ -94,6 +124,31 @@ export class WebGLRenderer {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.getTexture(sprite.image));
       gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+
+    this.renderDebugLines(debugLines);
+  }
+
+  renderDebugLines(lines) {
+    if (!lines.length) return;
+
+    const gl = this.gl;
+    gl.useProgram(this.lineProgram);
+    gl.bindVertexArray(this.lineVao);
+    gl.uniform2f(this.lineUniforms.resolution, this.width, this.height);
+    gl.uniform4f(this.lineUniforms.color, 1, 0.9, 0.2, 0.9);
+    gl.lineWidth(2);
+
+    for (const line of lines) {
+      const vertices = new Float32Array([
+        line.start.x * this.width,
+        line.start.y * this.height,
+        line.end.x * this.width,
+        line.end.y * this.height
+      ]);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.lineBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
+      gl.drawArrays(gl.LINES, 0, 2);
     }
   }
 

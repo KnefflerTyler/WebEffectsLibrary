@@ -9,6 +9,15 @@ export const PLAYER_ROTATION_RESPONSE = 22;
 export const DEFAULT_PLAYER_SIZE = 1;
 export const DEFAULT_PLAYER_SIZE_SCALER = 54;
 
+export const DEFAULT_PROJECTILE_SPEED = 1;
+export const DEFAULT_PROJECTILE_SPEED_SCALER = 0.75;
+
+export const DEFAULT_PROJECTILE_SIZE = 1;
+export const DEFAULT_PROJECTILE_SIZE_SCALER = 10;
+
+export const DEFAULT_PROJECTILE_TTL = 1;
+export const DEFAULT_PROJECTILE_TTL_SCALER = 1.6;
+
 export const NETWORK_HZ = 24;
 
 export const PLAYER_BOUNDS = {
