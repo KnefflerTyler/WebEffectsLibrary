@@ -154,6 +154,8 @@ export class WebGLRenderer {
     gl.lineWidth(2);
 
     for (const line of lines) {
+      const color = line.color ?? [1, 0.9, 0.2, 0.9];
+      gl.uniform4f(this.lineUniforms.color, color[0], color[1], color[2], color[3]);
       const vertices = new Float32Array([
         line.start.x * this.width,
         line.start.y * this.height,

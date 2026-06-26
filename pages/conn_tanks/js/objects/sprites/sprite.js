@@ -1,4 +1,5 @@
 import { GameObject } from '../object.js';
+import SpriteCollider from './spriteCollider.js';
 import SpriteAnimation from './spriteAnimation.js';
 
 export class Sprite extends GameObject {
@@ -18,6 +19,9 @@ export class Sprite extends GameObject {
     this.animations = new Map();
     this.currentAnimation = null;
     this.animationElapsed = 0;
+    this.collider = null;
+
+    if (options.collider) this.setCollider(options.collider);
   }
 
   addAnimation(animation) {
@@ -37,6 +41,20 @@ export class Sprite extends GameObject {
 
   update(dt) {
     this.animationElapsed += dt;
+    this.collider?.update(dt);
+  }
+
+  setCollider(collider = {}) {
+    this.collider?.destroy();
+    this.collider = collider instanceof SpriteCollider
+      ? collider.attach(this)
+      : new SpriteCollider(this, collider);
+    return this.collider;
+  }
+
+  removeCollider() {
+    this.collider?.destroy();
+    this.collider = null;
   }
 
   getFrame() {

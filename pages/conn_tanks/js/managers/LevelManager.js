@@ -99,7 +99,8 @@ export class LevelManager {
       color: data.color ?? '#ffffff',
       image: data.image ? await this.loadImage(data.image, levelUrl) : null,
       sheetCols: data.sheetCols ?? 1,
-      sheetRows: data.sheetRows ?? 1
+      sheetRows: data.sheetRows ?? 1,
+      collider: data.collider ?? null
     });
 
     for (const animation of Array.isArray(data.animations) ? data.animations : []) {

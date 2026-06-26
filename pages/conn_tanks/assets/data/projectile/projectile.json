@@ -1,0 +1,21 @@
+{
+  "speed": {
+    "default": 1,
+    "scaler": 0.75
+  },
+  "size": {
+    "default": 1,
+    "scaler": 10
+  },
+  "ttl": {
+    "default": 1,
+    "scaler": 1.6
+  },
+  "image": {
+    "type": "generatedCircle",
+    "width": 16,
+    "height": 16,
+    "radius": 5,
+    "color": "#f8f35f"
+  }
+}

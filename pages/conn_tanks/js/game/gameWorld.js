@@ -1,8 +1,8 @@
 // #region Imports
 import { PLAYER_BOUNDS, PLAYER_COLORS } from '../config.js';
 import LevelManager from '../managers/LevelManager.js';
-import Player from '../../assets/data/player/Player.js';
-import Projectile from '../../assets/data/Projectile/Projectile.js';
+import Player from '../objects/player/Player.js';
+import Projectile from '../objects/Projectile/Projectile.js';
 // #endregion
 
 // #region Constants and Helpers

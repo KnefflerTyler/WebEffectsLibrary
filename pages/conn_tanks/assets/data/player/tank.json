@@ -1,0 +1,85 @@
+{
+  "speed": {
+    "default": 1,
+    "scaler": 0.14,
+    "response": 22
+  },
+  "rotation": {
+    "default": 1,
+    "scaler": 1,
+    "response": 22
+  },
+  "aim": {
+    "default": 1,
+    "scaler": 0.1,
+    "response": 22
+  },
+  "size": {
+    "default": 1,
+    "scaler": 54
+  },
+  "collider": {
+    "enabled": true,
+    "isTrigger": true,
+    "layer": "player",
+    "collidesWith": [
+      "default",
+      "player",
+      "projectile"
+    ],
+    "offsetX": 0,
+    "offsetY": 0,
+    "width": 0.045,
+    "height": 0.06
+  },
+  "spriteSheet": {
+    "image": "../../images/tankspritesheet.png",
+    "frameWidth": 111.375,
+    "frameHeight": 140,
+    "sheetCols": 8,
+    "sheetRows": 2,
+    "turretPivotOffsetY": 15,
+    "frameCenterOffsets": [
+      [
+        { "x": 5, "y": 5 },
+        { "x": 6, "y": 4.5 },
+        { "x": 6.5, "y": 5 },
+        { "x": 3, "y": 5 },
+        { "x": 0.5, "y": 4.5 },
+        { "x": -1.5, "y": 5 },
+        { "x": -4.5, "y": 5 },
+        { "x": -5.5, "y": 4.5 }
+      ],
+      [
+        { "x": 3, "y": -6 },
+        { "x": 5, "y": -6 },
+        { "x": 6, "y": -6 },
+        { "x": 3, "y": -6 },
+        { "x": 0, "y": -6 },
+        { "x": -1.5, "y": -6 },
+        { "x": -5, "y": -6 },
+        { "x": -6, "y": -6 }
+      ]
+    ]
+  },
+  "bottomSprite": {
+    "animation": {
+      "name": "default",
+      "row": 1,
+      "startCol": 0,
+      "endCol": 7,
+      "fps": 5,
+      "loop": true
+    }
+  },
+  "topSprite": {
+    "animation": {
+      "name": "default",
+      "row": 0,
+      "startCol": 0,
+      "endCol": 7,
+      "fps": 5,
+      "loop": true
+    }
+  }
+}
