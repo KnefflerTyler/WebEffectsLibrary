@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connected Tanks Level Editor</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body class="editor-page">
+  <header class="editor-header">
+    <div>
+      <p class="eyebrow">Level editor</p>
+      <h1>Connected Tanks</h1>
+    </div>
+    <nav class="editor-nav">
+      <a class="button-link secondary" href="../index.html">Views</a>
+      <a class="button-link" href="game.html">Game</a>
+    </nav>
+  </header>
+
+  <main class="editor-shell">
+    <section class="editor-panel">
+      <div class="editor-toolbar">
+        <button id="load-default">Load default</button>
+        <label class="file-button">
+          Import
+          <input id="import-level" type="file" accept=".json,.level.json,application/json">
+        </label>
+        <button id="add-spawn">Add spawn</button>
+        <button id="add-sprite">Add sprite</button>
+        <button id="format-json">Format</button>
+        <button id="export-level">Export</button>
+      </div>
+      <textarea id="level-json" spellcheck="false"></textarea>
+      <p id="editor-status" class="status"></p>
+    </section>
+
+    <aside class="editor-panel editor-summary">
+      <h2>Summary</h2>
+      <dl>
+        <div><dt>Level</dt><dd id="summary-name">-</dd></div>
+        <div><dt>Spawns</dt><dd id="summary-spawns">0</dd></div>
+        <div><dt>Objects</dt><dd id="summary-objects">0</dd></div>
+      </dl>
+      <h2>Spawns</h2>
+      <ol id="spawn-list"></ol>
+      <h2>Objects</h2>
+      <ol id="object-list"></ol>
+    </aside>
+  </main>
+
+  <script type="module" src="../js/editor/editor.js"></script>
+</body>
+</html>

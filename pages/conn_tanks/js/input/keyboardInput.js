@@ -20,7 +20,7 @@ export class KeyboardInput {
   getMovement() {
     return {
       throttle: Number(this.keys.has('KeyW')) - Number(this.keys.has('KeyS')),
-      turn: Number(this.keys.has('KeyD')) - Number(this.keys.has('KeyA'))
+      rotate: Number(this.keys.has('KeyD')) - Number(this.keys.has('KeyA'))
     };
   }
 

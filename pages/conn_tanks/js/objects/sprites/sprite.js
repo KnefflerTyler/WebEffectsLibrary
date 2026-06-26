@@ -6,6 +6,10 @@ export class Sprite extends GameObject {
     super(options);
     this.width = options.width ?? 48;
     this.height = options.height ?? 48;
+    this.originOffsetX = options.originOffsetX ?? 0;
+    this.originOffsetY = options.originOffsetY ?? 0;
+    this.frameOffsets = options.frameOffsets ?? null;
+    this.backgroundKey = options.backgroundKey ?? null;
     this.color = options.color ?? '#ffffff';
     this.image = options.image ?? null;
     this.name = options.name ?? '';
@@ -37,11 +41,16 @@ export class Sprite extends GameObject {
 
   getFrame() {
     const animation = this.currentAnimation;
+    const column = animation?.frameAt(this.animationElapsed) ?? 0;
+    const row = animation?.row ?? 0;
+    const offset = this.frameOffsets?.[row]?.[column] ?? null;
     return {
-      column: animation?.frameAt(this.animationElapsed) ?? 0,
-      row: animation?.row ?? 0,
+      column,
+      row,
       cols: this.sheetCols,
-      rows: this.sheetRows
+      rows: this.sheetRows,
+      offsetX: offset?.x ?? 0,
+      offsetY: offset?.y ?? 0
     };
   }
 }

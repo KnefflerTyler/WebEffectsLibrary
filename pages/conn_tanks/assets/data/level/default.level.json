@@ -1,0 +1,55 @@
+{
+  "id": "default",
+  "name": "Default Test Level",
+  "spawns": [
+    {
+      "id": "host",
+      "x": 0.35,
+      "y": 0.5,
+      "rotation": 0
+    },
+    {
+      "id": "guest-1",
+      "x": 0.65,
+      "y": 0.5,
+      "rotation": 3.14159
+    },
+    {
+      "id": "guest-2",
+      "x": 0.5,
+      "y": 0.3,
+      "rotation": 1.5708
+    },
+    {
+      "id": "guest-3",
+      "x": 0.5,
+      "y": 0.7,
+      "rotation": -1.5708
+    }
+  ],
+  "objects": [
+    {
+      "type": "sprite",
+      "id": "center-marker",
+      "name": "Center Marker",
+      "x": 0.5,
+      "y": 0.5,
+      "width": 48,
+      "height": 48,
+      "image": "../../images/slime_idle1.png",
+      "sheetCols": 2,
+      "sheetRows": 7,
+      "animations": [
+        {
+          "name": "idle",
+          "row": 0,
+          "startCol": 0,
+          "endCol": 1,
+          "fps": 5,
+          "loop": true
+        }
+      ],
+      "animation": "idle"
+    }
+  ]
+}

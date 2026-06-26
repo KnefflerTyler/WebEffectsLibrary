@@ -44,11 +44,13 @@ export class WebGLRenderer {
     this.lineProgram = this.createProgram(lineVertexSource, lineFragmentSource);
     this.uniforms = {
       center: this.gl.getUniformLocation(this.program, 'uCenter'),
+      originOffset: this.gl.getUniformLocation(this.program, 'uOriginOffset'),
       size: this.gl.getUniformLocation(this.program, 'uSize'),
       resolution: this.gl.getUniformLocation(this.program, 'uResolution'),
       rotation: this.gl.getUniformLocation(this.program, 'uRotation'),
       texture: this.gl.getUniformLocation(this.program, 'uTexture'),
-      frame: this.gl.getUniformLocation(this.program, 'uFrame')
+      frame: this.gl.getUniformLocation(this.program, 'uFrame'),
+      backgroundKey: this.gl.getUniformLocation(this.program, 'uBackgroundKey')
     };
     this.lineUniforms = {
       resolution: this.gl.getUniformLocation(this.lineProgram, 'uResolution'),
@@ -112,6 +114,11 @@ export class WebGLRenderer {
       const frameWidth = 1 / frame.cols;
       const frameHeight = 1 / frame.rows;
       gl.uniform2f(this.uniforms.center, sprite.x * this.width, sprite.y * this.height);
+      gl.uniform2f(
+        this.uniforms.originOffset,
+        (sprite.originOffsetX + frame.offsetX) * this.dpr,
+        (sprite.originOffsetY + frame.offsetY) * this.dpr
+      );
       gl.uniform2f(this.uniforms.size, sprite.width * this.dpr, sprite.height * this.dpr);
       gl.uniform1f(this.uniforms.rotation, sprite.rotation);
       gl.uniform4f(
@@ -120,6 +127,13 @@ export class WebGLRenderer {
         frameHeight,
         frame.column * frameWidth,
         frame.row * frameHeight
+      );
+      gl.uniform4f(
+        this.uniforms.backgroundKey,
+        sprite.backgroundKey?.r ?? 1,
+        sprite.backgroundKey?.g ?? 1,
+        sprite.backgroundKey?.b ?? 1,
+        sprite.backgroundKey?.tolerance ?? 0
       );
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.getTexture(sprite.image));

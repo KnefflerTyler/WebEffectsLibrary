@@ -1,22 +1,26 @@
 import { NETWORK_HZ } from './config.js';
-import Game from './managers/GameManager.js';
+import { PlayerActionType } from './api/models.js';
+import GameManager from './managers/GameManager.js';
+import NetworkManager from './managers/NetworkManager.js';
 import KeyboardInput from './input/keyboardInput.js';
 import MouseInput from './input/mouseInput.js';
-import P2PSession from './network/p2pSession.js';
 import WebGLRenderer from './renderer/webglRenderer.js';
 import GameUI from './ui/gameUI.js';
 
 const canvas = document.getElementById('game-canvas');
 const renderer = await WebGLRenderer.create(canvas);
-const world = new Game();
+const world = new GameManager();
+await world.loadLevel('default');
 const input = new KeyboardInput();
 const mouse = new MouseInput(canvas);
 
 let lastTime = performance.now();
 let lastNetworkSend = 0;
+let pendingNetworkMoveDt = 0;
 
-const session = new P2PSession({
+const network = new NetworkManager({
   getSnapshot: () => world.serialize(),
+  getLevelData: () => world.getLevelData(),
 
   onReady: ({ id, roomCode, role, name }) => {
     if (role === 'host') world.addHost(id, name);
@@ -34,31 +38,44 @@ const session = new P2PSession({
     ui.updatePlayerCount(world.players.size);
   },
 
-  onSnapshot: (players, { preserveLocal }) => {
-    world.applySnapshot(players, preserveLocal ? session.localId : null);
+  onLevelData: level => world.loadLevelData(level),
+  onSnapshot: players => {
+    world.applySnapshot(players);
     ui.updatePlayerCount(world.players.size);
   },
 
-  onRemoteMove: (id, state) => world.applyPlayerState(id, state),
+  onRemoteMove: (id, movement, dt) => world.verifyPlayerMovement(id, movement, dt),
+  onRemoteAction: (id, action) => world.verifyPlayerAction(id, action),
   onDisconnected: () => ui.showDisconnected(),
   onError: error => ui.setMenuStatus(error.message)
 });
 
 const ui = new GameUI({
-  onHost: name => session.host(name),
-  onJoin: (roomCode, name) => session.join(roomCode, name)
+  onHost: name => network.host(name),
+  onJoin: (roomCode, name) => network.join(roomCode, name)
 });
 
 function update(dt, now) {
-  const state = world.movePlayer(session.localId, input.getMovement(), dt);
-  world.updateAim(session.localId, mouse.getPosition());
+  const movement = input.getMovement();
+  const state = world.movePlayer(network.localId, movement, dt);
+  if (state) pendingNetworkMoveDt += dt;
+  world.updateAim(network.localId, mouse.getPosition());
   const click = mouse.consumePrimaryClick();
-  if (click) world.fireProjectile(session.localId, click);
+  if (click) {
+    world.fireProjectile(network.localId);
+    network.sendLocalAction({ type: PlayerActionType.FIRE, target: click });
+  }
   world.update(dt);
 
-  if (state && now - lastNetworkSend >= 1000 / NETWORK_HZ) {
+  const shouldSendMove = state && (
+    now - lastNetworkSend >= 1000 / NETWORK_HZ
+    || (!movement.throttle && !movement.rotate)
+  );
+
+  if (shouldSendMove) {
     lastNetworkSend = now;
-    session.sendLocalState(state);
+    network.sendLocalMove(movement, pendingNetworkMoveDt);
+    pendingNetworkMoveDt = 0;
   }
 }
 
@@ -67,7 +84,7 @@ function animate(now) {
   lastTime = now;
   update(dt, now);
   renderer.render(world.sprites, {
-    debugLines: [world.getAimDebugLine(session.localId)].filter(Boolean)
+    debugLines: [world.getAimDebugLine(network.localId)].filter(Boolean)
   });
   requestAnimationFrame(animate);
 }

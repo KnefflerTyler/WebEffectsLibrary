@@ -1,21 +1,39 @@
-export class P2PSession {
+// #region Imports
+import { ApiMessageType } from '../api/models.js';
+import {
+  createActionRequest,
+  createMoveRequest,
+  createStateRequest,
+  createWelcomeRequest,
+  getSnapshotLevel,
+  getSnapshotPlayers,
+  parseApiRequest
+} from '../api/requests.js';
+// #endregion
+
+export class NetworkManager {
+  // #region Lifecycle
   constructor({
     PeerClass = window.Peer,
     getSnapshot = () => [],
+    getLevelData = () => null,
     onReady = () => {},
     onPlayerJoined = () => {},
     onPlayerLeft = () => {},
     onSnapshot = () => {},
+    onLevelData = () => {},
     onRemoteMove = () => {},
+    onRemoteAction = () => {},
     onDisconnected = () => {},
     onError = () => {}
   } = {}) {
     if (!PeerClass) throw new Error('PeerJS did not load.');
     this.PeerClass = PeerClass;
     this.getSnapshot = getSnapshot;
+    this.getLevelData = getLevelData;
     this.handlers = {
       onReady, onPlayerJoined, onPlayerLeft, onSnapshot,
-      onRemoteMove, onDisconnected, onError
+      onLevelData, onRemoteMove, onRemoteAction, onDisconnected, onError
     };
     this.connections = new Map();
     this.peer = null;
@@ -23,7 +41,9 @@ export class P2PSession {
     this.role = null;
     this.localId = null;
   }
+  // #endregion
 
+  // #region Session Setup
   host(name) {
     this.role = 'host';
     this.peer = this.createPeer();
@@ -53,7 +73,9 @@ export class P2PSession {
       connection.on('error', error => this.handlers.onError(error));
     });
   }
+  // #endregion
 
+  // #region Peer Connections
   createPeer() {
     const peer = new this.PeerClass();
     peer.on('error', error => this.handlers.onError(error));
@@ -77,39 +99,58 @@ export class P2PSession {
         name: String(connection.metadata?.name || '').slice(0, 18),
         index: this.connections.size
       });
-      this.send(connection, { type: 'welcome', players: this.getSnapshot() });
+      this.send(connection, createWelcomeRequest(this.getSnapshot(), this.getLevelData()));
       this.broadcastSnapshot();
     });
     connection.on('data', raw => this.handleHostData(connection, raw));
     connection.on('close', remove);
     connection.on('error', remove);
   }
+  // #endregion
 
+  // #region Incoming Messages
   handleHostData(connection, raw) {
-    const message = this.parse(raw);
-    if (message?.type !== 'move') return;
-    this.handlers.onRemoteMove(connection.peer, message.player);
+    const request = parseApiRequest(raw);
+    if (request?.type === ApiMessageType.MOVE) {
+      this.handlers.onRemoteMove(connection.peer, request.movement, request.dt);
+    } else if (request?.type === ApiMessageType.ACTION) {
+      this.handlers.onRemoteAction(connection.peer, request.action);
+    } else {
+      return;
+    }
     this.broadcastSnapshot();
   }
 
-  handleGuestData(raw) {
-    const message = this.parse(raw);
-    if (message?.type !== 'welcome' && message?.type !== 'state') return;
-    if (!Array.isArray(message.players)) return;
-    this.handlers.onSnapshot(message.players, { preserveLocal: message.type === 'state' });
+  async handleGuestData(raw) {
+    const request = parseApiRequest(raw);
+    const players = getSnapshotPlayers(request);
+    if (!players) return;
+    const level = getSnapshotLevel(request);
+    if (level) await this.handlers.onLevelData(level);
+    this.handlers.onSnapshot(players);
   }
+  // #endregion
 
-  sendLocalState(player) {
+  // #region Outgoing Messages
+  sendLocalMove(movement, dt) {
     if (this.role === 'host') {
       this.broadcastSnapshot();
       return;
     }
-    this.send(this.hostConnection, { type: 'move', player });
+    this.send(this.hostConnection, createMoveRequest(movement, dt));
+  }
+
+  sendLocalAction(action) {
+    if (this.role === 'host') {
+      this.broadcastSnapshot();
+      return;
+    }
+    this.send(this.hostConnection, createActionRequest(action));
   }
 
   broadcastSnapshot() {
     if (this.role !== 'host') return;
-    this.broadcast({ type: 'state', players: this.getSnapshot() });
+    this.broadcast(createStateRequest(this.getSnapshot(), this.getLevelData()));
   }
 
   broadcast(message) {
@@ -117,23 +158,18 @@ export class P2PSession {
   }
 
   send(connection, message) {
-    if (connection?.open) connection.send(JSON.stringify(message));
+    if (connection?.open && message) connection.send(JSON.stringify(message));
   }
+  // #endregion
 
-  parse(raw) {
-    try {
-      return typeof raw === 'string' ? JSON.parse(raw) : raw;
-    } catch {
-      return null;
-    }
-  }
-
+  // #region Teardown
   destroy() {
     this.hostConnection?.close();
     for (const connection of this.connections.values()) connection.close();
     this.connections.clear();
     this.peer?.destroy();
   }
+  // #endregion
 }
 
-export default P2PSession;
+export default NetworkManager;
