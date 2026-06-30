@@ -138,6 +138,8 @@ export class Tank {
       sheetRows: spriteSheet.sheetRows,
       collider: options.collider ?? createColliderOptions(data.collider, this.id)
     });
+    this.bottomSprite.playerId = this.id;
+    this.bottomSprite.wrapWithScreen = true;
     this.topSprite = new Sprite({
       id: `${this.id}:top`,
       x: this.x,
@@ -149,6 +151,7 @@ export class Tank {
       sheetCols: spriteSheet.sheetCols,
       sheetRows: spriteSheet.sheetRows
     });
+    this.topSprite.wrapWithScreen = true;
 
     this.bottomSprite.addAnimation(new SpriteAnimation(data.bottomSprite.animation));
     this.bottomSprite.setAnimation(data.bottomSprite.animation.name);
@@ -168,6 +171,8 @@ export class Tank {
     this.targetAimRotation = this.aimRotation;
     this.isMoving = false;
     this.isTurning = false;
+    this.lastSafeX = this.x;
+    this.lastSafeY = this.y;
     this.syncSprites();
   }
 
@@ -224,6 +229,18 @@ export class Tank {
     this.move(state);
   }
 
+  teleport({ x = this.x, y = this.y, rotation = this.rotation } = {}) {
+    this.x = this.targetX = x;
+    this.y = this.targetY = y;
+    this.rotation = this.targetRotation = rotation;
+    this.aimRotation = this.targetAimRotation = rotation;
+    this.stopMoving();
+    this.stopTurning();
+    this.lastSafeX = x;
+    this.lastSafeY = y;
+    this.syncSprites();
+  }
+
   moveFromInput(movement, dt, bounds) {
     const data = getTankData();
     if (!movement || !Number.isFinite(dt) || dt <= 0) return false;
@@ -243,16 +260,17 @@ export class Tank {
     const rotation = this.targetRotation
       + rotate * this.rotation_speed * data.rotation.scaler * dt;
     const distance = throttle * this.move_speed * data.speed.scaler * dt;
-    const x = clamp(
-      this.targetX + Math.sin(rotation) * distance,
-      bounds.minX,
-      bounds.maxX
-    );
-    const y = clamp(
-      this.targetY - Math.cos(rotation) * distance,
-      bounds.minY,
-      bounds.maxY
-    );
+    const rawX = this.targetX + Math.sin(rotation) * distance;
+    const rawY = this.targetY - Math.cos(rotation) * distance;
+    const x = bounds.wrap
+      ? wrap(rawX, bounds.minX, bounds.maxX)
+      : clamp(rawX, bounds.minX, bounds.maxX);
+    const y = bounds.wrap
+      ? wrap(rawY, bounds.minY, bounds.maxY)
+      : clamp(rawY, bounds.minY, bounds.maxY);
+
+    if (bounds.wrap && x !== rawX) this.x = this.targetX = x;
+    if (bounds.wrap && y !== rawY) this.y = this.targetY = y;
 
     this.move({ x, y, rotation });
     return true;
@@ -294,11 +312,26 @@ export class Tank {
   }
 
   update(dt) {
-    this.bottomSprite.update(dt);
+    const collisions = this.bottomSprite.update(dt);
+    if (collisions.some(collider => collider.layer === 'level')) {
+      this.x = this.lastSafeX;
+      this.y = this.lastSafeY;
+      this.stopMoving();
+      this.syncSprites();
+    } else {
+      this.lastSafeX = this.x;
+      this.lastSafeY = this.y;
+    }
     this.topSprite.update(dt);
     this.move(undefined, dt);
     this.updateAim(dt);
   }
+}
+
+function wrap(value, min, max) {
+  if (value >= min && value <= max) return value;
+  const span = max - min;
+  return ((value - min) % span + span) % span + min;
 }
 
 export default Tank;

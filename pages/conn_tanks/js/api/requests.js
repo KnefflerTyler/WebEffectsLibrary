@@ -34,26 +34,40 @@ export class ApiRequest extends SerializableModel {
 
 // #region Snapshot Requests
 export class SnapshotRequest extends ApiRequest {
-  constructor(type, players = [], level = null) {
+  constructor(type, { players, level, game } = {}) {
     super(type);
-    this.players = Array.isArray(players) ? players : [];
+    this.players = players;
     this.level = level;
+    this.game = game;
+  }
+
+  get valid() {
+    return Array.isArray(this.players)
+      && this.game
+      && ['lobby', 'playing', 'gameOver'].includes(this.game.phase)
+      && Number.isInteger(this.game.levelRevision)
+      && this.game.levelRevision >= 0;
   }
 
   static from(value) {
-    return new this(value?.players, value?.level ?? null);
+    const request = new this(value);
+    return request.valid ? request : null;
   }
 }
 
 export class WelcomeRequest extends SnapshotRequest {
-  constructor(players = [], level = null) {
-    super(ApiMessageType.WELCOME, players, level);
+  constructor(snapshot = {}) {
+    super(ApiMessageType.WELCOME, snapshot);
+  }
+
+  get valid() {
+    return super.valid && Boolean(this.level);
   }
 }
 
 export class StateRequest extends SnapshotRequest {
-  constructor(players = [], level = null) {
-    super(ApiMessageType.STATE, players, level);
+  constructor(snapshot = {}) {
+    super(ApiMessageType.STATE, snapshot);
   }
 }
 // #endregion
@@ -90,12 +104,16 @@ export class ActionRequest extends ApiRequest {
 // #endregion
 
 // #region Factory Helpers
-export function createWelcomeRequest(players, level = null) {
-  return new WelcomeRequest(players, level);
+export function createWelcomeRequest(snapshot) {
+  const request = new WelcomeRequest(snapshot);
+  if (!request.valid) throw new TypeError('Invalid welcome snapshot');
+  return request;
 }
 
-export function createStateRequest(players, level = null) {
-  return new StateRequest(players, level);
+export function createStateRequest(snapshot) {
+  const request = new StateRequest(snapshot);
+  if (!request.valid) throw new TypeError('Invalid state snapshot');
+  return request;
 }
 
 export function createMoveRequest(movement, dt) {
@@ -121,6 +139,11 @@ export function getSnapshotPlayers(request) {
 export function getSnapshotLevel(request) {
   if (!(request instanceof SnapshotRequest)) return null;
   return request.level;
+}
+
+export function getSnapshotGame(request) {
+  if (!(request instanceof SnapshotRequest)) return null;
+  return request.game;
 }
 
 function parseRaw(raw) {

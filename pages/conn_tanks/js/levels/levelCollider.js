@@ -1,5 +1,5 @@
-import Collider from './collider.js';
-import { GameObject } from './object.js';
+import Collider from '../objects/collider.js';
+import { GameObject } from '../objects/object.js';
 
 const DEFAULT_BORDER = '#69e394';
 const DEFAULT_FILL = '#2d9e5b';
@@ -17,6 +17,12 @@ export class LevelCollider extends GameObject {
     this.fillColor = options.fillColor ?? DEFAULT_FILL;
     this.borderAlpha = clamp01(options.borderAlpha ?? 1);
     this.fillAlpha = clamp01(options.fillAlpha ?? 0.25);
+    const destructible = options.destructible;
+    this.maxHealth = destructible
+      ? Math.max(1, Math.floor(Number(destructible.health ?? destructible) || 1))
+      : null;
+    this.health = this.maxHealth;
+    this.isDestroyed = false;
     this.collider = new Collider({
       ...(options.collider ?? {}),
       id: options.collider?.id ?? `${this.id}:collider`,
@@ -29,6 +35,7 @@ export class LevelCollider extends GameObject {
   }
 
   update() {
+    if (this.isDestroyed) return;
     this.collider.update();
   }
 
@@ -80,14 +87,38 @@ export class LevelCollider extends GameObject {
   }
 
   getRenderShape() {
+    const healthRatio = this.maxHealth ? this.health / this.maxHealth : 1;
     return {
       shape: this.shape,
       points: this.getGeometry().points,
       borderColor: this.borderColor,
       fillColor: this.fillColor,
-      borderAlpha: this.borderAlpha,
-      fillAlpha: this.fillAlpha
+      borderAlpha: this.borderAlpha * (0.55 + healthRatio * 0.45),
+      fillAlpha: this.fillAlpha * (0.35 + healthRatio * 0.65)
     };
+  }
+
+  damage(amount = 1) {
+    if (!this.maxHealth || this.isDestroyed) return false;
+    this.health = Math.max(0, this.health - Math.max(0, Number(amount) || 0));
+    if (this.health > 0) return false;
+    this.isDestroyed = true;
+    this.collider.enabled = false;
+    this.collider.collisions.clear();
+    return true;
+  }
+
+  applyState(state = {}) {
+    if (!this.maxHealth) return;
+    const health = Math.max(0, Math.min(this.maxHealth, Number(state.health)));
+    if (!Number.isFinite(health)) return;
+    this.health = health;
+    this.isDestroyed = health <= 0;
+    this.collider.enabled = !this.isDestroyed;
+  }
+
+  serializeState() {
+    return this.maxHealth ? { id: this.id, health: this.health } : null;
   }
 }
 

@@ -1,0 +1,49 @@
+{
+  "id": "shattered-passage",
+  "name": "Shattered Passage",
+  "screenWrap": true,
+  "spawns": [
+    { "id": "host", "x": 0.08, "y": 0.50, "rotation": 1.57 },
+    { "id": "guest-1", "x": 0.92, "y": 0.50, "rotation": -1.57 },
+    { "id": "guest-2", "x": 0.50, "y": 0.09, "rotation": 3.14 },
+    { "id": "guest-3", "x": 0.50, "y": 0.91, "rotation": 0 }
+  ],
+  "objects": [
+    {
+      "type": "collider", "id": "shard-a", "name": "Western Shard", "shape": "rectangle",
+      "start": { "x": 0.17, "y": 0.18 }, "end": { "x": 0.25, "y": 0.68 },
+      "borderColor": "#6fe7ff", "fillColor": "#164d5b", "borderAlpha": 0.95, "fillAlpha": 0.68,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "shard-b", "name": "Upper Shard", "shape": "rectangle",
+      "start": { "x": 0.36, "y": 0.08 }, "end": { "x": 0.44, "y": 0.52 },
+      "borderColor": "#8af2ce", "fillColor": "#245d4a", "borderAlpha": 0.95, "fillAlpha": 0.68,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "shard-c", "name": "Lower Shard", "shape": "rectangle",
+      "start": { "x": 0.56, "y": 0.48 }, "end": { "x": 0.64, "y": 0.92 },
+      "borderColor": "#ff9f7a", "fillColor": "#69372a", "borderAlpha": 0.95, "fillAlpha": 0.68,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "shard-d", "name": "Eastern Shard", "shape": "rectangle",
+      "start": { "x": 0.75, "y": 0.32 }, "end": { "x": 0.83, "y": 0.82 },
+      "borderColor": "#e58aff", "fillColor": "#5b2a69", "borderAlpha": 0.95, "fillAlpha": 0.68,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "north-pool", "name": "North Pool", "shape": "ellipse",
+      "start": { "x": 0.67, "y": 0.08 }, "end": { "x": 0.88, "y": 0.25 },
+      "borderColor": "#66a7ff", "fillColor": "#193c76", "borderAlpha": 0.8, "fillAlpha": 0.55,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "south-pool", "name": "South Pool", "shape": "ellipse",
+      "start": { "x": 0.12, "y": 0.75 }, "end": { "x": 0.33, "y": 0.92 },
+      "borderColor": "#66a7ff", "fillColor": "#193c76", "borderAlpha": 0.8, "fillAlpha": 0.55,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    }
+  ]
+}

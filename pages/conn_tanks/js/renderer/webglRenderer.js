@@ -98,7 +98,7 @@ export class WebGLRenderer {
     this.gl.viewport(0, 0, width, height);
   }
 
-  render(sprites, { shapes = [], debugLines = [] } = {}) {
+  render(sprites, { shapes = [], screenWrap = false, debugLines = [] } = {}) {
     const gl = this.gl;
     this.resize();
     gl.clearColor(.055, .085, .06, 1);
@@ -114,13 +114,16 @@ export class WebGLRenderer {
       const frame = sprite.getFrame();
       const frameWidth = 1 / frame.cols;
       const frameHeight = 1 / frame.rows;
-      gl.uniform2f(this.uniforms.center, sprite.x * this.width, sprite.y * this.height);
       gl.uniform2f(
         this.uniforms.originOffset,
         (sprite.originOffsetX + frame.offsetX) * this.dpr,
         (sprite.originOffsetY + frame.offsetY) * this.dpr
       );
-      gl.uniform2f(this.uniforms.size, sprite.width * this.dpr, sprite.height * this.dpr);
+      gl.uniform2f(
+        this.uniforms.size,
+        sprite.levelSized ? this.width : sprite.width * this.dpr,
+        sprite.levelSized ? this.height : sprite.height * this.dpr
+      );
       gl.uniform1f(this.uniforms.rotation, sprite.rotation);
       gl.uniform4f(
         this.uniforms.frame,
@@ -138,10 +141,34 @@ export class WebGLRenderer {
       );
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, this.getTexture(sprite.image));
-      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      for (const position of this.getSpriteRenderPositions(sprite, screenWrap)) {
+        gl.uniform2f(this.uniforms.center, position.x * this.width, position.y * this.height);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
     }
 
     this.renderDebugLines(debugLines);
+  }
+
+  getSpriteRenderPositions(sprite, screenWrap) {
+    const positions = [{ x: sprite.x, y: sprite.y }];
+    if (!screenWrap || sprite.wrapWithScreen === false || sprite.levelSized) return positions;
+
+    const radius = Math.hypot(sprite.width, sprite.height) / 2
+      + Math.hypot(sprite.originOffsetX ?? 0, sprite.originOffsetY ?? 0);
+    const halfWidth = radius * this.dpr / this.width;
+    const halfHeight = radius * this.dpr / this.height;
+    const offsetsX = [0];
+    const offsetsY = [0];
+    if (sprite.x - halfWidth < 0) offsetsX.push(1);
+    if (sprite.x + halfWidth > 1) offsetsX.push(-1);
+    if (sprite.y - halfHeight < 0) offsetsY.push(1);
+    if (sprite.y + halfHeight > 1) offsetsY.push(-1);
+
+    return offsetsX.flatMap(offsetX => offsetsY.map(offsetY => ({
+      x: sprite.x + offsetX,
+      y: sprite.y + offsetY
+    })));
   }
 
   renderShapes(shapes) {

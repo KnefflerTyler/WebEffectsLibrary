@@ -1,0 +1,79 @@
+{
+  "id": "glass-labyrinth",
+  "name": "Glass Labyrinth",
+  "screenWrap": false,
+  "spawns": [
+    { "id": "host", "x": 0.10, "y": 0.10, "rotation": 2.35 },
+    { "id": "guest-1", "x": 0.90, "y": 0.90, "rotation": -0.79 },
+    { "id": "guest-2", "x": 0.90, "y": 0.10, "rotation": -2.35 },
+    { "id": "guest-3", "x": 0.10, "y": 0.90, "rotation": 0.79 }
+  ],
+  "objects": [
+    {
+      "type": "collider", "id": "west-upper", "name": "West Upper Glass", "shape": "line",
+      "start": { "x": 0.22, "y": 0.00 }, "end": { "x": 0.22, "y": 0.38 },
+      "borderColor": "#8cecff", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "west-lower", "name": "West Lower Glass", "shape": "line",
+      "start": { "x": 0.22, "y": 0.62 }, "end": { "x": 0.22, "y": 1.00 },
+      "borderColor": "#8cecff", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "east-upper", "name": "East Upper Glass", "shape": "line",
+      "start": { "x": 0.78, "y": 0.00 }, "end": { "x": 0.78, "y": 0.38 },
+      "borderColor": "#ff9ee9", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "east-lower", "name": "East Lower Glass", "shape": "line",
+      "start": { "x": 0.78, "y": 0.62 }, "end": { "x": 0.78, "y": 1.00 },
+      "borderColor": "#ff9ee9", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "north-left", "name": "North Left Glass", "shape": "line",
+      "start": { "x": 0.22, "y": 0.38 }, "end": { "x": 0.44, "y": 0.38 },
+      "borderColor": "#8cecff", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "north-right", "name": "North Right Glass", "shape": "line",
+      "start": { "x": 0.56, "y": 0.38 }, "end": { "x": 0.78, "y": 0.38 },
+      "borderColor": "#ff9ee9", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "south-left", "name": "South Left Glass", "shape": "line",
+      "start": { "x": 0.22, "y": 0.62 }, "end": { "x": 0.44, "y": 0.62 },
+      "borderColor": "#8cecff", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "south-right", "name": "South Right Glass", "shape": "line",
+      "start": { "x": 0.56, "y": 0.62 }, "end": { "x": 0.78, "y": 0.62 },
+      "borderColor": "#ff9ee9", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "core", "name": "Prism Core", "shape": "rectangle",
+      "start": { "x": 0.44, "y": 0.38 }, "end": { "x": 0.56, "y": 0.62 },
+      "borderColor": "#fff4a3", "fillColor": "#756b2e", "borderAlpha": 1, "fillAlpha": 0.72,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "mid-west", "name": "West Divider", "shape": "line",
+      "start": { "x": 0.00, "y": 0.50 }, "end": { "x": 0.22, "y": 0.50 },
+      "borderColor": "#8cecff", "fillColor": "#000000", "borderAlpha": 0.75, "fillAlpha": 0,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "mid-east", "name": "East Divider", "shape": "line",
+      "start": { "x": 0.78, "y": 0.50 }, "end": { "x": 1.00, "y": 0.50 },
+      "borderColor": "#ff9ee9", "fillColor": "#000000", "borderAlpha": 0.75, "fillAlpha": 0,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    }
+  ]
+}

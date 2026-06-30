@@ -67,9 +67,27 @@ button:disabled { cursor: default; filter: grayscale(.65); opacity: .65; }
 
 #room-code { min-height: 34px; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #connection-status { color: #a9baab; white-space: nowrap; }
+#lives-status { color: #f4c86b; white-space: nowrap; }
 .controls { color: #71d99b; white-space: nowrap; }
 .hud-link { color: #71d99b; text-decoration: none; white-space: nowrap; }
 .hidden { display: none !important; }
+.match-panel {
+  position: fixed; z-index: 5; top: 82px; left: 16px; width: min(280px, calc(100vw - 32px));
+  padding: 14px; border: 1px solid #354637; border-radius: 12px;
+  background: rgba(15, 23, 17, .94); box-shadow: 0 14px 40px #0007;
+}
+.match-panel strong { display: block; margin-bottom: 10px; color: #71d99b; }
+.level-list { display: grid; gap: 7px; margin-bottom: 12px; }
+.level-option { display: flex; align-items: center; gap: 8px; color: #c8d7ca; font-size: 13px; }
+.level-option input { width: auto; min-height: 0; accent-color: #68d493; }
+.match-panel button { width: 100%; }
+.match-panel p { margin: 9px 0 0; color: #9caf9e; font-size: 11px; line-height: 1.4; }
+.match-banner {
+  position: fixed; z-index: 6; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  padding: 18px 26px; border: 1px solid #5d765f; border-radius: 12px;
+  color: #edf6ed; background: rgba(13, 20, 15, .92); box-shadow: 0 20px 60px #000a;
+  font-size: clamp(20px, 4vw, 34px); font-weight: 800; text-align: center;
+}
 
 .editor-page { min-height: 100%; overflow: auto; }
 .editor-header {
@@ -91,6 +109,12 @@ button:disabled { cursor: default; filter: grayscale(.65); opacity: .65; }
 .editor-toolbar button, .editor-toolbar .file-button { min-height: 36px; }
 .editor-toolbar .tool-button.active { border-color: #b0f4c9; box-shadow: inset 0 0 0 1px #b0f4c9; }
 .editor-toolbar .danger { border-color: #8d4545; background: #6d3030; }
+.wrap-control {
+  display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 10px;
+  border: 1px solid #3b503e; border-radius: 9px; color: #b8c9ba; background: #0e1510;
+  font-size: 12px; font-weight: 700;
+}
+.wrap-control input { width: auto; min-height: 0; accent-color: #68d493; }
 .toolbar-divider { width: 1px; align-self: stretch; background: #354637; }
 .color-control, .alpha-control {
   display: inline-flex; align-items: center; gap: 7px; min-height: 36px; padding: 0 9px;
@@ -100,6 +124,17 @@ button:disabled { cursor: default; filter: grayscale(.65); opacity: .65; }
 .color-control input[type="color"] { width: 30px; height: 26px; min-height: 0; padding: 2px; border: 0; }
 .alpha-control input[type="range"] { width: 82px; min-height: 0; padding: 0; accent-color: #68d493; }
 .alpha-control output { min-width: 32px; color: #edf6ed; text-align: right; }
+.cave-generator { border-bottom: 1px solid #2f4132; background: #131d15; }
+.cave-generator summary { padding: 10px 14px; cursor: pointer; color: #71d99b; font-weight: 750; }
+.cave-controls { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 0 12px 12px; }
+.cave-controls label {
+  display: grid; gap: 4px; color: #9caf9e; font-size: 11px; font-weight: 700;
+}
+.cave-controls input { width: 110px; min-height: 34px; }
+.cave-controls input[type="range"] { padding: 0; accent-color: #68d493; }
+.cave-controls input[type="color"] { width: 54px; padding: 3px; }
+.cave-controls output { color: #edf6ed; text-align: center; }
+.cave-controls button { min-height: 34px; }
 .editor-workspace { padding: 14px; background: #0d130f; }
 .level-stage {
   position: relative; overflow: hidden; width: 100%; aspect-ratio: 16 / 9;

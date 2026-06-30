@@ -6,6 +6,7 @@ import {
   createStateRequest,
   createWelcomeRequest,
   getSnapshotLevel,
+  getSnapshotGame,
   getSnapshotPlayers,
   parseApiRequest
 } from '../api/requests.js';
@@ -17,11 +18,13 @@ export class NetworkManager {
     PeerClass = window.Peer,
     getSnapshot = () => [],
     getLevelData = () => null,
+    getGameState = () => null,
     onReady = () => {},
     onPlayerJoined = () => {},
     onPlayerLeft = () => {},
     onSnapshot = () => {},
     onLevelData = () => {},
+    onGameState = () => {},
     onRemoteMove = () => {},
     onRemoteAction = () => {},
     onDisconnected = () => {},
@@ -31,15 +34,19 @@ export class NetworkManager {
     this.PeerClass = PeerClass;
     this.getSnapshot = getSnapshot;
     this.getLevelData = getLevelData;
+    this.getGameState = getGameState;
     this.handlers = {
       onReady, onPlayerJoined, onPlayerLeft, onSnapshot,
-      onLevelData, onRemoteMove, onRemoteAction, onDisconnected, onError
+      onLevelData, onGameState, onRemoteMove, onRemoteAction, onDisconnected, onError
     };
     this.connections = new Map();
     this.peer = null;
     this.hostConnection = null;
     this.role = null;
     this.localId = null;
+    this.lastLevelRevision = null;
+    this.lastBroadcastLevelRevision = null;
+    this.levelBroadcastsRemaining = 0;
   }
   // #endregion
 
@@ -99,7 +106,11 @@ export class NetworkManager {
         name: String(connection.metadata?.name || '').slice(0, 18),
         index: this.connections.size
       });
-      this.send(connection, createWelcomeRequest(this.getSnapshot(), this.getLevelData()));
+      this.send(connection, createWelcomeRequest({
+        players: this.getSnapshot(),
+        level: this.getLevelData(),
+        game: this.getGameState()
+      }));
       this.broadcastSnapshot();
     });
     connection.on('data', raw => this.handleHostData(connection, raw));
@@ -126,7 +137,13 @@ export class NetworkManager {
     const players = getSnapshotPlayers(request);
     if (!players) return;
     const level = getSnapshotLevel(request);
-    if (level) await this.handlers.onLevelData(level);
+    const game = getSnapshotGame(request);
+    const revision = game.levelRevision;
+    if (level && revision !== this.lastLevelRevision) {
+      await this.handlers.onLevelData(level);
+      this.lastLevelRevision = revision;
+    }
+    if (game) this.handlers.onGameState(game);
     this.handlers.onSnapshot(players);
   }
   // #endregion
@@ -150,7 +167,19 @@ export class NetworkManager {
 
   broadcastSnapshot() {
     if (this.role !== 'host') return;
-    this.broadcast(createStateRequest(this.getSnapshot(), this.getLevelData()));
+    const game = this.getGameState();
+    const revision = game.levelRevision;
+    if (revision !== this.lastBroadcastLevelRevision) {
+      this.lastBroadcastLevelRevision = revision;
+      this.levelBroadcastsRemaining = 3;
+    }
+    const includeLevel = this.levelBroadcastsRemaining > 0;
+    this.broadcast(createStateRequest({
+      players: this.getSnapshot(),
+      level: includeLevel ? this.getLevelData() : null,
+      game
+    }));
+    if (includeLevel) this.levelBroadcastsRemaining -= 1;
   }
 
   broadcast(message) {

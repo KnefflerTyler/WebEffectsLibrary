@@ -1,3 +1,5 @@
+import { createCaveTextureCanvas, generateCave } from './caveGenerator.js';
+
 const textarea = document.getElementById('level-json');
 const status = document.getElementById('editor-status');
 const summaryName = document.getElementById('summary-name');
@@ -14,11 +16,25 @@ const borderAlpha = document.getElementById('border-alpha');
 const fillAlpha = document.getElementById('fill-alpha');
 const borderAlphaValue = document.getElementById('border-alpha-value');
 const fillAlphaValue = document.getElementById('fill-alpha-value');
+const destructible = document.getElementById('destructible');
+const destructibleHealth = document.getElementById('destructible-health');
 const deleteButton = document.getElementById('delete-collider');
+const screenWrap = document.getElementById('screen-wrap');
+const caveCols = document.getElementById('cave-cols');
+const caveRows = document.getElementById('cave-rows');
+const caveFill = document.getElementById('cave-fill');
+const caveIterations = document.getElementById('cave-iterations');
+const caveSeed = document.getElementById('cave-seed');
+const caveFloorColor = document.getElementById('cave-floor-color');
+const caveWallColor = document.getElementById('cave-wall-color');
+const caveEdgeColor = document.getElementById('cave-edge-color');
+const caveFillValue = document.getElementById('cave-fill-value');
+const caveIterationsValue = document.getElementById('cave-iterations-value');
 
 const starterLevel = {
   id: 'new-level',
   name: 'New Level',
+  screenWrap: false,
   spawns: [],
   objects: []
 };
@@ -26,6 +42,7 @@ const starterLevel = {
 let activeTool = 'select';
 let selectedId = null;
 let draft = null;
+let caveTextureCache = null;
 
 function setLevel(level, { clearSelection = false } = {}) {
   if (clearSelection) selectedId = null;
@@ -61,11 +78,15 @@ function updateSummary() {
     const spawns = Array.isArray(level.spawns) ? level.spawns : [];
     const objects = getObjects(level);
     const colliders = objects.filter(object => object.type === 'collider');
+    const colliderCount = colliders.length + objects
+      .filter(object => object.type === 'cave')
+      .reduce((count, cave) => count + (cave.mesh?.length ?? 0), 0);
     if (selectedId && !colliders.some(collider => collider.id === selectedId)) selectedId = null;
     summaryName.textContent = level.name || level.id || '-';
+    screenWrap.checked = level.screenWrap;
     summarySpawns.textContent = String(spawns.length);
     summaryObjects.textContent = String(objects.length);
-    summaryColliders.textContent = String(colliders.length);
+    summaryColliders.textContent = String(colliderCount);
     spawnList.replaceChildren(...spawns.map((spawn, index) => {
       const item = document.createElement('li');
       item.textContent = `${spawn.id || `spawn-${index + 1}`} (${spawn.x ?? 0}, ${spawn.y ?? 0})`;
@@ -120,12 +141,16 @@ function updateStyleControls() {
     fillColor.value = selected.fillColor ?? '#2d9e5b';
     borderAlpha.value = selected.borderAlpha ?? 1;
     fillAlpha.value = selected.fillAlpha ?? 0.25;
+    destructible.checked = Boolean(selected.destructible);
+    destructibleHealth.value = selected.destructible?.health ?? 2;
   }
   borderAlphaValue.value = `${Math.round(Number(borderAlpha.value) * 100)}%`;
   fillAlphaValue.value = `${Math.round(Number(fillAlpha.value) * 100)}%`;
   deleteButton.disabled = !selected;
   fillColor.disabled = selected?.shape === 'line';
   fillAlpha.disabled = selected?.shape === 'line';
+  destructible.disabled = !selected;
+  destructibleHealth.disabled = !selected || !destructible.checked;
 }
 
 function applyStylesToSelected() {
@@ -138,6 +163,11 @@ function applyStylesToSelected() {
   selected.fillColor = fillColor.value;
   selected.borderAlpha = Number(borderAlpha.value);
   selected.fillAlpha = Number(fillAlpha.value);
+  if (destructible.checked) {
+    selected.destructible = { health: Math.max(1, Math.floor(Number(destructibleHealth.value) || 1)) };
+  } else {
+    delete selected.destructible;
+  }
   setLevel(level);
 }
 
@@ -151,12 +181,21 @@ function drawLevel() {
   try {
     const level = getLevel();
     for (const object of getObjects(level)) {
-      if (object.type === 'collider') drawCollider(object, object.id === selectedId);
+      if (object.type === 'cave') drawCave(object);
+      else if (object.type === 'collider') drawCollider(object, object.id === selectedId);
       else if (object.type === 'sprite') drawSpritePlaceholder(object);
     }
     for (const spawn of Array.isArray(level.spawns) ? level.spawns : []) drawSpawn(spawn);
     if (draft) drawCollider(draft, true);
   } catch { /* Keep the drawing surface available while JSON is being edited. */ }
+}
+
+function drawCave(cave) {
+  const key = JSON.stringify([cave.seed, cave.cols, cave.rows, cave.cells, cave.texture]);
+  if (caveTextureCache?.key !== key) {
+    caveTextureCache = { key, canvas: createCaveTextureCanvas(cave) };
+  }
+  context.drawImage(caveTextureCache.canvas, 0, 0, canvas.clientWidth, canvas.clientHeight);
 }
 
 function resizeCanvas() {
@@ -395,6 +434,53 @@ document.getElementById('add-sprite').addEventListener('click', () => {
   setLevel(level);
 });
 
+screenWrap.addEventListener('change', () => {
+  const level = getLevel();
+  level.screenWrap = screenWrap.checked;
+  setLevel(level);
+});
+
+function updateCaveControlValues() {
+  caveFillValue.value = `${caveFill.value}%`;
+  caveIterationsValue.value = caveIterations.value;
+}
+
+caveFill.addEventListener('input', updateCaveControlValues);
+caveIterations.addEventListener('input', updateCaveControlValues);
+document.getElementById('generate-cave').addEventListener('click', () => {
+  const generated = generateCave({
+    cols: caveCols.value,
+    rows: caveRows.value,
+    fill: Number(caveFill.value) / 100,
+    iterations: caveIterations.value,
+    seed: caveSeed.value
+  });
+  const { spawnPoints, ...caveData } = generated;
+  const cave = {
+    type: 'cave',
+    id: 'cave-base',
+    name: 'Generated Cave',
+    ...caveData,
+    texture: {
+      floorColor: caveFloorColor.value,
+      wallColor: caveWallColor.value,
+      edgeColor: caveEdgeColor.value
+    }
+  };
+  const level = getLevel();
+  level.objects = [cave, ...getObjects(level).filter(object => object.type !== 'cave')];
+  level.spawns = spawnPoints.map((point, index) => ({
+    id: index ? `guest-${index}` : 'host',
+    x: point.x,
+    y: point.y,
+    rotation: index * Math.PI / 2
+  }));
+  selectedId = null;
+  caveTextureCache = null;
+  setLevel(level);
+  setStatus(`Generated ${cave.cols}×${cave.rows} cave with ${cave.mesh.length} mesh colliders`);
+});
+
 deleteButton.addEventListener('click', () => {
   const level = getLevel();
   level.objects = getObjects(level).filter(object => object.id !== selectedId);
@@ -405,6 +491,8 @@ deleteButton.addEventListener('click', () => {
 for (const input of [borderColor, fillColor, borderAlpha, fillAlpha]) {
   input.addEventListener('input', applyStylesToSelected);
 }
+destructible.addEventListener('change', applyStylesToSelected);
+destructibleHealth.addEventListener('input', applyStylesToSelected);
 
 document.getElementById('format-json').addEventListener('click', () => setLevel(getLevel()));
 
@@ -426,4 +514,5 @@ window.addEventListener('keydown', event => {
     && selectedId && document.activeElement !== textarea) deleteButton.click();
 });
 new ResizeObserver(drawLevel).observe(document.getElementById('level-stage'));
+updateCaveControlValues();
 setLevel(starterLevel);

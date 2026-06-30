@@ -17,7 +17,8 @@ const renderer = await WebGLRenderer.create(canvas);
 await loadTankData();
 await loadProjectileData();
 const world = new GameManager();
-await world.loadLevel('default');
+await world.loadLevel('default.level.json');
+const availableLevels = await loadAvailableLevels();
 const input = new KeyboardInput();
 const mouse = new MouseInput(canvas);
 // #endregion
@@ -32,11 +33,13 @@ let pendingNetworkMoveDt = 0;
 const network = new NetworkManager({
   getSnapshot: () => world.serialize(),
   getLevelData: () => world.getLevelData(),
+  getGameState: () => world.serializeGameState(),
 
   onReady: ({ id, roomCode, role, name }) => {
     if (role === 'host') world.addHost(id, name);
     ui.showGame(roomCode, role);
     ui.updatePlayerCount(world.players.size);
+    ui.updateMatchState(world.serializeGameState(), world.serialize(), network.localId);
   },
 
   onPlayerJoined: player => {
@@ -50,9 +53,11 @@ const network = new NetworkManager({
   },
 
   onLevelData: level => world.loadLevelData(level),
+  onGameState: game => world.applyGameState(game),
   onSnapshot: players => {
     world.applySnapshot(players);
     ui.updatePlayerCount(world.players.size);
+    ui.updateMatchState(world.serializeGameState(), world.serialize(), network.localId);
   },
 
   onRemoteMove: (id, movement, dt) => world.verifyPlayerMovement(id, movement, dt),
@@ -65,8 +70,24 @@ const network = new NetworkManager({
 // #region UI
 const ui = new GameUI({
   onHost: name => network.host(name),
-  onJoin: (roomCode, name) => network.join(roomCode, name)
+  onJoin: (roomCode, name) => network.join(roomCode, name),
+  onStartGame: async levels => {
+    const level = levels[Math.floor(Math.random() * levels.length)];
+    ui.setHostStatus(`Loading ${level.name ?? level.id}…`);
+    try {
+      await world.startGame(level);
+      network.broadcastSnapshot();
+      ui.updateMatchState(world.serializeGameState(), world.serialize(), network.localId);
+    } catch (error) {
+      ui.setHostStatus(error.message);
+    }
+  }
 });
+ui.setLevels(availableLevels);
+world.onGameStateChanged = () => {
+  network.broadcastSnapshot();
+  ui.updateMatchState(world.serializeGameState(), world.serialize(), network.localId);
+};
 // #endregion
 
 // #region Debug
@@ -135,9 +156,9 @@ function update(dt, now) {
     world.fireProjectile(network.localId);
     network.sendLocalAction({ type: PlayerActionType.FIRE, target: click });
   }
-  world.update(dt);
+  world.update(dt, { authoritative: network.role === 'host' });
 
-  const shouldSendMove = state && (
+  const shouldSendMove = network.role !== 'host' && state && (
     now - lastNetworkSend >= 1000 / NETWORK_HZ
     || (!movement.throttle && !movement.rotate)
   );
@@ -146,6 +167,12 @@ function update(dt, now) {
     lastNetworkSend = now;
     network.sendLocalMove(movement, pendingNetworkMoveDt);
     pendingNetworkMoveDt = 0;
+  }
+
+  if (network.role === 'host' && now - lastNetworkSend >= 1000 / NETWORK_HZ) {
+    lastNetworkSend = now;
+    network.broadcastSnapshot();
+    ui.updateMatchState(world.serializeGameState(), world.serialize(), network.localId);
   }
 }
 // #endregion
@@ -157,6 +184,7 @@ function animate(now) {
   update(dt, now);
   renderer.render(world.sprites, {
     shapes: world.levelShapes,
+    screenWrap: world.screenWrap,
     debugLines: getDebugLines()
   });
   requestAnimationFrame(animate);
@@ -164,3 +192,17 @@ function animate(now) {
 
 requestAnimationFrame(animate);
 // #endregion
+
+async function loadAvailableLevels() {
+  try {
+    const response = await fetch('../assets/data/level/levels.json');
+    if (!response.ok) throw new Error('Unable to load level list');
+    const levels = await response.json();
+    return Array.isArray(levels) && levels.length
+      ? levels
+      : [{ id: 'default', name: 'Default Arena', file: 'default.level.json' }];
+  } catch (error) {
+    console.warn(error);
+    return [{ id: 'default', name: 'Default Arena', file: 'default.level.json' }];
+  }
+}

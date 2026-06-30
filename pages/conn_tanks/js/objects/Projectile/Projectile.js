@@ -89,13 +89,38 @@ export class Projectile extends Sprite {
       image: options.image ?? getProjectileImage(data),
       width: options.width ?? size * data.size.scaler,
       height: options.height ?? size * data.size.scaler,
-      rotation
+      rotation,
+      collider: options.collider ?? {
+        enabled: true,
+        isTrigger: true,
+        layer: 'projectile',
+        collidesWith: ['player', 'level'],
+        width: 0.012,
+        height: 0.012
+      }
     });
 
+    this.ownerId = options.ownerId ?? '';
+    this.hitPlayerId = null;
+    this.hitLevelObjectId = null;
+    this.hit = false;
     this.size = size;
     this.speed = (options.speed ?? data.speed.default) * data.speed.scaler;
     this.age = 0;
     this.ttl = (options.ttl ?? data.ttl.default) * data.ttl.scaler;
+  }
+
+  onCollision({ other, otherOwner }) {
+    if (this.hit) return;
+    if (other.layer === 'player') {
+      const playerId = otherOwner?.playerId;
+      if (!playerId || playerId === this.ownerId) return;
+      this.hitPlayerId = playerId;
+      this.hit = true;
+    } else if (other.layer === 'level') {
+      this.hitLevelObjectId = otherOwner?.id ?? null;
+      this.hit = true;
+    }
   }
 
   update(dt) {
@@ -106,7 +131,8 @@ export class Projectile extends Sprite {
   }
 
   get expired() {
-    return this.age >= this.ttl
+    return this.hit
+      || this.age >= this.ttl
       || this.x < -0.05
       || this.x > 1.05
       || this.y < -0.05

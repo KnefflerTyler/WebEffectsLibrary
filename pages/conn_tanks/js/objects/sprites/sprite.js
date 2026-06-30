@@ -14,6 +14,7 @@ export class Sprite extends GameObject {
     this.color = options.color ?? '#ffffff';
     this.image = options.image ?? null;
     this.name = options.name ?? '';
+    this.wrapWithScreen = options.wrapWithScreen ?? true;
     this.sheetCols = options.sheetCols ?? 1;
     this.sheetRows = options.sheetRows ?? 1;
     this.animations = new Map();
@@ -41,7 +42,7 @@ export class Sprite extends GameObject {
 
   update(dt) {
     this.animationElapsed += dt;
-    this.collider?.update(dt);
+    return this.collider?.update(dt) ?? [];
   }
 
   setCollider(collider = {}) {

@@ -1,0 +1,55 @@
+{
+  "id": "citadel-crossfire",
+  "name": "Citadel Crossfire",
+  "screenWrap": true,
+  "spawns": [
+    { "id": "host", "x": 0.12, "y": 0.14, "rotation": 2.35 },
+    { "id": "guest-1", "x": 0.88, "y": 0.86, "rotation": -0.79 },
+    { "id": "guest-2", "x": 0.88, "y": 0.14, "rotation": -2.35 },
+    { "id": "guest-3", "x": 0.12, "y": 0.86, "rotation": 0.79 }
+  ],
+  "objects": [
+    {
+      "type": "collider", "id": "north-rampart", "name": "North Rampart", "shape": "rectangle",
+      "start": { "x": 0.31, "y": 0.25 }, "end": { "x": 0.69, "y": 0.31 },
+      "borderColor": "#d6b76a", "fillColor": "#66552d", "borderAlpha": 0.95, "fillAlpha": 0.72,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "south-rampart", "name": "South Rampart", "shape": "rectangle",
+      "start": { "x": 0.31, "y": 0.69 }, "end": { "x": 0.69, "y": 0.75 },
+      "borderColor": "#d6b76a", "fillColor": "#66552d", "borderAlpha": 0.95, "fillAlpha": 0.72,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "west-rampart", "name": "West Rampart", "shape": "rectangle",
+      "start": { "x": 0.25, "y": 0.31 }, "end": { "x": 0.31, "y": 0.69 },
+      "borderColor": "#d6b76a", "fillColor": "#66552d", "borderAlpha": 0.95, "fillAlpha": 0.72,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "east-rampart", "name": "East Rampart", "shape": "rectangle",
+      "start": { "x": 0.69, "y": 0.31 }, "end": { "x": 0.75, "y": 0.69 },
+      "borderColor": "#d6b76a", "fillColor": "#66552d", "borderAlpha": 0.95, "fillAlpha": 0.72,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "central-keep", "name": "Central Keep", "shape": "ellipse",
+      "start": { "x": 0.43, "y": 0.40 }, "end": { "x": 0.57, "y": 0.60 },
+      "borderColor": "#ffe49a", "fillColor": "#8c7135", "borderAlpha": 1, "fillAlpha": 0.82,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "northwest-tower", "name": "Northwest Tower", "shape": "ellipse",
+      "start": { "x": 0.21, "y": 0.21 }, "end": { "x": 0.34, "y": 0.34 },
+      "borderColor": "#c99bff", "fillColor": "#55346e", "borderAlpha": 0.9, "fillAlpha": 0.7,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "southeast-tower", "name": "Southeast Tower", "shape": "ellipse",
+      "start": { "x": 0.66, "y": 0.66 }, "end": { "x": 0.79, "y": 0.79 },
+      "borderColor": "#c99bff", "fillColor": "#55346e", "borderAlpha": 0.9, "fillAlpha": 0.7,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    }
+  ]
+}

@@ -25,9 +25,19 @@
   <header id="hud" class="hidden">
     <button id="room-code" title="Copy invite link">Copy invite link</button>
     <span id="connection-status">Waiting for players</span>
+    <span id="lives-status">Lives: 3</span>
     <span class="controls">WASD to drive</span>
     <a class="hud-link" href="../index.html">Views</a>
   </header>
+
+  <section id="host-controls" class="match-panel hidden" aria-label="Host match controls">
+    <strong>Level pool</strong>
+    <div id="level-list" class="level-list"></div>
+    <button id="start-game">Start game</button>
+    <p id="host-status">Select one or more levels. One will be chosen randomly.</p>
+  </section>
+
+  <div id="match-banner" class="match-banner hidden" role="status"></div>
 
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script type="module" src="../js/main.js"></script>

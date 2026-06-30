@@ -26,13 +26,17 @@ export class GameWorld {
   get sprites() {
     return [
       ...this.levelManager.sprites,
-      ...[...this.players.values()].flatMap(player => player.sprites),
+      ...[...this.players.values()].filter(player => player.alive).flatMap(player => player.sprites),
       ...this.projectiles
     ];
   }
 
   get levelShapes() {
     return this.levelManager.colliders.map(collider => collider.getRenderShape());
+  }
+
+  get screenWrap() {
+    return this.levelManager.screenWrap;
   }
   // #endregion
 
@@ -59,6 +63,33 @@ export class GameWorld {
 
   getSpawnLocation(index = 0) {
     return this.levelManager.getSpawnLocation(index);
+  }
+
+  serializeLevelState() {
+    return this.levelManager.serializeObjectState();
+  }
+
+  applyLevelState(states) {
+    this.levelManager.applyObjectState(states);
+  }
+
+  resetPlayers(lives = 3) {
+    let index = 0;
+    for (const player of this.players.values()) {
+      player.resetForMatch(this.getSpawnLocation(index) ?? fallbackSpawn(index), lives);
+      index += 1;
+    }
+    this.clearProjectiles();
+  }
+
+  respawnPlayer(player) {
+    const index = [...this.players.keys()].indexOf(player.id);
+    player.respawn(this.getSpawnLocation(index) ?? fallbackSpawn(index));
+  }
+
+  clearProjectiles() {
+    for (const projectile of this.projectiles) projectile.removeCollider?.();
+    this.projectiles = [];
   }
   // #endregion
 
@@ -90,6 +121,7 @@ export class GameWorld {
   }
 
   removePlayer(id) {
+    this.players.get(id)?.destroy();
     this.players.delete(id);
   }
   // #endregion
@@ -112,7 +144,7 @@ export class GameWorld {
   applySnapshot(snapshot, localPlayerId = null) {
     const ids = new Set(snapshot.map(player => player.id));
     for (const id of this.players.keys()) {
-      if (!ids.has(id)) this.players.delete(id);
+      if (!ids.has(id)) this.removePlayer(id);
     }
     for (const state of snapshot) {
       if (state.id === localPlayerId && this.players.has(state.id)) continue;
@@ -125,7 +157,10 @@ export class GameWorld {
   movePlayer(id, movement, dt) {
     const player = this.players.get(id);
     if (!player) return null;
-    return player.moveFromInput(movement, dt, PLAYER_BOUNDS)
+    return player.moveFromInput(movement, dt, {
+      ...PLAYER_BOUNDS,
+      wrap: this.levelManager.screenWrap
+    })
       ? player.serialize()
       : null;
   }
@@ -150,10 +185,11 @@ export class GameWorld {
   // #region Player Actions
   fireProjectile(id) {
     const player = this.players.get(id);
-    if (!player) return null;
+    if (!player?.alive) return null;
 
     const projectile = new Projectile({
       id: `${id}:projectile:${performance.now()}`,
+      ownerId: id,
       x: player.x,
       y: player.y,
       rotation: player.aimRotation
@@ -164,15 +200,28 @@ export class GameWorld {
 
   verifyPlayerAction(id, action) {
     if (!action || action.type !== 'fire') return null;
+    if (action.target) this.updateAim(id, action.target);
     return this.fireProjectile(id);
   }
   // #endregion
 
   // #region Update and Serialization
-  update(dt) {
+  update(dt, { authoritative = false } = {}) {
     this.levelManager.update(dt);
     for (const player of this.players.values()) player.update(dt);
     for (const projectile of this.projectiles) projectile.update(dt);
+    if (authoritative) {
+      for (const projectile of this.projectiles) {
+        if (projectile.hitLevelObjectId) {
+          this.levelManager.damageObject(projectile.hitLevelObjectId, 1);
+        }
+        if (!projectile.hitPlayerId) continue;
+        const player = this.players.get(projectile.hitPlayerId);
+        if (player?.loseLife() && player.alive) this.respawnPlayer(player);
+      }
+    }
+    const expired = this.projectiles.filter(projectile => projectile.expired);
+    for (const projectile of expired) projectile.removeCollider?.();
     this.projectiles = this.projectiles.filter(projectile => !projectile.expired);
   }
 
@@ -180,6 +229,15 @@ export class GameWorld {
     return [...this.players.values()].map(player => player.serialize());
   }
   // #endregion
+}
+
+function fallbackSpawn(index) {
+  const angle = index * Math.PI / 2;
+  return {
+    x: 0.5 + Math.cos(angle) * 0.2,
+    y: 0.5 + Math.sin(angle) * 0.2,
+    rotation: angle + Math.PI
+  };
 }
 
 export default GameWorld;

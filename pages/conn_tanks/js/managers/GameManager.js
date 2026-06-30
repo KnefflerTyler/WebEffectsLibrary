@@ -2,10 +2,20 @@
 import GameWorld from '../game/gameWorld.js';
 // #endregion
 
+const DEFAULT_LIVES = 3;
+const GAME_OVER_DELAY = 3;
+
 export class GameManager {
   // #region Lifecycle
   constructor(world = new GameWorld()) {
     this.world = world;
+    this.phase = 'lobby';
+    this.winnerId = null;
+    this.levelRevision = 0;
+    this.gameOverElapsed = 0;
+    this.returningToLobby = false;
+    this.startingGame = false;
+    this.onGameStateChanged = null;
   }
   // #endregion
 
@@ -21,6 +31,10 @@ export class GameManager {
   get levelShapes() {
     return this.world.levelShapes;
   }
+
+  get screenWrap() {
+    return this.world.screenWrap;
+  }
   // #endregion
 
   // #region Level Management
@@ -30,6 +44,68 @@ export class GameManager {
 
   loadLevelData(data) {
     return this.world.loadLevelData(data);
+  }
+
+  async startGame(level) {
+    if (this.phase !== 'lobby' || this.startingGame || !level) return false;
+    this.startingGame = true;
+    try {
+      await this.world.loadLevel(level.file);
+      this.world.resetPlayers(DEFAULT_LIVES);
+      this.phase = 'playing';
+      this.winnerId = null;
+      this.gameOverElapsed = 0;
+      this.levelRevision += 1;
+      this.notifyGameStateChanged();
+      return true;
+    } finally {
+      this.startingGame = false;
+    }
+  }
+
+  endGame() {
+    if (this.phase !== 'playing') return false;
+    const alive = [...this.players.values()].filter(player => player.alive);
+    this.phase = 'gameOver';
+    this.winnerId = alive.length === 1 ? alive[0].id : null;
+    this.gameOverElapsed = 0;
+    this.notifyGameStateChanged();
+    return true;
+  }
+
+  async returnToDefaultLevel() {
+    if (this.returningToLobby) return;
+    this.returningToLobby = true;
+    try {
+      await this.world.loadLevel('default.level.json');
+      this.world.resetPlayers(DEFAULT_LIVES);
+      this.phase = 'lobby';
+      this.winnerId = null;
+      this.levelRevision += 1;
+      this.notifyGameStateChanged();
+    } finally {
+      this.returningToLobby = false;
+    }
+  }
+
+  applyGameState(state = {}) {
+    this.phase = ['lobby', 'playing', 'gameOver'].includes(state.phase) ? state.phase : 'lobby';
+    this.winnerId = state.winnerId ?? null;
+    this.levelRevision = Math.max(0, Number(state.levelRevision) || 0);
+    this.world.applyLevelState(Array.isArray(state.levelObjects) ? state.levelObjects : []);
+  }
+
+  serializeGameState() {
+    return {
+      phase: this.phase,
+      winnerId: this.winnerId,
+      levelRevision: this.levelRevision,
+      levelObjects: this.world.serializeLevelState()
+    };
+  }
+
+  notifyGameStateChanged() {
+    this.onGameStateChanged?.(this.serializeGameState());
   }
 
   unloadLevel() {
@@ -59,7 +135,11 @@ export class GameManager {
   }
 
   addGuest(id, name = '', index = this.players.size) {
-    return this.world.addGuest(id, name, index);
+    const player = this.world.addGuest(id, name, index);
+    if (this.phase === 'playing') {
+      player.resetForMatch(this.getSpawnLocation(index) ?? undefined, DEFAULT_LIVES);
+    }
+    return player;
   }
 
   removePlayer(id) {
@@ -83,14 +163,17 @@ export class GameManager {
 
   // #region Player Actions
   movePlayer(id, movement, dt) {
+    if (this.phase !== 'playing') return null;
     return this.world.movePlayer(id, movement, dt);
   }
 
   verifyPlayerMovement(id, movement, dt) {
+    if (this.phase !== 'playing') return null;
     return this.world.verifyPlayerMovement(id, movement, dt);
   }
 
   verifyPlayerAction(id, action) {
+    if (this.phase !== 'playing') return null;
     return this.world.verifyPlayerAction(id, action);
   }
 
@@ -103,13 +186,23 @@ export class GameManager {
   }
 
   fireProjectile(id) {
+    if (this.phase !== 'playing') return null;
     return this.world.fireProjectile(id);
   }
   // #endregion
 
   // #region Update and Serialization
-  update(dt) {
-    this.world.update(dt);
+  update(dt, { authoritative = false } = {}) {
+    this.world.update(dt, { authoritative: authoritative && this.phase === 'playing' });
+    if (!authoritative) return;
+
+    if (this.phase === 'playing' && this.players.size > 1) {
+      const aliveCount = [...this.players.values()].filter(player => player.alive).length;
+      if (aliveCount <= 1) this.endGame();
+    } else if (this.phase === 'gameOver') {
+      this.gameOverElapsed += dt;
+      if (this.gameOverElapsed >= GAME_OVER_DELAY) this.returnToDefaultLevel();
+    }
   }
 
   serialize() {

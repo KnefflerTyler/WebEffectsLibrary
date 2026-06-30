@@ -1,0 +1,79 @@
+{
+  "id": "breach-the-bulkheads",
+  "name": "Breach the Bulkheads",
+  "screenWrap": false,
+  "spawns": [
+    { "id": "host", "x": 0.10, "y": 0.28, "rotation": 1.57 },
+    { "id": "guest-1", "x": 0.90, "y": 0.72, "rotation": -1.57 },
+    { "id": "guest-2", "x": 0.10, "y": 0.72, "rotation": 1.57 },
+    { "id": "guest-3", "x": 0.90, "y": 0.28, "rotation": -1.57 }
+  ],
+  "objects": [
+    {
+      "type": "collider", "id": "west-door-north", "name": "West Bulkhead North", "shape": "rectangle",
+      "start": { "x": 0.31, "y": 0.00 }, "end": { "x": 0.35, "y": 0.22 },
+      "borderColor": "#ffc66d", "fillColor": "#774525", "borderAlpha": 1, "fillAlpha": 0.84,
+      "destructible": { "health": 2 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "west-door-upper", "name": "West Bulkhead Upper", "shape": "rectangle",
+      "start": { "x": 0.31, "y": 0.22 }, "end": { "x": 0.35, "y": 0.42 },
+      "borderColor": "#ffda82", "fillColor": "#8a4b25", "borderAlpha": 1, "fillAlpha": 0.9,
+      "destructible": { "health": 3 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "west-door-center", "name": "West Bulkhead Center", "shape": "rectangle",
+      "start": { "x": 0.31, "y": 0.42 }, "end": { "x": 0.35, "y": 0.58 },
+      "borderColor": "#fff0a3", "fillColor": "#a35c27", "borderAlpha": 1, "fillAlpha": 0.94,
+      "destructible": { "health": 2 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "west-door-lower", "name": "West Bulkhead Lower", "shape": "rectangle",
+      "start": { "x": 0.31, "y": 0.58 }, "end": { "x": 0.35, "y": 0.78 },
+      "borderColor": "#ffda82", "fillColor": "#8a4b25", "borderAlpha": 1, "fillAlpha": 0.9,
+      "destructible": { "health": 3 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "west-door-south", "name": "West Bulkhead South", "shape": "rectangle",
+      "start": { "x": 0.31, "y": 0.78 }, "end": { "x": 0.35, "y": 1.00 },
+      "borderColor": "#ffc66d", "fillColor": "#774525", "borderAlpha": 1, "fillAlpha": 0.84,
+      "destructible": { "health": 2 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "east-door-north", "name": "East Bulkhead North", "shape": "rectangle",
+      "start": { "x": 0.65, "y": 0.00 }, "end": { "x": 0.69, "y": 0.22 },
+      "borderColor": "#77e9ff", "fillColor": "#20566e", "borderAlpha": 1, "fillAlpha": 0.84,
+      "destructible": { "health": 2 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "east-door-upper", "name": "East Bulkhead Upper", "shape": "rectangle",
+      "start": { "x": 0.65, "y": 0.22 }, "end": { "x": 0.69, "y": 0.42 },
+      "borderColor": "#93f1ff", "fillColor": "#245f78", "borderAlpha": 1, "fillAlpha": 0.9,
+      "destructible": { "health": 3 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "east-door-center", "name": "East Bulkhead Center", "shape": "rectangle",
+      "start": { "x": 0.65, "y": 0.42 }, "end": { "x": 0.69, "y": 0.58 },
+      "borderColor": "#b5f8ff", "fillColor": "#27718f", "borderAlpha": 1, "fillAlpha": 0.94,
+      "destructible": { "health": 2 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "east-door-lower", "name": "East Bulkhead Lower", "shape": "rectangle",
+      "start": { "x": 0.65, "y": 0.58 }, "end": { "x": 0.69, "y": 0.78 },
+      "borderColor": "#93f1ff", "fillColor": "#245f78", "borderAlpha": 1, "fillAlpha": 0.9,
+      "destructible": { "health": 3 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "east-door-south", "name": "East Bulkhead South", "shape": "rectangle",
+      "start": { "x": 0.65, "y": 0.78 }, "end": { "x": 0.69, "y": 1.00 },
+      "borderColor": "#77e9ff", "fillColor": "#20566e", "borderAlpha": 1, "fillAlpha": 0.84,
+      "destructible": { "health": 2 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "center-bunker", "name": "Indestructible Center Bunker", "shape": "ellipse",
+      "start": { "x": 0.44, "y": 0.39 }, "end": { "x": 0.56, "y": 0.61 },
+      "borderColor": "#c7cbd4", "fillColor": "#404753", "borderAlpha": 1, "fillAlpha": 0.8,
+      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    }
+  ]
+}

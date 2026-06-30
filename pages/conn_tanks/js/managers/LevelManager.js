@@ -1,6 +1,9 @@
 // #region Imports
 import Sprite from '../objects/sprites/sprite.js';
-import LevelCollider from '../objects/levelCollider.js';
+import LevelCollider from '../levels/levelCollider.js';
+import CaveLevel from '../levels/caveLevel.js';
+import BaseLevel from '../levels/baseLevel.js';
+import { generateCave } from '../editor/caveGenerator.js';
 // #endregion
 
 // #region Constants
@@ -11,83 +14,89 @@ export class LevelManager {
   // #region Lifecycle
   constructor() {
     this.currentLevel = null;
-    this.objects = [];
-    this.sprites = [];
-    this.colliders = [];
-    this.spawns = [];
   }
+
+  get objects() { return this.currentLevel?.objects ?? []; }
+  get sprites() { return this.currentLevel?.sprites ?? []; }
+  get colliders() { return this.currentLevel?.colliders ?? []; }
+  get spawns() { return this.currentLevel?.spawns ?? []; }
+  get screenWrap() { return this.currentLevel.screenWrap; }
+  damageObject(id, amount) { return this.currentLevel?.damageObject(id, amount) ?? false; }
+  serializeObjectState() { return this.currentLevel?.serializeObjectState() ?? []; }
+  applyObjectState(states) { this.currentLevel?.applyObjectState(states); }
   // #endregion
 
   // #region Loading
   async loadLevel(level) {
     this.unloadLevel();
-
     const url = this.resolveLevelUrl(level);
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Failed to load level: ${url.href}`);
+    const definition = await response.json();
+    const data = definition.generator === 'cave'
+      ? this.generateCaveLevel(definition)
+      : definition;
+    return this.loadLevelData(data, url);
+  }
 
-    return this.loadLevelData(await response.json(), url);
+  generateCaveLevel(definition) {
+    const generated = generateCave(definition.options);
+    const { spawnPoints, ...caveData } = generated;
+    return {
+      id: definition.id,
+      name: definition.name,
+      screenWrap: definition.screenWrap,
+      spawns: spawnPoints.map((point, index) => ({
+        id: index ? `guest-${index}` : 'host',
+        ...point,
+        rotation: index * Math.PI / 2
+      })),
+      objects: [{
+        type: 'cave',
+        id: 'cave-base',
+        ...caveData,
+        texture: definition.texture
+      }]
+    };
   }
 
   async loadLevelData(data, source = levelBaseUrl) {
     this.unloadLevel();
 
     const url = source instanceof URL ? source : new URL(String(source || ''), levelBaseUrl);
-    this.currentLevel = {
-      id: data.id ?? '',
-      name: data.name ?? '',
-      source: url.href,
-      data
-    };
-    this.spawns = this.normalizeSpawns(data.spawns);
-    this.objects = await Promise.all(
+    const objects = await Promise.all(
       (Array.isArray(data.objects) ? data.objects : []).map(object => this.createObject(object, url))
     );
-    this.objects = this.objects.filter(Boolean);
-    this.sprites = this.objects.filter(object => object instanceof Sprite);
-    this.colliders = this.objects.filter(object => object instanceof LevelCollider);
+    this.currentLevel = new BaseLevel({ data, source: url, objects });
     return this.currentLevel;
   }
 
   unloadLevel() {
-    for (const object of this.objects) object.destroy?.();
+    this.currentLevel?.destroy();
     this.currentLevel = null;
-    this.objects = [];
-    this.sprites = [];
-    this.colliders = [];
-    this.spawns = [];
   }
   // #endregion
 
   // #region Spawns
   getSpawnLocations() {
-    return this.spawns.map(spawn => ({ ...spawn }));
+    return this.currentLevel?.getSpawnLocations() ?? [];
   }
 
   getSpawnLocation(index = 0) {
-    if (!this.spawns.length) return null;
-    return { ...this.spawns[Math.abs(index) % this.spawns.length] };
+    return this.currentLevel?.getSpawnLocation(index) ?? null;
   }
 
   getLevelData() {
     return this.currentLevel?.data ?? null;
   }
 
-  normalizeSpawns(spawns) {
-    return (Array.isArray(spawns) ? spawns : [])
-      .map((spawn, index) => ({
-        id: spawn.id ?? `spawn-${index + 1}`,
-        x: clamp01(spawn.x),
-        y: clamp01(spawn.y),
-        rotation: Number(spawn.rotation) || 0
-      }));
-  }
   // #endregion
 
   // #region Object Creation
   async createObject(data, levelUrl) {
     if (data?.type === 'sprite') return this.createSprite(data, levelUrl);
     if (data?.type === 'collider') return new LevelCollider(data);
+    if (data?.type === 'cave') return new CaveLevel(data);
     return null;
   }
 
@@ -104,6 +113,7 @@ export class LevelManager {
       originOffsetY: data.originOffsetY ?? 0,
       color: data.color ?? '#ffffff',
       image: data.image ? await this.loadImage(data.image, levelUrl) : null,
+      wrapWithScreen: data.wrapWithScreen ?? true,
       sheetCols: data.sheetCols ?? 1,
       sheetRows: data.sheetRows ?? 1,
       collider: data.collider ?? null
@@ -120,16 +130,17 @@ export class LevelManager {
 
   // #region Update
   update(dt) {
-    for (const object of this.objects) object.update?.(dt);
+    this.currentLevel?.update(dt);
   }
   // #endregion
 
   // #region Helpers
   resolveLevelUrl(level) {
     if (level instanceof URL) return level;
-    const value = String(level || 'default');
-    const fileName = /\.[a-z0-9]+$/i.test(value) ? value : `${value}.level.json`;
-    return new URL(fileName, levelBaseUrl);
+    if (typeof level !== 'string' || !level.endsWith('.level.json')) {
+      throw new TypeError('Level must be a .level.json filename');
+    }
+    return new URL(level, levelBaseUrl);
   }
 
   async loadImage(path, levelUrl) {
@@ -146,10 +157,6 @@ export class LevelManager {
     return image;
   }
   // #endregion
-}
-
-function clamp01(value) {
-  return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
 export default LevelManager;

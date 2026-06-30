@@ -1,0 +1,67 @@
+{
+  "id": "powder-keg-grid",
+  "name": "Powder Keg Grid",
+  "screenWrap": false,
+  "spawns": [
+    { "id": "host", "x": 0.16, "y": 0.16, "rotation": 2.35 },
+    { "id": "guest-1", "x": 0.84, "y": 0.84, "rotation": -0.79 },
+    { "id": "guest-2", "x": 0.84, "y": 0.16, "rotation": -2.35 },
+    { "id": "guest-3", "x": 0.16, "y": 0.84, "rotation": 0.79 }
+  ],
+  "objects": [
+    {
+      "type": "collider", "id": "gate-nw", "name": "Northwest Gate", "shape": "rectangle",
+      "start": { "x": 0.00, "y": 0.47 }, "end": { "x": 0.27, "y": 0.53 },
+      "borderColor": "#ff8c69", "fillColor": "#7f3024", "borderAlpha": 1, "fillAlpha": 0.88,
+      "destructible": { "health": 2 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "gate-nc", "name": "North Center Gate", "shape": "rectangle",
+      "start": { "x": 0.27, "y": 0.47 }, "end": { "x": 0.50, "y": 0.53 },
+      "borderColor": "#ffbd69", "fillColor": "#804d24", "borderAlpha": 1, "fillAlpha": 0.9,
+      "destructible": { "health": 3 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "gate-sc", "name": "South Center Gate", "shape": "rectangle",
+      "start": { "x": 0.50, "y": 0.47 }, "end": { "x": 0.73, "y": 0.53 },
+      "borderColor": "#e6ff72", "fillColor": "#667324", "borderAlpha": 1, "fillAlpha": 0.9,
+      "destructible": { "health": 3 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "gate-se", "name": "Southeast Gate", "shape": "rectangle",
+      "start": { "x": 0.73, "y": 0.47 }, "end": { "x": 1.00, "y": 0.53 },
+      "borderColor": "#70f0c1", "fillColor": "#236a53", "borderAlpha": 1, "fillAlpha": 0.88,
+      "destructible": { "health": 2 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "gate-wn", "name": "West North Gate", "shape": "rectangle",
+      "start": { "x": 0.47, "y": 0.00 }, "end": { "x": 0.53, "y": 0.27 },
+      "borderColor": "#d17cff", "fillColor": "#63307c", "borderAlpha": 1, "fillAlpha": 0.88,
+      "destructible": { "health": 2 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "gate-wc", "name": "West Center Gate", "shape": "rectangle",
+      "start": { "x": 0.47, "y": 0.27 }, "end": { "x": 0.53, "y": 0.47 },
+      "borderColor": "#ec8cff", "fillColor": "#74347f", "borderAlpha": 1, "fillAlpha": 0.9,
+      "destructible": { "health": 3 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "gate-ec", "name": "East Center Gate", "shape": "rectangle",
+      "start": { "x": 0.47, "y": 0.53 }, "end": { "x": 0.53, "y": 0.73 },
+      "borderColor": "#8aa5ff", "fillColor": "#33477e", "borderAlpha": 1, "fillAlpha": 0.9,
+      "destructible": { "health": 3 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "gate-es", "name": "East South Gate", "shape": "rectangle",
+      "start": { "x": 0.47, "y": 0.73 }, "end": { "x": 0.53, "y": 1.00 },
+      "borderColor": "#6fc7ff", "fillColor": "#265c79", "borderAlpha": 1, "fillAlpha": 0.88,
+      "destructible": { "health": 2 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    },
+    {
+      "type": "collider", "id": "powder-core", "name": "Powder Core", "shape": "ellipse",
+      "start": { "x": 0.43, "y": 0.43 }, "end": { "x": 0.57, "y": 0.57 },
+      "borderColor": "#fff6b0", "fillColor": "#a86125", "borderAlpha": 1, "fillAlpha": 0.95,
+      "destructible": { "health": 5 }, "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+    }
+  ]
+}

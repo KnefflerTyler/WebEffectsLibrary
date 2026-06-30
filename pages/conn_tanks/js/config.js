@@ -1,10 +1,10 @@
 export const NETWORK_HZ = 24;
 
 export const PLAYER_BOUNDS = {
-  minX: 0.035,
-  maxX: 0.965,
-  minY: 0.05,
-  maxY: 0.95
+  minX: 0,
+  maxX: 1,
+  minY: 0,
+  maxY: 1
 };
 
 export const PLAYER_COLORS = [

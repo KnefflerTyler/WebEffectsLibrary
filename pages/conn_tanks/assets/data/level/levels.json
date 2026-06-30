@@ -1,0 +1,42 @@
+[
+  {
+    "id": "default",
+    "name": "Default Arena",
+    "file": "default.level.json"
+  },
+  {
+    "id": "moss-cavern",
+    "name": "Moss Cavern",
+    "file": "moss-cavern.level.json"
+  },
+  {
+    "id": "ember-depths",
+    "name": "Ember Depths",
+    "file": "ember-depths.level.json"
+  },
+  {
+    "id": "citadel-crossfire",
+    "name": "Citadel Crossfire",
+    "file": "citadel-crossfire.level.json"
+  },
+  {
+    "id": "shattered-passage",
+    "name": "Shattered Passage",
+    "file": "shattered-passage.level.json"
+  },
+  {
+    "id": "glass-labyrinth",
+    "name": "Glass Labyrinth",
+    "file": "glass-labyrinth.level.json"
+  },
+  {
+    "id": "breach-the-bulkheads",
+    "name": "Breach the Bulkheads",
+    "file": "breach-the-bulkheads.level.json"
+  },
+  {
+    "id": "powder-keg-grid",
+    "name": "Powder Keg Grid",
+    "file": "powder-keg-grid.level.json"
+  }
+]

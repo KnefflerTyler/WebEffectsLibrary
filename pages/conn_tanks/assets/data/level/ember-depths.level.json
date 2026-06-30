@@ -1,0 +1,18 @@
+{
+  "id": "ember-depths",
+  "name": "Ember Depths",
+  "screenWrap": false,
+  "generator": "cave",
+  "options": {
+    "cols": 48,
+    "rows": 27,
+    "fill": 0.47,
+    "iterations": 4,
+    "seed": "ember-depths"
+  },
+  "texture": {
+    "floorColor": "#211817",
+    "wallColor": "#51352f",
+    "edgeColor": "#b26a4b"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "moss-cavern",
+  "name": "Moss Cavern",
+  "screenWrap": false,
+  "generator": "cave",
+  "options": {
+    "cols": 48,
+    "rows": 27,
+    "fill": 0.45,
+    "iterations": 5,
+    "seed": "moss-cavern"
+  },
+  "texture": {
+    "floorColor": "#152219",
+    "wallColor": "#344638",
+    "edgeColor": "#6f8a72"
+  }
+}

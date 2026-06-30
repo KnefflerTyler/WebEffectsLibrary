@@ -28,6 +28,7 @@
         </label>
         <button id="add-spawn">Add spawn</button>
         <button id="add-sprite">Add sprite</button>
+        <label class="wrap-control"><input id="screen-wrap" type="checkbox"> Screen wrap</label>
         <span class="toolbar-divider" aria-hidden="true"></span>
         <button class="tool-button active" data-tool="select" aria-pressed="true">Select</button>
         <button class="tool-button" data-tool="line" aria-pressed="false">Line collider</button>
@@ -39,10 +40,26 @@
         <label class="alpha-control">Border alpha <input id="border-alpha" type="range" min="0" max="1" step="0.05" value="1"><output id="border-alpha-value">100%</output></label>
         <label class="color-control">Fill <input id="fill-color" type="color" value="#2d9e5b"></label>
         <label class="alpha-control">Fill alpha <input id="fill-alpha" type="range" min="0" max="1" step="0.05" value="0.25"><output id="fill-alpha-value">25%</output></label>
+        <label class="wrap-control"><input id="destructible" type="checkbox"> Destructible</label>
+        <label>Wall health <input id="destructible-health" type="number" min="1" max="99" step="1" value="2" disabled></label>
         <span class="toolbar-divider" aria-hidden="true"></span>
         <button id="format-json">Format</button>
         <button id="export-level">Export</button>
       </div>
+      <details class="cave-generator">
+        <summary>Cave generator</summary>
+        <div class="cave-controls">
+          <label>Columns <input id="cave-cols" type="number" min="12" max="96" value="48"></label>
+          <label>Rows <input id="cave-rows" type="number" min="8" max="64" value="27"></label>
+          <label>Wall fill <input id="cave-fill" type="range" min="25" max="70" value="45"><output id="cave-fill-value">45%</output></label>
+          <label>Smoothing <input id="cave-iterations" type="range" min="1" max="10" value="5"><output id="cave-iterations-value">5</output></label>
+          <label>Seed <input id="cave-seed" type="text" value="connected-tanks"></label>
+          <label>Floor <input id="cave-floor-color" type="color" value="#152219"></label>
+          <label>Walls <input id="cave-wall-color" type="color" value="#344638"></label>
+          <label>Edges <input id="cave-edge-color" type="color" value="#6f8a72"></label>
+          <button id="generate-cave">Generate cave</button>
+        </div>
+      </details>
       <div class="editor-workspace">
         <div class="level-stage" id="level-stage">
           <canvas id="level-canvas" aria-label="Level drawing surface"></canvas>
