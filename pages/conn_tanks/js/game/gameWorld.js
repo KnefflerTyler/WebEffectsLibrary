@@ -30,6 +30,10 @@ export class GameWorld {
       ...this.projectiles
     ];
   }
+
+  get levelShapes() {
+    return this.levelManager.colliders.map(collider => collider.getRenderShape());
+  }
   // #endregion
 
   // #region Level Management

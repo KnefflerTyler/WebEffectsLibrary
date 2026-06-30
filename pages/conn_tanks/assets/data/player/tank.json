@@ -24,6 +24,7 @@
     "layer": "player",
     "collidesWith": [
       "default",
+      "level",
       "player",
       "projectile"
     ],

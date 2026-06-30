@@ -17,6 +17,10 @@ export class GameManager {
   get sprites() {
     return this.world.sprites;
   }
+
+  get levelShapes() {
+    return this.world.levelShapes;
+  }
   // #endregion
 
   // #region Level Management

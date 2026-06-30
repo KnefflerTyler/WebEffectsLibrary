@@ -1,5 +1,6 @@
 // #region Imports
 import Sprite from '../objects/sprites/sprite.js';
+import LevelCollider from '../objects/levelCollider.js';
 // #endregion
 
 // #region Constants
@@ -12,6 +13,7 @@ export class LevelManager {
     this.currentLevel = null;
     this.objects = [];
     this.sprites = [];
+    this.colliders = [];
     this.spawns = [];
   }
   // #endregion
@@ -43,13 +45,16 @@ export class LevelManager {
     );
     this.objects = this.objects.filter(Boolean);
     this.sprites = this.objects.filter(object => object instanceof Sprite);
+    this.colliders = this.objects.filter(object => object instanceof LevelCollider);
     return this.currentLevel;
   }
 
   unloadLevel() {
+    for (const object of this.objects) object.destroy?.();
     this.currentLevel = null;
     this.objects = [];
     this.sprites = [];
+    this.colliders = [];
     this.spawns = [];
   }
   // #endregion
@@ -82,6 +87,7 @@ export class LevelManager {
   // #region Object Creation
   async createObject(data, levelUrl) {
     if (data?.type === 'sprite') return this.createSprite(data, levelUrl);
+    if (data?.type === 'collider') return new LevelCollider(data);
     return null;
   }
 

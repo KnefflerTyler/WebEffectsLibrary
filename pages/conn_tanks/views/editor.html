@@ -28,10 +28,31 @@
         </label>
         <button id="add-spawn">Add spawn</button>
         <button id="add-sprite">Add sprite</button>
+        <span class="toolbar-divider" aria-hidden="true"></span>
+        <button class="tool-button active" data-tool="select" aria-pressed="true">Select</button>
+        <button class="tool-button" data-tool="line" aria-pressed="false">Line collider</button>
+        <button class="tool-button" data-tool="rectangle" aria-pressed="false">Rectangle</button>
+        <button class="tool-button" data-tool="ellipse" aria-pressed="false">Ellipse</button>
+        <button id="delete-collider" class="danger" disabled>Delete selected</button>
+        <span class="toolbar-divider" aria-hidden="true"></span>
+        <label class="color-control">Border <input id="border-color" type="color" value="#69e394"></label>
+        <label class="alpha-control">Border alpha <input id="border-alpha" type="range" min="0" max="1" step="0.05" value="1"><output id="border-alpha-value">100%</output></label>
+        <label class="color-control">Fill <input id="fill-color" type="color" value="#2d9e5b"></label>
+        <label class="alpha-control">Fill alpha <input id="fill-alpha" type="range" min="0" max="1" step="0.05" value="0.25"><output id="fill-alpha-value">25%</output></label>
+        <span class="toolbar-divider" aria-hidden="true"></span>
         <button id="format-json">Format</button>
         <button id="export-level">Export</button>
       </div>
-      <textarea id="level-json" spellcheck="false"></textarea>
+      <div class="editor-workspace">
+        <div class="level-stage" id="level-stage">
+          <canvas id="level-canvas" aria-label="Level drawing surface"></canvas>
+          <p class="canvas-hint">Drag to draw. Collider coordinates are saved from 0 to 1.</p>
+        </div>
+        <details class="json-panel">
+          <summary>Level JSON</summary>
+          <textarea id="level-json" spellcheck="false"></textarea>
+        </details>
+      </div>
       <p id="editor-status" class="status"></p>
     </section>
 
@@ -41,6 +62,7 @@
         <div><dt>Level</dt><dd id="summary-name">-</dd></div>
         <div><dt>Spawns</dt><dd id="summary-spawns">0</dd></div>
         <div><dt>Objects</dt><dd id="summary-objects">0</dd></div>
+        <div><dt>Colliders</dt><dd id="summary-colliders">0</dd></div>
       </dl>
       <h2>Spawns</h2>
       <ol id="spawn-list"></ol>

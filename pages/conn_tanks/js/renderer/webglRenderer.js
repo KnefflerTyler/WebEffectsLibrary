@@ -98,11 +98,12 @@ export class WebGLRenderer {
     this.gl.viewport(0, 0, width, height);
   }
 
-  render(sprites, { debugLines = [] } = {}) {
+  render(sprites, { shapes = [], debugLines = [] } = {}) {
     const gl = this.gl;
     this.resize();
     gl.clearColor(.055, .085, .06, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
+    this.renderShapes(shapes);
     gl.useProgram(this.program);
     gl.bindVertexArray(this.vao);
     gl.uniform2f(this.uniforms.resolution, this.width, this.height);
@@ -141,6 +142,37 @@ export class WebGLRenderer {
     }
 
     this.renderDebugLines(debugLines);
+  }
+
+  renderShapes(shapes) {
+    if (!shapes.length) return;
+    const gl = this.gl;
+    gl.useProgram(this.lineProgram);
+    gl.bindVertexArray(this.lineVao);
+    gl.uniform2f(this.lineUniforms.resolution, this.width, this.height);
+
+    for (const shape of shapes) {
+      const points = shape.points ?? [];
+      if (points.length < 2) continue;
+      const vertices = new Float32Array(points.flatMap(point => [
+        point.x * this.width,
+        point.y * this.height
+      ]));
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.lineBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.DYNAMIC_DRAW);
+
+      if (shape.shape !== 'line' && shape.fillAlpha > 0) {
+        const fill = colorToRgba(shape.fillColor, shape.fillAlpha);
+        gl.uniform4f(this.lineUniforms.color, ...fill);
+        gl.drawArrays(gl.TRIANGLE_FAN, 0, points.length);
+      }
+
+      if (shape.borderAlpha > 0) {
+        const border = colorToRgba(shape.borderColor, shape.borderAlpha);
+        gl.uniform4f(this.lineUniforms.color, ...border);
+        gl.drawArrays(shape.shape === 'line' ? gl.LINES : gl.LINE_LOOP, 0, points.length);
+      }
+    }
   }
 
   renderDebugLines(lines) {
@@ -203,6 +235,16 @@ export class WebGLRenderer {
     }
     return program;
   }
+}
+
+function colorToRgba(hex, alpha = 1) {
+  const value = /^#[0-9a-f]{6}$/i.test(hex) ? hex.slice(1) : 'ffffff';
+  return [
+    parseInt(value.slice(0, 2), 16) / 255,
+    parseInt(value.slice(2, 4), 16) / 255,
+    parseInt(value.slice(4, 6), 16) / 255,
+    Math.max(0, Math.min(1, Number(alpha) || 0))
+  ];
 }
 
 export default WebGLRenderer;

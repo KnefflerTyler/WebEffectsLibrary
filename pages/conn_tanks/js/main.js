@@ -156,6 +156,7 @@ function animate(now) {
   lastTime = now;
   update(dt, now);
   renderer.render(world.sprites, {
+    shapes: world.levelShapes,
     debugLines: getDebugLines()
   });
   requestAnimationFrame(animate);

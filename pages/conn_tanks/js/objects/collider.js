@@ -69,10 +69,24 @@ export class Collider {
   intersects(other) {
     const a = this.getBounds();
     const b = other.getBounds();
-    return a.left <= b.right
-      && a.right >= b.left
-      && a.top <= b.bottom
-      && a.bottom >= b.top;
+    if (a.left > b.right || a.right < b.left || a.top > b.bottom || a.bottom < b.top) {
+      return false;
+    }
+
+    return geometriesIntersect(this.getGeometry(), other.getGeometry());
+  }
+
+  getGeometry() {
+    const bounds = this.getBounds();
+    return {
+      type: 'polygon',
+      points: [
+        { x: bounds.left, y: bounds.top },
+        { x: bounds.right, y: bounds.top },
+        { x: bounds.right, y: bounds.bottom },
+        { x: bounds.left, y: bounds.bottom }
+      ]
+    };
   }
 
   getBounds() {
@@ -115,6 +129,77 @@ export class Collider {
     };
   }
   // #endregion
+}
+
+function geometriesIntersect(a, b) {
+  if (!a || !b) return false;
+  if (a.type === 'line') return lineIntersectsGeometry(a, b);
+  if (b.type === 'line') return lineIntersectsGeometry(b, a);
+  return polygonsIntersect(a.points ?? [], b.points ?? []);
+}
+
+function lineIntersectsGeometry(line, geometry) {
+  const [start, end] = line.points ?? [];
+  const points = geometry.points ?? [];
+  if (!start || !end || points.length < 2) return false;
+  if (pointInPolygon(start, points) || pointInPolygon(end, points)) return true;
+  return points.some((point, index) => segmentsIntersect(
+    start,
+    end,
+    point,
+    points[(index + 1) % points.length]
+  ));
+}
+
+function polygonsIntersect(a, b) {
+  if (a.length < 3 || b.length < 3) return false;
+  return [...polygonAxes(a), ...polygonAxes(b)].every(axis => {
+    const rangeA = projectPoints(a, axis);
+    const rangeB = projectPoints(b, axis);
+    return rangeA.max >= rangeB.min && rangeB.max >= rangeA.min;
+  });
+}
+
+function polygonAxes(points) {
+  return points.map((point, index) => {
+    const next = points[(index + 1) % points.length];
+    const x = -(next.y - point.y);
+    const y = next.x - point.x;
+    const length = Math.hypot(x, y) || 1;
+    return { x: x / length, y: y / length };
+  });
+}
+
+function projectPoints(points, axis) {
+  const values = points.map(point => point.x * axis.x + point.y * axis.y);
+  return { min: Math.min(...values), max: Math.max(...values) };
+}
+
+function pointInPolygon(point, points) {
+  let inside = false;
+  for (let index = 0, previous = points.length - 1; index < points.length; previous = index++) {
+    const a = points[index];
+    const b = points[previous];
+    if ((a.y > point.y) !== (b.y > point.y)
+      && point.x < (b.x - a.x) * (point.y - a.y) / (b.y - a.y) + a.x) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function segmentsIntersect(a, b, c, d) {
+  const cross = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+  const abC = cross(a, b, c);
+  const abD = cross(a, b, d);
+  const cdA = cross(c, d, a);
+  const cdB = cross(c, d, b);
+  if (abC * abD < 0 && cdA * cdB < 0) return true;
+  const onSegment = (p, q, r) => Math.abs(cross(p, q, r)) < 1e-10
+    && r.x >= Math.min(p.x, q.x) && r.x <= Math.max(p.x, q.x)
+    && r.y >= Math.min(p.y, q.y) && r.y <= Math.max(p.y, q.y);
+  return onSegment(a, b, c) || onSegment(a, b, d)
+    || onSegment(c, d, a) || onSegment(c, d, b);
 }
 
 export default Collider;
