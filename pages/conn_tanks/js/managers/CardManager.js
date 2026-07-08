@@ -70,6 +70,22 @@ export class CardManager {
     return true;
   }
 
+  grant(playerId, cardId) {
+    if (!getCardData().some(card => card.id === cardId)) return false;
+    this.ensurePlayer(playerId);
+    this.hands[playerId].push(cardId);
+    return true;
+  }
+
+  removeCard(playerId, cardId) {
+    const hand = this.hands[playerId];
+    if (!Array.isArray(hand)) return false;
+    const index = hand.lastIndexOf(cardId);
+    if (index < 0) return false;
+    hand.splice(index, 1);
+    return true;
+  }
+
   get allSelected() {
     return Object.keys(this.offers).length === 0;
   }

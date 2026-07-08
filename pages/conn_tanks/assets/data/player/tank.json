@@ -16,7 +16,8 @@
   },
   "size": {
     "default": 1,
-    "scaler": 54
+    "scaler": 54,
+    "cellScale": 1.8
   },
   "collider": {
     "enabled": true,

@@ -6,6 +6,7 @@ import CardManager, { getCardData } from './CardManager.js';
 const DEFAULT_HEALTH = 100;
 const GAME_OVER_DELAY = 3;
 const LOBBY_REGEN_DELAY = 3;
+const LOBBY_LEVEL_FILE = 'lobby.level.json';
 
 export class GameManager {
   // #region Lifecycle
@@ -108,11 +109,11 @@ export class GameManager {
     return this.endGame({ awardWinner: false });
   }
 
-  async returnToDefaultLevel() {
+  async returnToLobbyLevel() {
     if (this.returningToLobby) return;
     this.returningToLobby = true;
     try {
-      await this.world.loadLevel('default.level.json');
+      await this.world.loadLevel(LOBBY_LEVEL_FILE);
       this.world.resetPlayers(DEFAULT_HEALTH);
       this.phase = 'lobby';
       this.winnerId = null;
@@ -134,7 +135,7 @@ export class GameManager {
   async startNextRound() {
     if (this.roundTransitioning || this.phase !== 'cardSelection' || this.matchWinnerId) return;
     const nextLevel = this.levelPool[(this.levelIndex + 1) % this.levelPool.length];
-    if (!nextLevel) return this.returnToDefaultLevel();
+    if (!nextLevel) return this.returnToLobbyLevel();
     this.roundTransitioning = true;
     try {
       this.levelIndex = (this.levelIndex + 1) % this.levelPool.length;
@@ -179,6 +180,20 @@ export class GameManager {
     this.applyCardModifiers(playerId);
     this.notifyGameStateChanged();
     if (this.cardManager.allSelected) this.completeCardSelection();
+    return true;
+  }
+
+  grantCard(playerId, cardId) {
+    if (!this.players.has(playerId) || !this.cardManager.grant(playerId, cardId)) return false;
+    this.applyCardModifiers(playerId);
+    this.notifyGameStateChanged();
+    return true;
+  }
+
+  removeCard(playerId, cardId) {
+    if (!this.players.has(playerId) || !this.cardManager.removeCard(playerId, cardId)) return false;
+    this.applyCardModifiers(playerId);
+    this.notifyGameStateChanged();
     return true;
   }
 
@@ -353,7 +368,7 @@ export class GameManager {
     } else if (this.phase === 'gameOver') {
       this.gameOverElapsed += dt;
       if (this.gameOverElapsed >= GAME_OVER_DELAY) {
-        if (this.matchWinnerId) this.returnToDefaultLevel();
+        if (this.matchWinnerId) this.returnToLobbyLevel();
         else this.beginCardSelection();
       }
     }

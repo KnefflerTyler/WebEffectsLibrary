@@ -3,7 +3,7 @@ import { NETWORK_HZ } from './config.js';
 import { PlayerActionType } from './api/models.js';
 import { loadProjectileData } from './objects/Projectile/Projectile.js';
 import { loadTankData } from './objects/player/Tank.js';
-import { loadCardData } from './managers/CardManager.js';
+import { getCardData, loadCardData } from './managers/CardManager.js';
 import GameManager from './managers/GameManager.js';
 import NetworkManager from './managers/NetworkManager.js';
 import KeyboardInput from './input/keyboardInput.js';
@@ -19,7 +19,7 @@ await loadTankData();
 await loadProjectileData();
 await loadCardData();
 const world = new GameManager();
-await world.loadLevel('default.level.json');
+await world.loadLevel('lobby.level.json');
 const availableLevels = await loadAvailableLevels();
 const input = new KeyboardInput();
 const mouse = new MouseInput(canvas);
@@ -100,6 +100,8 @@ const ui = new GameUI({
     if (network.role === 'host') world.selectCard(network.localId, cardId);
     else network.sendLocalAction({ type: PlayerActionType.CARD_SELECT, cardId });
   },
+  onGrantCard: (playerId, cardId) => network.role === 'host' && world.grantCard(playerId, cardId),
+  onRemoveCard: (playerId, cardId) => network.role === 'host' && world.removeCard(playerId, cardId),
   onEndRound: () => world.endRoundWithoutWinner(),
   onExit: () => {
     sessionStorage.removeItem('connTanksHostLobby');
@@ -108,6 +110,7 @@ const ui = new GameUI({
   }
 });
 ui.setLevels(availableLevels);
+ui.setCards(getCardData());
 world.onGameStateChanged = () => {
   if (network.role === 'host' && world.phase === 'lobby' && network.localId) {
     const name = world.players.get(network.localId)?.name || 'Player';

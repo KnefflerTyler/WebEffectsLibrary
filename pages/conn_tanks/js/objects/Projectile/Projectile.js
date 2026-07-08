@@ -33,7 +33,8 @@ function normalizeProjectileData(data, sourceUrl) {
     },
     size: {
       default: data.size?.default ?? 1,
-      scaler: data.size?.scaler ?? 10
+      scaler: data.size?.scaler ?? 10,
+      tankRatio: Math.max(0.02, Number(data.size?.tankRatio) || 0.24)
     },
     ttl: {
       default: data.ttl?.default ?? 1,
@@ -95,20 +96,24 @@ export class Projectile extends Sprite {
     const data = getProjectileData();
     const rotation = options.rotation ?? 0;
     const size = options.size ?? data.size.default;
+    const pixelSize = options.pixelSize
+      ?? (Number(options.referenceSize) > 0
+        ? Number(options.referenceSize) * data.size.tankRatio * size
+        : size * data.size.scaler);
     const collideProjectiles = options.collideProjectiles ?? true;
     super({
       ...options,
       image: options.image ?? getProjectileImage(data),
-      width: options.width ?? size * data.size.scaler,
-      height: options.height ?? size * data.size.scaler,
+      width: options.width ?? pixelSize,
+      height: options.height ?? pixelSize,
       rotation,
       collider: options.collider ?? {
         enabled: true,
         isTrigger: true,
         layer: 'projectile',
         collidesWith: ['player', 'level', 'mine', ...(collideProjectiles ? ['projectile'] : [])],
-        width: 0.012 * size,
-        height: 0.012 * size
+        width: options.collisionWidth ?? pixelSize * 0.7 / Math.max(1, Number(globalThis.innerWidth) || 1),
+        height: options.collisionHeight ?? pixelSize * 0.7 / Math.max(1, Number(globalThis.innerHeight) || 1)
       }
     });
 
@@ -165,17 +170,37 @@ export class Projectile extends Sprite {
   }
 
   update(dt, { wrap = false } = {}) {
-    const collisions = super.update(dt);
-    const touchingOwner = collisions.some(collider =>
-      collider.layer === 'player' && collider.owner?.playerId === this.ownerId
-    );
-    if (!touchingOwner) this.ownerCollisionArmed = true;
     this.age += dt;
-    this.x += Math.sin(this.rotation) * this.speed * dt;
-    this.y -= Math.cos(this.rotation) * this.speed * dt;
-    if (wrap) {
-      this.x = wrapUnit(this.x);
-      this.y = wrapUnit(this.y);
+    const distance = Math.abs(this.speed * dt);
+    const maxStep = Math.max(0.002, Math.min(this.collider?.width || 0.006, this.collider?.height || 0.006) * 0.45);
+    const steps = Math.max(1, Math.ceil(distance / maxStep));
+    const stepTime = dt / steps;
+
+    for (let step = 0; step < steps && !this.hit; step += 1) {
+      this.previousX = this.x;
+      this.previousY = this.y;
+      this.x += Math.sin(this.rotation) * this.speed * stepTime;
+      this.y -= Math.cos(this.rotation) * this.speed * stepTime;
+      if (wrap) {
+        this.x = wrapUnit(this.x);
+        this.y = wrapUnit(this.y);
+      }
+      const collisions = super.update(stepTime);
+      const touchingOwner = collisions.some(collider =>
+        collider.layer === 'player' && collider.owner?.playerId === this.ownerId
+      );
+      if (!touchingOwner) this.ownerCollisionArmed = true;
+      this.updateCollisionBehaviors();
+    }
+  }
+
+  updateCollisionBehaviors() {
+    for (const [index, behavior] of this.cardBehaviors.entries()) {
+      behavior.module.afterProjectileMove?.({
+        projectile: this,
+        options: behavior.options,
+        state: getBehaviorState(this.behaviorState, `${behavior.id}:${index}`)
+      });
     }
   }
 

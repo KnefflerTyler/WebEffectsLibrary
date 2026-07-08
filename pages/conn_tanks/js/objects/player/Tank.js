@@ -1,5 +1,6 @@
 import Sprite from '../sprites/sprite.js';
 import SpriteAnimation from '../sprites/spriteAnimation.js';
+import Collider from '../collider.js';
 
 const tankDataUrl = new URL('../../../assets/data/player/tank.json', import.meta.url);
 let tankData = null;
@@ -42,7 +43,8 @@ function normalizeTankData(data, sourceUrl) {
     },
     size: {
       default: data.size?.default ?? 1,
-      scaler: data.size?.scaler ?? 54
+      scaler: data.size?.scaler ?? 54,
+      cellScale: Math.max(0.1, Math.min(4, Number(data.size?.cellScale) || 1.8))
     },
     collider: normalizeColliderData(data.collider),
     spriteSheet: {
@@ -120,6 +122,8 @@ export class Tank {
     this.rotation = options.rotation ?? 0;
 
     this.size = options.size ?? data.size.default;
+    this.levelGridCols = 96;
+    this.levelGridRows = 54;
     this.move_speed = options.move_speed ?? data.speed.default;
     this.rotation_speed = options.rotation_speed ?? data.rotation.default;
     this.aim_speed = options.aim_speed ?? data.aim.default;
@@ -171,6 +175,7 @@ export class Tank {
 
     this.topSprite.addAnimation(new SpriteAnimation(data.topSprite.animation));
     this.topSprite.setAnimation(data.topSprite.animation.name);
+    this.updateLevelScale();
 
     this.targetX = this.x;
     this.targetY = this.y;
@@ -181,6 +186,7 @@ export class Tank {
     this.isTurning = false;
     this.lastSafeX = this.x;
     this.lastSafeY = this.y;
+    this.lastSafeRotation = this.rotation;
     this.syncSprites();
   }
 
@@ -192,6 +198,42 @@ export class Tank {
     this.move_speed = this.baseStats.move_speed * moveSpeed;
     this.rotation_speed = this.baseStats.rotation_speed * rotationSpeed;
     this.aim_speed = this.baseStats.aim_speed * aimSpeed;
+  }
+
+  setLevelGridSize(cols, rows) {
+    const nextCols = Math.max(1, Math.floor(Number(cols) || 1));
+    const nextRows = Math.max(1, Math.floor(Number(rows) || 1));
+    if (nextCols === this.levelGridCols && nextRows === this.levelGridRows) return;
+    this.levelGridCols = nextCols;
+    this.levelGridRows = nextRows;
+    this.updateLevelScale();
+  }
+
+  updateLevelScale() {
+    if (!this.bottomSprite || !this.topSprite) return;
+    const data = getTankData();
+    const viewportWidth = Math.max(1, Number(globalThis.innerWidth) || 1);
+    const viewportHeight = Math.max(1, Number(globalThis.innerHeight) || 1);
+    const cellWidth = viewportWidth / this.levelGridCols;
+    const cellHeight = viewportHeight / this.levelGridRows;
+    const aspect = data.spriteSheet.frameWidth / data.spriteSheet.frameHeight;
+    const height = Math.min(cellHeight, cellWidth / aspect) * data.size.cellScale * this.size;
+    const width = height * aspect;
+    if (Math.abs(this.bottomSprite.height - height) < 0.01
+      && Math.abs(this.bottomSprite.width - width) < 0.01) return;
+
+    const frameOffsets = createFrameOffsets(data, width, height);
+    const turretPivotOffsetY = data.spriteSheet.turretPivotOffsetY / data.spriteSheet.frameHeight * height;
+    for (const sprite of [this.bottomSprite, this.topSprite]) {
+      sprite.width = width;
+      sprite.height = height;
+      sprite.frameOffsets = frameOffsets;
+    }
+    this.topSprite.originOffsetY = turretPivotOffsetY;
+    if (this.bottomSprite.collider) {
+      this.bottomSprite.collider.pixelWidth = width * 0.52;
+      this.bottomSprite.collider.pixelHeight = height * 0.63;
+    }
   }
 
   syncSprites() {
@@ -252,6 +294,7 @@ export class Tank {
     this.stopTurning();
     this.lastSafeX = x;
     this.lastSafeY = y;
+    this.lastSafeRotation = rotation;
     this.syncSprites();
   }
 
@@ -326,19 +369,65 @@ export class Tank {
   }
 
   update(dt) {
+    this.updateLevelScale();
+    this.move(undefined, dt);
     const collisions = this.bottomSprite.update(dt);
-    if (collisions.some(collider => collider.layer === 'level')) {
-      this.x = this.lastSafeX;
-      this.y = this.lastSafeY;
-      this.stopMoving();
-      this.syncSprites();
+    const walls = collisions.filter(collider => collider.layer === 'level');
+    if (walls.length) {
+      this.resolveWallSlide();
     } else {
       this.lastSafeX = this.x;
       this.lastSafeY = this.y;
+      this.lastSafeRotation = this.rotation;
     }
     this.topSprite.update(dt);
-    this.move(undefined, dt);
     this.updateAim(dt);
+  }
+
+  resolveWallSlide() {
+    const attemptedX = this.x;
+    const attemptedY = this.y;
+    const deltaX = attemptedX - this.lastSafeX;
+    const deltaY = attemptedY - this.lastSafeY;
+    const canSlideX = Math.abs(deltaX) > 1e-8 && this.isClearOfWalls(attemptedX, this.lastSafeY);
+    const canSlideY = Math.abs(deltaY) > 1e-8 && this.isClearOfWalls(this.lastSafeX, attemptedY);
+
+    if (canSlideX && (!canSlideY || Math.abs(deltaX) >= Math.abs(deltaY))) {
+      this.x = attemptedX;
+      this.y = this.lastSafeY;
+      this.targetY = this.y;
+    } else if (canSlideY) {
+      this.x = this.lastSafeX;
+      this.y = attemptedY;
+      this.targetX = this.x;
+    } else {
+      this.x = this.lastSafeX;
+      this.y = this.lastSafeY;
+      this.rotation = this.lastSafeRotation;
+      this.stopMoving();
+    }
+
+    this.lastSafeX = this.x;
+    this.lastSafeY = this.y;
+    this.lastSafeRotation = this.rotation;
+    this.syncSprites();
+  }
+
+  isClearOfWalls(x, y) {
+    const previousX = this.x;
+    const previousY = this.y;
+    this.x = x;
+    this.y = y;
+    this.syncSprites();
+    const clear = [...Collider.colliders].every(collider =>
+      collider === this.bottomSprite.collider
+      || collider.layer !== 'level'
+      || !collider.enabled
+      || !this.bottomSprite.collider.intersects(collider));
+    this.x = previousX;
+    this.y = previousY;
+    this.syncSprites();
+    return clear;
   }
 }
 

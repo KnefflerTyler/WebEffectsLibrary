@@ -5,14 +5,15 @@
   },
   "size": {
     "default": 1,
-    "scaler": 10
+    "scaler": 10,
+    "tankRatio": 0.24
   },
   "ttl": {
     "default": 1,
     "scaler": 0.25
   },
   "damage": 34,
-  "levelDamage": 1,
+  "levelDamage": 3,
   "explosion": {
     "damage": 8.5,
     "radius": 0.0175,

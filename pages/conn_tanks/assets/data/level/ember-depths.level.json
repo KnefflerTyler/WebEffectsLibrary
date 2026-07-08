@@ -4,11 +4,12 @@
   "screenWrap": false,
   "generator": "cave",
   "options": {
-    "cols": 48,
-    "rows": 27,
+    "cols": 96,
+    "rows": 54,
     "fill": 0.47,
     "iterations": 4,
-    "seed": "ember-depths"
+    "seed": "ember-depths",
+    "wallHealth": 12
   },
   "texture": {
     "floorColor": "#211817",

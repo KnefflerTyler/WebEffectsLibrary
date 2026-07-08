@@ -1,6 +1,6 @@
 export function generateCave(options = {}) {
-  const cols = clampInteger(options.cols, 12, 96, 48);
-  const rows = clampInteger(options.rows, 8, 64, 27);
+  const cols = clampInteger(options.cols, 12, 256, 96);
+  const rows = clampInteger(options.rows, 8, 144, 54);
   const fill = clamp(Number(options.fill ?? 0.45), 0.25, 0.7);
   const iterations = clampInteger(options.iterations, 1, 10, 5);
   const seed = normalizeSeed(options.seed ?? Date.now());

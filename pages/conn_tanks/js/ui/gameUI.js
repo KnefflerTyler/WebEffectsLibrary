@@ -2,7 +2,7 @@ import CardSelectionView from './cardSelectionView.js';
 import AmmoView from './ammoView.js';
 
 export class GameUI {
-  constructor({ onHost, onJoin, onStartGame, onSelectCard, onEndRound, onExit } = {}) {
+  constructor({ onHost, onJoin, onStartGame, onSelectCard, onGrantCard, onRemoveCard, onEndRound, onExit } = {}) {
     this.elements = {
       menu: document.getElementById('menu'),
       hud: document.getElementById('hud'),
@@ -19,6 +19,12 @@ export class GameUI {
       winsRequired: document.getElementById('wins-required'),
       startGame: document.getElementById('start-game'),
       hostStatus: document.getElementById('host-status'),
+      hostCardControls: document.getElementById('host-card-controls'),
+      hostCardPlayer: document.getElementById('host-card-player'),
+      hostCardSelect: document.getElementById('host-card-select'),
+      hostGrantCard: document.getElementById('host-grant-card'),
+      hostRemoveCard: document.getElementById('host-remove-card'),
+      hostCardStatus: document.getElementById('host-card-status'),
       matchBanner: document.getElementById('match-banner'),
       loadingScreen: document.getElementById('loading-screen'),
       loadingPlayers: document.getElementById('loading-players')
@@ -51,6 +57,34 @@ export class GameUI {
         this.elements.startGame.disabled = false;
       }
     });
+    this.elements.hostGrantCard.addEventListener('click', () => {
+      const playerId = this.elements.hostCardPlayer.value;
+      const cardId = this.elements.hostCardSelect.value;
+      if (!playerId || !cardId) {
+        this.elements.hostCardStatus.textContent = 'Choose a player and card.';
+        return;
+      }
+      const granted = onGrantCard?.(playerId, cardId) === true;
+      const player = this.players?.find(candidate => candidate.id === playerId);
+      const card = this.cards?.find(candidate => candidate.id === cardId);
+      this.elements.hostCardStatus.textContent = granted
+        ? `Applied ${card?.name ?? cardId} to ${player?.name ?? playerId}.`
+        : 'Unable to apply that card.';
+    });
+    this.elements.hostRemoveCard.addEventListener('click', () => {
+      const playerId = this.elements.hostCardPlayer.value;
+      const cardId = this.elements.hostCardSelect.value;
+      if (!playerId || !cardId) {
+        this.elements.hostCardStatus.textContent = 'Choose a player and card.';
+        return;
+      }
+      const removed = onRemoveCard?.(playerId, cardId) === true;
+      const player = this.players?.find(candidate => candidate.id === playerId);
+      const card = this.cards?.find(candidate => candidate.id === cardId);
+      this.elements.hostCardStatus.textContent = removed
+        ? `Removed one ${card?.name ?? cardId} from ${player?.name ?? playerId}.`
+        : `${player?.name ?? 'Player'} does not have that card.`;
+    });
 
     const inviteCode = new URLSearchParams(location.search).get('join')?.trim();
     if (inviteCode) {
@@ -80,6 +114,17 @@ export class GameUI {
     this.elements.roomCode.classList.toggle('hidden', role !== 'host');
     this.role = role;
     this.elements.hostControls.classList.toggle('hidden', role !== 'host');
+    this.elements.hostCardControls.classList.toggle('hidden', role !== 'host');
+  }
+
+  setCards(cards) {
+    this.cards = Array.isArray(cards) ? cards : [];
+    this.elements.hostCardSelect.replaceChildren(...this.cards.map(card => {
+      const option = document.createElement('option');
+      option.value = card.id;
+      option.textContent = card.name ?? card.id;
+      return option;
+    }));
   }
 
   setLevels(levels) {
@@ -107,6 +152,8 @@ export class GameUI {
   }
 
   updateMatchState(game, players = [], localId = null) {
+    this.players = players;
+    this.updateHostCardPlayers(players);
     const phase = game?.phase ?? 'lobby';
     this.cardSelection.update(game, localId);
     this.updateLoadingPlayers(game, players);
@@ -130,6 +177,19 @@ export class GameUI {
     } else {
       this.elements.matchBanner.classList.add('hidden');
     }
+  }
+
+  updateHostCardPlayers(players = []) {
+    const selected = this.elements.hostCardPlayer.value;
+    this.elements.hostCardPlayer.replaceChildren(...players.map(player => {
+      const option = document.createElement('option');
+      option.value = player.id;
+      option.textContent = player.name || player.id;
+      return option;
+    }));
+    if (players.some(player => player.id === selected)) this.elements.hostCardPlayer.value = selected;
+    this.elements.hostGrantCard.disabled = !players.length || !this.cards?.length;
+    this.elements.hostRemoveCard.disabled = !players.length || !this.cards?.length;
   }
 
   updatePlayerCount(count) {

@@ -130,6 +130,11 @@ button:disabled { cursor: default; filter: grayscale(.65); opacity: .65; }
 .level-option input { width: auto; min-height: 0; accent-color: #68d493; }
 .match-panel button { width: 100%; }
 .match-panel p { margin: 9px 0 0; color: #9caf9e; font-size: 11px; line-height: 1.4; }
+.host-card-panel { right: 16px; left: auto; }
+.host-card-field { display: grid; gap: 5px; margin-bottom: 10px; color: #9caf9e; font-size: 11px; font-weight: 700; }
+.host-card-field select { width: 100%; color: #edf6ed; background: #0e1510; }
+.host-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.host-card-actions .danger { border-color: #8d4545; background: #6d3030; }
 .match-banner {
   position: fixed; z-index: 6; top: 50%; left: 50%; transform: translate(-50%, -50%);
   padding: 18px 26px; border: 1px solid #5d765f; border-radius: 12px;

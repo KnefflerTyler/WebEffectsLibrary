@@ -3,77 +3,280 @@
   "name": "Glass Labyrinth",
   "screenWrap": false,
   "spawns": [
-    { "id": "host", "x": 0.10, "y": 0.10, "rotation": 2.35 },
-    { "id": "guest-1", "x": 0.90, "y": 0.90, "rotation": -0.79 },
-    { "id": "guest-2", "x": 0.90, "y": 0.10, "rotation": -2.35 },
-    { "id": "guest-3", "x": 0.10, "y": 0.90, "rotation": 0.79 }
-  ],
-  "objects": [
     {
-      "type": "collider", "id": "west-upper", "name": "West Upper Glass", "shape": "line",
-      "start": { "x": 0.22, "y": 0.00 }, "end": { "x": 0.22, "y": 0.38 },
-      "borderColor": "#8cecff", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+      "id": "host",
+      "x": 0.1,
+      "y": 0.1,
+      "rotation": 2.35
     },
     {
-      "type": "collider", "id": "west-lower", "name": "West Lower Glass", "shape": "line",
-      "start": { "x": 0.22, "y": 0.62 }, "end": { "x": 0.22, "y": 1.00 },
-      "borderColor": "#8cecff", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+      "id": "guest-1",
+      "x": 0.9,
+      "y": 0.9,
+      "rotation": -0.79
     },
     {
-      "type": "collider", "id": "east-upper", "name": "East Upper Glass", "shape": "line",
-      "start": { "x": 0.78, "y": 0.00 }, "end": { "x": 0.78, "y": 0.38 },
-      "borderColor": "#ff9ee9", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+      "id": "guest-2",
+      "x": 0.9,
+      "y": 0.1,
+      "rotation": -2.35
     },
     {
-      "type": "collider", "id": "east-lower", "name": "East Lower Glass", "shape": "line",
-      "start": { "x": 0.78, "y": 0.62 }, "end": { "x": 0.78, "y": 1.00 },
-      "borderColor": "#ff9ee9", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
-    },
-    {
-      "type": "collider", "id": "north-left", "name": "North Left Glass", "shape": "line",
-      "start": { "x": 0.22, "y": 0.38 }, "end": { "x": 0.44, "y": 0.38 },
-      "borderColor": "#8cecff", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
-    },
-    {
-      "type": "collider", "id": "north-right", "name": "North Right Glass", "shape": "line",
-      "start": { "x": 0.56, "y": 0.38 }, "end": { "x": 0.78, "y": 0.38 },
-      "borderColor": "#ff9ee9", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
-    },
-    {
-      "type": "collider", "id": "south-left", "name": "South Left Glass", "shape": "line",
-      "start": { "x": 0.22, "y": 0.62 }, "end": { "x": 0.44, "y": 0.62 },
-      "borderColor": "#8cecff", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
-    },
-    {
-      "type": "collider", "id": "south-right", "name": "South Right Glass", "shape": "line",
-      "start": { "x": 0.56, "y": 0.62 }, "end": { "x": 0.78, "y": 0.62 },
-      "borderColor": "#ff9ee9", "fillColor": "#000000", "borderAlpha": 0.95, "fillAlpha": 0,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
-    },
-    {
-      "type": "collider", "id": "core", "name": "Prism Core", "shape": "rectangle",
-      "start": { "x": 0.44, "y": 0.38 }, "end": { "x": 0.56, "y": 0.62 },
-      "borderColor": "#fff4a3", "fillColor": "#756b2e", "borderAlpha": 1, "fillAlpha": 0.72,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
-    },
-    {
-      "type": "collider", "id": "mid-west", "name": "West Divider", "shape": "line",
-      "start": { "x": 0.00, "y": 0.50 }, "end": { "x": 0.22, "y": 0.50 },
-      "borderColor": "#8cecff", "fillColor": "#000000", "borderAlpha": 0.75, "fillAlpha": 0,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
-    },
-    {
-      "type": "collider", "id": "mid-east", "name": "East Divider", "shape": "line",
-      "start": { "x": 0.78, "y": 0.50 }, "end": { "x": 1.00, "y": 0.50 },
-      "borderColor": "#ff9ee9", "fillColor": "#000000", "borderAlpha": 0.75, "fillAlpha": 0,
-      "collider": { "enabled": true, "isTrigger": false, "layer": "level" }
+      "id": "guest-3",
+      "x": 0.1,
+      "y": 0.9,
+      "rotation": 0.79
     }
-  ]
+  ],
+  "grid": {
+    "cols": 96,
+    "rows": 54,
+    "defaultBackground": "transparency",
+    "backgroundSprites": {
+      "transparency": {
+        "type": "checker",
+        "colors": [
+          "#202720",
+          "#2a322a"
+        ]
+      }
+    },
+    "foregroundSprites": {
+      "west-upper": {
+        "id": "west-upper",
+        "name": "West Upper Glass",
+        "color": "#000000",
+        "borderColor": "#8cecff",
+        "borderAlpha": 0.95,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 7
+        }
+      },
+      "west-lower": {
+        "id": "west-lower",
+        "name": "West Lower Glass",
+        "color": "#000000",
+        "borderColor": "#8cecff",
+        "borderAlpha": 0.95,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 7
+        }
+      },
+      "east-upper": {
+        "id": "east-upper",
+        "name": "East Upper Glass",
+        "color": "#000000",
+        "borderColor": "#ff9ee9",
+        "borderAlpha": 0.95,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 7
+        }
+      },
+      "east-lower": {
+        "id": "east-lower",
+        "name": "East Lower Glass",
+        "color": "#000000",
+        "borderColor": "#ff9ee9",
+        "borderAlpha": 0.95,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 7
+        }
+      },
+      "north-left": {
+        "id": "north-left",
+        "name": "North Left Glass",
+        "color": "#000000",
+        "borderColor": "#8cecff",
+        "borderAlpha": 0.95,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 7
+        }
+      },
+      "north-right": {
+        "id": "north-right",
+        "name": "North Right Glass",
+        "color": "#000000",
+        "borderColor": "#ff9ee9",
+        "borderAlpha": 0.95,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 7
+        }
+      },
+      "south-left": {
+        "id": "south-left",
+        "name": "South Left Glass",
+        "color": "#000000",
+        "borderColor": "#8cecff",
+        "borderAlpha": 0.95,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 7
+        }
+      },
+      "south-right": {
+        "id": "south-right",
+        "name": "South Right Glass",
+        "color": "#000000",
+        "borderColor": "#ff9ee9",
+        "borderAlpha": 0.95,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 7
+        }
+      },
+      "core": {
+        "id": "core",
+        "name": "Prism Core",
+        "color": "#756b2e",
+        "borderColor": "#fff4a3",
+        "borderAlpha": 1,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 24
+        }
+      },
+      "mid-west": {
+        "id": "mid-west",
+        "name": "West Divider",
+        "color": "#000000",
+        "borderColor": "#8cecff",
+        "borderAlpha": 0.75,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 5
+        }
+      },
+      "mid-east": {
+        "id": "mid-east",
+        "name": "East Divider",
+        "color": "#000000",
+        "borderColor": "#ff9ee9",
+        "borderAlpha": 0.75,
+        "collider": {
+          "enabled": true,
+          "isTrigger": false,
+          "layer": "level"
+        },
+        "destructible": {
+          "health": 5
+        }
+      }
+    },
+    "foregroundLegend": {
+      "1": "west-upper",
+      "2": "west-lower",
+      "3": "east-upper",
+      "4": "east-lower",
+      "5": "north-left",
+      "6": "north-right",
+      "7": "south-left",
+      "8": "south-right",
+      "9": "core",
+      ".": null,
+      "A": "mid-west",
+      "B": "mid-east"
+    },
+    "foreground": [
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................11....................................................33....................",
+      "....................555555555555555555555555........666666666666666666666666....................",
+      "....................555555555555555555555555........666666666666666666666666....................",
+      "....................55555555555555555555555599999999666666666666666666666666....................",
+      "....................55555555555555555555555599999999666666666666666666666666....................",
+      "............................................99999999............................................",
+      "............................................99999999............................................",
+      "AAAAAAAAAAAAAAAAAAAAAA......................99999999......................BBBBBBBBBBBBBBBBBBBBBB",
+      "AAAAAAAAAAAAAAAAAAAAAA......................99999999......................BBBBBBBBBBBBBBBBBBBBBB",
+      "AAAAAAAAAAAAAAAAAAAAAA......................99999999......................BBBBBBBBBBBBBBBBBBBBBB",
+      "AAAAAAAAAAAAAAAAAAAAAA......................99999999......................BBBBBBBBBBBBBBBBBBBBBB",
+      "............................................99999999............................................",
+      "............................................99999999............................................",
+      "............................................99999999............................................",
+      "............................................99999999............................................",
+      "....................77777777777777777777777799999999888888888888888888888888....................",
+      "....................77777777777777777777777799999999888888888888888888888888....................",
+      "....................227777777777777777777777........888888888888888888888888....................",
+      "....................227777777777777777777777........888888888888888888888888....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44....................",
+      "....................22....................................................44...................."
+    ]
+  }
 }

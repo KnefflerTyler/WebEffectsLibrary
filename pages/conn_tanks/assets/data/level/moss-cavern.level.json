@@ -4,11 +4,12 @@
   "screenWrap": false,
   "generator": "cave",
   "options": {
-    "cols": 48,
-    "rows": 27,
+    "cols": 96,
+    "rows": 54,
     "fill": 0.45,
     "iterations": 5,
-    "seed": "moss-cavern"
+    "seed": "moss-cavern",
+    "wallHealth": 12
   },
   "texture": {
     "floorColor": "#152219",

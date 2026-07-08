@@ -218,6 +218,7 @@ export class GameWorld {
         x: player.x,
         y: player.y,
         rotation: player.aimRotation + spreadPosition * spread,
+        referenceSize: player.tank.bottomSprite.height,
         speed: projectileData.speed.default * (modifiers.speed ?? 1),
         size: projectileData.size.default * (modifiers.size ?? 1),
         ttl: projectileData.ttl.default * (modifiers.ttl ?? 1),
@@ -245,10 +246,19 @@ export class GameWorld {
   // #region Update and Serialization
   update(dt, { authoritative = false, behaviorsActive = true } = {}) {
     this.levelManager.update(dt);
-    for (const player of this.players.values()) player.update(dt);
+    const gridSize = this.levelManager.gridSize;
+    for (const player of this.players.values()) {
+      if (gridSize) player.tank.setLevelGridSize(gridSize.cols, gridSize.rows);
+      player.update(dt);
+    }
     for (const projectile of this.projectiles) {
       projectile.update(dt, { wrap: this.screenWrap });
-      if (projectile.hitLevelCollider) this.runProjectileLevelBehaviors(projectile);
+      if (projectile.hitLevelCollider) {
+        if (authoritative && projectile.hitLevelObjectId) {
+          this.levelManager.damageObject(projectile.hitLevelObjectId, projectile.levelDamage);
+        }
+        this.runProjectileLevelBehaviors(projectile);
+      }
     }
     if (behaviorsActive) this.updatePlayerBehaviors(dt);
     for (const mine of this.mines) mine.update(dt, this.players, { wrap: this.screenWrap });
@@ -260,9 +270,6 @@ export class GameWorld {
     }
     if (authoritative) {
       for (const projectile of this.projectiles) {
-        if (projectile.hitLevelObjectId) {
-          this.levelManager.damageObject(projectile.hitLevelObjectId, projectile.levelDamage);
-        }
         if (!projectile.hitPlayerId) continue;
         const player = this.players.get(projectile.hitPlayerId);
         player?.loseLife(projectile.damage);
@@ -321,17 +328,29 @@ export class GameWorld {
     }
   }
 
-  spawnProjectileFan(source, { count = 3, spread = 0.5, rotation = source.rotation + Math.PI } = {}) {
+  spawnProjectileFan(source, {
+    count = 3,
+    spread = 0.5,
+    rotation = source.rotation + Math.PI,
+    x = source.x,
+    y = source.y
+  } = {}) {
     const total = Math.max(1, Math.floor(count));
-    const volleyId = `${source.id}:burst:${performance.now()}`;
+    // Keep the source volley id so freshly-created pellets do not collide
+    // with the impact projectile before it is removed at the end of the tick.
+    const volleyId = source.volleyId || `${source.id}:burst:${performance.now()}`;
     const spawned = Array.from({ length: total }, (_, index) => new Projectile({
       ownerId: source.ownerId,
       volleyId,
-      x: source.x,
-      y: source.y,
+      x,
+      y,
       rotation: rotation + (total === 1 ? 0 : (index / (total - 1) - 0.5) * spread),
       speed: source.speed / getProjectileData().speed.scaler,
       size: source.size,
+      width: source.width,
+      height: source.height,
+      collisionWidth: source.collider?.width,
+      collisionHeight: source.collider?.height,
       ttl: Math.max(0.1, source.ttl - source.age),
       damage: source.damage,
       explosion: source.explosion,

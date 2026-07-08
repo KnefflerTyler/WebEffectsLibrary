@@ -118,7 +118,9 @@ export class LevelCollider extends GameObject {
   }
 
   serializeState() {
-    return this.maxHealth ? { id: this.id, health: this.health } : null;
+    return this.maxHealth && this.health !== this.maxHealth
+      ? { id: this.id, health: this.health }
+      : null;
   }
 }
 

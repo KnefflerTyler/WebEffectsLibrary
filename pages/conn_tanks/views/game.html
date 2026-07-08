@@ -46,6 +46,23 @@
     <p id="host-status">Select one or more levels. Rounds will cycle through them.</p>
   </section>
 
+  <section id="host-card-controls" class="match-panel host-card-panel hidden" aria-label="Host card controls">
+    <strong>Grant card</strong>
+    <label class="host-card-field">
+      Player
+      <select id="host-card-player"></select>
+    </label>
+    <label class="host-card-field">
+      Card
+      <select id="host-card-select"></select>
+    </label>
+    <div class="host-card-actions">
+      <button id="host-grant-card" type="button">Apply card</button>
+      <button id="host-remove-card" class="danger" type="button">Remove card</button>
+    </div>
+    <p id="host-card-status">Choose a player and card.</p>
+  </section>
+
   <div id="match-banner" class="match-banner hidden" role="status"></div>
 
   <div id="loading-screen" class="loading-screen hidden" role="status" aria-live="polite">

@@ -3,6 +3,7 @@ import Sprite from '../objects/sprites/sprite.js';
 import LevelCollider from '../levels/levelCollider.js';
 import CaveLevel from '../levels/caveLevel.js';
 import BaseLevel from '../levels/baseLevel.js';
+import GridLevel from '../levels/gridLevel.js';
 import { generateCave } from '../editor/caveGenerator.js';
 // #endregion
 
@@ -21,6 +22,10 @@ export class LevelManager {
   get colliders() { return this.currentLevel?.colliders ?? []; }
   get spawns() { return this.currentLevel?.spawns ?? []; }
   get screenWrap() { return this.currentLevel?.screenWrap ?? false; }
+  get gridSize() {
+    const grid = this.currentLevel?.grid;
+    return grid ? { cols: grid.cols, rows: grid.rows } : null;
+  }
   damageObject(id, amount) { return this.currentLevel?.damageObject(id, amount) ?? false; }
   serializeObjectState() { return this.currentLevel?.serializeObjectState() ?? []; }
   applyObjectState(states) { this.currentLevel?.applyObjectState(states); }
@@ -51,12 +56,26 @@ export class LevelManager {
         ...point,
         rotation: index * Math.PI / 2
       })),
-      objects: [{
-        type: 'cave',
-        id: 'cave-base',
-        ...caveData,
-        texture: definition.texture
-      }]
+      grid: {
+        cols: caveData.cols,
+        rows: caveData.rows,
+        foregroundLegend: { '0': null, '1': 'wall' },
+        foreground: caveData.cells,
+        foregroundSprites: {
+          wall: {
+            id: 'cave-wall',
+            name: 'Cave wall',
+            color: definition.texture?.wallColor ?? '#344638',
+            borderColor: definition.texture?.edgeColor ?? '#6f8a72',
+            destructible: { health: Math.max(1, Number(definition.options?.wallHealth) || 12) },
+            collider: { enabled: true, isTrigger: false, layer: 'level' }
+          }
+        },
+        backgroundSprites: {
+          floor: { type: 'color', color: definition.texture?.floorColor ?? '#152219' }
+        },
+        defaultBackground: 'floor'
+      }
     };
   }
 
@@ -64,6 +83,13 @@ export class LevelManager {
     this.unloadLevel();
 
     const url = source instanceof URL ? source : new URL(String(source || ''), levelBaseUrl);
+    if (data.grid) {
+      const overlayObjects = await Promise.all(
+        (Array.isArray(data.objects) ? data.objects : []).map(object => this.createObject(object, url))
+      );
+      this.currentLevel = new GridLevel({ ...data, source: url }, overlayObjects.filter(Boolean));
+      return this.currentLevel;
+    }
     const objects = await Promise.all(
       (Array.isArray(data.objects) ? data.objects : []).map(object => this.createObject(object, url))
     );

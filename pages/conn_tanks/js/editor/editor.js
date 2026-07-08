@@ -1,4 +1,5 @@
 import { createCaveTextureCanvas, generateCave } from './caveGenerator.js';
+import { normalizeGrid } from '../levels/gridLevel.js';
 
 const textarea = document.getElementById('level-json');
 const status = document.getElementById('editor-status');
@@ -36,13 +37,24 @@ const starterLevel = {
   name: 'New Level',
   screenWrap: false,
   spawns: [],
-  objects: []
+  grid: {
+    cols: 96,
+    rows: 54,
+    defaultBackground: 'transparency',
+    backgroundSprites: {
+      transparency: { type: 'checker', colors: ['#202720', '#2a322a'] }
+    },
+    foregroundSprites: {},
+    foregroundLegend: { '.': null },
+    foreground: Array(54).fill('.'.repeat(96))
+  }
 };
 
 let activeTool = 'select';
 let selectedId = null;
 let draft = null;
 let caveTextureCache = null;
+const tileImageCache = new Map();
 
 function setLevel(level, { clearSelection = false } = {}) {
   if (clearSelection) selectedId = null;
@@ -85,7 +97,9 @@ function updateSummary() {
     summaryName.textContent = level.name || level.id || '-';
     screenWrap.checked = level.screenWrap;
     summarySpawns.textContent = String(spawns.length);
-    summaryObjects.textContent = String(objects.length);
+    const grid = level.grid ? normalizeGrid(level.grid) : null;
+    const occupiedTiles = grid ? grid.foreground.flat().filter(Boolean).length : 0;
+    summaryObjects.textContent = String(objects.length + occupiedTiles);
     summaryColliders.textContent = String(colliderCount);
     spawnList.replaceChildren(...spawns.map((spawn, index) => {
       const item = document.createElement('li');
@@ -180,6 +194,7 @@ function drawLevel() {
 
   try {
     const level = getLevel();
+    if (level.grid) drawSpriteGrid(level.grid);
     for (const object of getObjects(level)) {
       if (object.type === 'cave') drawCave(object);
       else if (object.type === 'collider') drawCollider(object, object.id === selectedId);
@@ -188,6 +203,59 @@ function drawLevel() {
     for (const spawn of Array.isArray(level.spawns) ? level.spawns : []) drawSpawn(spawn);
     if (draft) drawCollider(draft, true);
   } catch { /* Keep the drawing surface available while JSON is being edited. */ }
+}
+
+function drawSpriteGrid(source) {
+  const grid = normalizeGrid(source);
+  const width = canvas.clientWidth / grid.cols;
+  const height = canvas.clientHeight / grid.rows;
+  for (let row = 0; row < grid.rows; row += 1) for (let col = 0; col < grid.cols; col += 1) {
+    const x = col * width;
+    const y = row * height;
+    drawEditorTile(grid.backgroundSprites[grid.background[row][col]], x, y, width, height, true, row, col);
+    const foreground = grid.foregroundSprites[grid.foreground[row][col]];
+    if (foreground) drawEditorTile(foreground, x, y, width, height, false, row, col);
+  }
+}
+
+function drawEditorTile(tile, x, y, width, height, background, row, col) {
+  if (!tile && !background) return;
+  const value = tile ?? { type: 'checker', colors: ['#202720', '#2a322a'] };
+  if (value.image) {
+    let image = tileImageCache.get(value.image);
+    if (!image) {
+      image = new Image();
+      image.onload = drawLevel;
+      image.src = new URL(value.image, new URL('../assets/data/level/default.level.json', location.href)).href;
+      tileImageCache.set(value.image, image);
+    }
+    if (image.complete && image.naturalWidth) {
+      const cols = Math.max(1, Number(value.sheetCols) || 1);
+      const rows = Math.max(1, Number(value.sheetRows) || 1);
+      const frameColumn = Math.max(0, Math.min(cols - 1, Number(value.frame?.column) || 0));
+      const frameRow = Math.max(0, Math.min(rows - 1, Number(value.frame?.row) || 0));
+      context.drawImage(
+        image,
+        frameColumn * image.naturalWidth / cols,
+        frameRow * image.naturalHeight / rows,
+        image.naturalWidth / cols,
+        image.naturalHeight / rows,
+        x, y, width, height
+      );
+      return;
+    }
+  }
+  if (value.type === 'checker') {
+    const colors = value.colors ?? ['#202720', '#2a322a'];
+    context.fillStyle = colors[(row + col) % 2];
+  } else {
+    context.fillStyle = value.color ?? value.fillColor ?? '#ffffff';
+  }
+  context.fillRect(x, y, Math.ceil(width), Math.ceil(height));
+  if (value.borderColor) {
+    context.strokeStyle = value.borderColor;
+    context.strokeRect(x + 0.5, y + 0.5, width - 1, height - 1);
+  }
 }
 
 function drawCave(cave) {
@@ -381,6 +449,13 @@ canvas.addEventListener('pointerup', event => {
   const size = Math.hypot(draft.end.x - draft.start.x, draft.end.y - draft.start.y);
   if (size >= 0.005) {
     const level = getLevel();
+    if (level.grid) {
+      addDraftToGrid(level, draft);
+      draft = null;
+      setLevel(level);
+      setTool('select');
+      return;
+    }
     level.objects = getObjects(level);
     let count = level.objects.filter(object => object.type === 'collider').length + 1;
     while (level.objects.some(object => object.id === `collider-${count}`)) count += 1;
@@ -425,6 +500,19 @@ document.getElementById('add-spawn').addEventListener('click', () => {
 
 document.getElementById('add-sprite').addEventListener('click', () => {
   const level = getLevel();
+  if (level.grid) {
+    const grid = normalizeGrid(level.grid);
+    const id = `sprite-${Object.keys(grid.foregroundSprites).length + 1}`;
+    level.grid.foregroundSprites[id] = { id, name: 'Sprite tile', color: '#506b92' };
+    const key = nextLegendKey(level.grid.foregroundLegend);
+    level.grid.foregroundLegend[key] = id;
+    const rows = level.grid.foreground ?? Array(grid.rows).fill('.'.repeat(grid.cols));
+    const row = Math.floor(grid.rows / 2), col = Math.floor(grid.cols / 2);
+    rows[row] = `${rows[row].slice(0, col)}${key}${rows[row].slice(col + 1)}`;
+    level.grid.foreground = rows;
+    setLevel(level);
+    return;
+  }
   level.objects = getObjects(level);
   level.objects.push({
     type: 'sprite', id: `sprite-${level.objects.length + 1}`, name: 'Sprite',
@@ -455,20 +543,28 @@ document.getElementById('generate-cave').addEventListener('click', () => {
     iterations: caveIterations.value,
     seed: caveSeed.value
   });
-  const { spawnPoints, ...caveData } = generated;
-  const cave = {
-    type: 'cave',
-    id: 'cave-base',
-    name: 'Generated Cave',
-    ...caveData,
-    texture: {
-      floorColor: caveFloorColor.value,
-      wallColor: caveWallColor.value,
-      edgeColor: caveEdgeColor.value
-    }
-  };
+  const { spawnPoints } = generated;
   const level = getLevel();
-  level.objects = [cave, ...getObjects(level).filter(object => object.type !== 'cave')];
+  level.grid = {
+    cols: generated.cols,
+    rows: generated.rows,
+    defaultBackground: 'floor',
+    backgroundSprites: {
+      transparency: { type: 'checker', colors: ['#202720', '#2a322a'] },
+      floor: { type: 'color', color: caveFloorColor.value }
+    },
+    foregroundSprites: {
+      wall: {
+        id: 'cave-wall', name: 'Cave wall', color: caveWallColor.value,
+        borderColor: caveEdgeColor.value,
+        destructible: { health: 12 },
+        collider: { enabled: true, isTrigger: false, layer: 'level' }
+      }
+    },
+    foregroundLegend: { '0': null, '1': 'wall' },
+    foreground: generated.cells
+  };
+  delete level.objects;
   level.spawns = spawnPoints.map((point, index) => ({
     id: index ? `guest-${index}` : 'host',
     x: point.x,
@@ -478,8 +574,51 @@ document.getElementById('generate-cave').addEventListener('click', () => {
   selectedId = null;
   caveTextureCache = null;
   setLevel(level);
-  setStatus(`Generated ${cave.cols}×${cave.rows} cave with ${cave.mesh.length} mesh colliders`);
+  setStatus(`Generated ${generated.cols} x ${generated.rows} sprite-grid cave`);
 });
+
+function addDraftToGrid(level, object) {
+  const grid = normalizeGrid(level.grid);
+  level.grid.foregroundSprites ??= {};
+  level.grid.foregroundLegend ??= { '.': null };
+  const id = `wall-${Object.keys(level.grid.foregroundSprites).length + 1}`;
+  const key = nextLegendKey(level.grid.foregroundLegend);
+  level.grid.foregroundSprites[id] = {
+    id,
+    name: `${object.shape[0].toUpperCase()}${object.shape.slice(1)} wall`,
+    color: object.fillColor,
+    borderColor: object.borderColor,
+    borderAlpha: object.borderAlpha,
+    ...(destructible.checked ? { destructible: { health: Math.max(1, Number(destructibleHealth.value) || 1) } } : {}),
+    collider: { enabled: true, isTrigger: false, layer: 'level' }
+  };
+  level.grid.foregroundLegend[key] = id;
+  const cells = grid.foreground.map(row => row.map(value => value ? findLegendKey(level.grid.foregroundLegend, value) : '.'));
+  for (let row = 0; row < grid.rows; row += 1) for (let col = 0; col < grid.cols; col += 1) {
+    const point = { x: (col + 0.5) / grid.cols, y: (row + 0.5) / grid.rows };
+    if (pointHitsShape(point, object, grid.cols, grid.rows)) cells[row][col] = key;
+  }
+  level.grid.foreground = cells.map(row => row.join(''));
+}
+
+function pointHitsShape(point, object, cols, rows) {
+  const left = Math.min(object.start.x, object.end.x), right = Math.max(object.start.x, object.end.x);
+  const top = Math.min(object.start.y, object.end.y), bottom = Math.max(object.start.y, object.end.y);
+  if (object.shape === 'line') return distanceToSegment(point, object.start, object.end) <= 0.65 / Math.min(cols, rows);
+  if (object.shape === 'ellipse') {
+    const radiusX = (right - left) / 2 || 1 / cols, radiusY = (bottom - top) / 2 || 1 / rows;
+    return ((point.x - (left + right) / 2) / radiusX) ** 2 + ((point.y - (top + bottom) / 2) / radiusY) ** 2 <= 1;
+  }
+  return point.x >= left && point.x <= right && point.y >= top && point.y <= bottom;
+}
+
+function nextLegendKey(legend = {}) {
+  return [...'123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'].find(key => !Object.hasOwn(legend, key)) ?? '!';
+}
+
+function findLegendKey(legend, value) {
+  return Object.keys(legend).find(key => legend[key] === value) ?? '.';
+}
 
 deleteButton.addEventListener('click', () => {
   const level = getLevel();
