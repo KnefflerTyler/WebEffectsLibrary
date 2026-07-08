@@ -39,6 +39,17 @@ function normalizeProjectileData(data, sourceUrl) {
       default: data.ttl?.default ?? 1,
       scaler: data.ttl?.scaler ?? 1
     },
+    reload: {
+      default: data.reload?.default ?? 1.5,
+      scaler: data.reload?.scaler ?? 1
+    },
+    damage: Math.max(0, Number(data.damage) || 34),
+    levelDamage: Math.max(0, Number(data.levelDamage) || 1),
+    explosion: {
+      damage: Math.max(0, Number(data.explosion?.damage) || 8.5),
+      radius: Math.max(0, Number(data.explosion?.radius) || 0.0175),
+      duration: Math.max(0.01, Number(data.explosion?.duration) || 0.35)
+    },
     image: {
       type: data.image?.type ?? 'generatedCircle',
       src: data.image?.src ?? null,
@@ -84,6 +95,7 @@ export class Projectile extends Sprite {
     const data = getProjectileData();
     const rotation = options.rotation ?? 0;
     const size = options.size ?? data.size.default;
+    const collideProjectiles = options.collideProjectiles ?? true;
     super({
       ...options,
       image: options.image ?? getProjectileImage(data),
@@ -94,13 +106,19 @@ export class Projectile extends Sprite {
         enabled: true,
         isTrigger: true,
         layer: 'projectile',
-        collidesWith: ['player', 'level'],
-        width: 0.012,
-        height: 0.012
+        collidesWith: ['player', 'level', 'mine', ...(collideProjectiles ? ['projectile'] : [])],
+        width: 0.012 * size,
+        height: 0.012 * size
       }
     });
 
     this.ownerId = options.ownerId ?? '';
+    this.volleyId = options.volleyId ?? '';
+    this.ownerImmune = options.ownerImmune ?? false;
+    this.ownerCollisionArmed = false;
+    this.collideProjectiles = collideProjectiles;
+    this.cardBehaviors = options.cardBehaviors ?? [];
+    this.behaviorState = new Map();
     this.hitPlayerId = null;
     this.hitLevelObjectId = null;
     this.hit = false;
@@ -108,36 +126,72 @@ export class Projectile extends Sprite {
     this.speed = (options.speed ?? data.speed.default) * data.speed.scaler;
     this.age = 0;
     this.ttl = (options.ttl ?? data.ttl.default) * data.ttl.scaler;
+    this.damage = options.damage ?? data.damage;
+    this.levelDamage = options.levelDamage ?? data.levelDamage;
+    this.explosion = { ...data.explosion, ...(options.explosion ?? {}) };
   }
 
   onCollision({ other, otherOwner }) {
     if (this.hit) return;
     if (other.layer === 'player') {
       const playerId = otherOwner?.playerId;
-      if (!playerId || playerId === this.ownerId) return;
+      if (!playerId) return;
+      if (playerId === this.ownerId && (!this.ownerCollisionArmed || this.ownerImmune)) return;
       this.hitPlayerId = playerId;
+      this.hit = true;
+    } else if (other.layer === 'projectile') {
+      if (this.volleyId && otherOwner?.volleyId === this.volleyId) return;
+      this.hit = true;
+    } else if (other.layer === 'mine') {
+      if (otherOwner?.ownerId === this.ownerId) return;
       this.hit = true;
     } else if (other.layer === 'level') {
       this.hitLevelObjectId = otherOwner?.id ?? null;
+      this.hitLevelCollider = other;
       this.hit = true;
     }
   }
 
-  update(dt) {
-    super.update(dt);
+  shouldIgnoreCollision(other) {
+    return this.cardBehaviors.some((behavior, index) =>
+      behavior.module.shouldIgnoreCollision?.({
+        projectile: this,
+        other,
+        otherOwner: other.owner,
+        options: behavior.options,
+        state: getBehaviorState(this.behaviorState, `${behavior.id}:${index}`)
+      }) === true
+    );
+  }
+
+  update(dt, { wrap = false } = {}) {
+    const collisions = super.update(dt);
+    const touchingOwner = collisions.some(collider =>
+      collider.layer === 'player' && collider.owner?.playerId === this.ownerId
+    );
+    if (!touchingOwner) this.ownerCollisionArmed = true;
     this.age += dt;
     this.x += Math.sin(this.rotation) * this.speed * dt;
     this.y -= Math.cos(this.rotation) * this.speed * dt;
+    if (wrap) {
+      this.x = wrapUnit(this.x);
+      this.y = wrapUnit(this.y);
+    }
   }
 
   get expired() {
     return this.hit
-      || this.age >= this.ttl
-      || this.x < -0.05
-      || this.x > 1.05
-      || this.y < -0.05
-      || this.y > 1.05;
+      || this.age >= this.ttl;
   }
+}
+
+function wrapUnit(value) {
+  return ((value % 1) + 1) % 1;
+}
+
+function getBehaviorState(states, key) {
+  if (!states.has(key)) states.set(key, {});
+  return states.get(key);
 }
 
 export default Projectile;

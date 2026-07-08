@@ -179,7 +179,9 @@ export class WebGLRenderer {
     gl.uniform2f(this.lineUniforms.resolution, this.width, this.height);
 
     for (const shape of shapes) {
-      const points = shape.points ?? [];
+      const points = shape.shape === 'screenCircle'
+        ? createScreenCirclePoints(shape.center, shape.radius, this.width, this.height)
+        : shape.points ?? [];
       if (points.length < 2) continue;
       const vertices = new Float32Array(points.flatMap(point => [
         point.x * this.width,
@@ -262,6 +264,18 @@ export class WebGLRenderer {
     }
     return program;
   }
+}
+
+function createScreenCirclePoints(center, radius, width, height) {
+  if (!center || !radius || !width || !height) return [];
+  const radiusY = radius * width / height;
+  return Array.from({ length: 32 }, (_, index) => {
+    const angle = index / 32 * Math.PI * 2;
+    return {
+      x: center.x + Math.cos(angle) * radius,
+      y: center.y + Math.sin(angle) * radiusY
+    };
+  });
 }
 
 function colorToRgba(hex, alpha = 1) {

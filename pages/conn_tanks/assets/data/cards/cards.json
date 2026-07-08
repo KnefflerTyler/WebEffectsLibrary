@@ -1,0 +1,144 @@
+[
+  {
+    "id": "overdrive",
+    "name": "Overdrive",
+    "description": "Move 20% faster.",
+    "image": "images/overdrive.svg",
+    "effects": { "tank": { "moveSpeed": 1.2 } }
+  },
+  {
+    "id": "quick-traverse",
+    "name": "Quick Traverse",
+    "description": "Turn and aim 20% faster.",
+    "image": "images/quick-traverse.svg",
+    "effects": { "tank": { "rotationSpeed": 1.2, "aimSpeed": 1.2 } }
+  },
+  {
+    "id": "high-velocity",
+    "name": "High Velocity",
+    "description": "Projectiles travel 25% faster.",
+    "image": "images/high-velocity.svg",
+    "effects": { "projectile": { "speed": 1.25 } }
+  },
+  {
+    "id": "long-fuse",
+    "name": "Long Fuse",
+    "description": "Projectiles last 35% longer.",
+    "image": "images/long-fuse.svg",
+    "effects": { "projectile": { "ttl": 1.35 } }
+  },
+  {
+    "id": "heavy-shells",
+    "name": "Heavy Shells",
+    "description": "Projectiles are 35% larger.",
+    "image": "images/heavy-shells.svg",
+    "effects": { "projectile": { "size": 1.35 } }
+  },
+  {
+    "id": "iff-shield",
+    "name": "IFF Shield",
+    "description": "Your own projectiles cannot hurt you.",
+    "image": "images/iff-shield.svg",
+    "behaviors": [
+      { "module": "../../../js/cards/behaviors/ownerImmunity.js" }
+    ]
+  },
+  {
+    "id": "phase-rounds",
+    "name": "Phase Rounds",
+    "description": "Projectiles phase through walls, bullets, or enemies up to 2 times.",
+    "image": "images/phase-rounds.svg",
+    "behaviors": [
+      { "module": "../../../js/cards/behaviors/projectilePhasing.js", "options": { "count": 2 } }
+    ]
+  },
+  {
+    "id": "shotgun",
+    "name": "Shotgun",
+    "description": "Fire 2 additional projectiles in a fan.",
+    "image": "images/shotgun.svg",
+    "behaviors": [
+      {
+        "module": "../../../js/cards/behaviors/shotgun.js",
+        "options": { "additionalProjectiles": 2, "spread": 0.28 }
+      }
+    ]
+  },
+  {
+    "id": "smg",
+    "name": "SMG",
+    "description": "Automatic fire and +4 ammo, but each shot deals 55% less damage.",
+    "image": "images/smg.svg",
+    "effects": {
+      "tank": { "maxAmmoAdd": 4, "reloadSpeed": 0.65 },
+      "projectile": { "damage": 0.45 }
+    },
+    "behaviors": [
+      {
+        "module": "../../../js/cards/behaviors/automaticFire.js",
+        "options": { "fireInterval": 0.11 }
+      }
+    ]
+  },
+  {
+    "id": "reinforced-hull",
+    "name": "Reinforced Hull",
+    "description": "+25 maximum health.",
+    "image": "images/reinforced-hull.svg",
+    "effects": { "tank": { "maxHealthAdd": 25 } }
+  },
+  {
+    "id": "extended-magazine",
+    "name": "Extended Magazine",
+    "description": "+2 maximum ammo.",
+    "image": "images/extended-magazine.svg",
+    "effects": { "tank": { "maxAmmoAdd": 2 } }
+  },
+  {
+    "id": "quick-loader",
+    "name": "Quick Loader",
+    "description": "Reload each round 25% faster.",
+    "image": "images/quick-loader.svg",
+    "effects": { "tank": { "reloadSpeed": 0.75 } }
+  },
+  {
+    "id": "sniper",
+    "name": "Sniper",
+    "description": "Lose 1 maximum ammo, but gain 75% damage, 25% projectile speed, and 60% range.",
+    "image": "images/sniper.svg",
+    "effects": {
+      "tank": { "maxAmmoAdd": -1 },
+      "projectile": { "damage": 1.75, "speed": 1.25, "ttl": 1.6 }
+    }
+  },
+  {
+    "id": "ricochet",
+    "name": "Ricochet",
+    "description": "Projectiles bounce off walls up to 2 times.",
+    "image": "images/ricochet.svg",
+    "behaviors": [
+      { "module": "../../../js/cards/behaviors/bounce.js", "options": { "count": 2 } }
+    ]
+  },
+  {
+    "id": "wall-burst",
+    "name": "Wall Burst",
+    "description": "Wall impacts fire 3 projectiles backward in a fan.",
+    "image": "images/wall-burst.svg",
+    "behaviors": [
+      { "module": "../../../js/cards/behaviors/wallBurst.js", "options": { "count": 3, "spread": 0.65 } }
+    ]
+  },
+  {
+    "id": "mine-layer",
+    "name": "Mine Layer",
+    "description": "Drop a friendly proximity mine every 4 seconds.",
+    "image": "images/mine-layer.svg",
+    "behaviors": [
+      {
+        "module": "../../../js/cards/behaviors/mine.js",
+        "options": { "interval": 4, "triggerRadius": 0.065, "damage": 25, "radius": 0.045 }
+      }
+    ]
+  }
+]

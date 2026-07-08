@@ -30,8 +30,9 @@
     ],
     "offsetX": 0,
     "offsetY": 0,
-    "width": 0.045,
-    "height": 0.06
+    "rotateWithOwner": true,
+    "pixelWidth": 28,
+    "pixelHeight": 34
   },
   "spriteSheet": {
     "image": "../../images/tankspritesheet.png",

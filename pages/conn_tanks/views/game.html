@@ -8,6 +8,8 @@
 </head>
 <body>
   <canvas id="game-canvas" aria-label="Connected Tanks game"></canvas>
+  <div id="tank-ammo-layer" class="tank-ammo-layer" aria-hidden="true"></div>
+  <div id="screen-border" class="screen-border hidden" aria-hidden="true"></div>
 
   <main id="menu" class="overlay">
     <section class="card">
@@ -25,19 +27,41 @@
   <header id="hud" class="hidden">
     <button id="room-code" title="Copy invite link">Copy invite link</button>
     <span id="connection-status">Waiting for players</span>
-    <span id="lives-status">Lives: 3</span>
+    <span id="wins-status">Wins: 0/3</span>
     <span class="controls">WASD to drive</span>
+    <button id="end-round" class="end-round hidden" type="button">End round</button>
+    <button id="exit-game" class="exit-game" type="button">Exit</button>
     <a class="hud-link" href="../index.html">Views</a>
+    <button id="hud-toggle" class="hud-toggle" type="button" aria-label="Collapse header controls" aria-expanded="true">▲</button>
   </header>
 
   <section id="host-controls" class="match-panel hidden" aria-label="Host match controls">
     <strong>Level pool</strong>
     <div id="level-list" class="level-list"></div>
+    <label class="round-setting">
+      Wins required
+      <input id="wins-required" type="number" min="1" max="20" step="1" value="3">
+    </label>
     <button id="start-game">Start game</button>
-    <p id="host-status">Select one or more levels. One will be chosen randomly.</p>
+    <p id="host-status">Select one or more levels. Rounds will cycle through them.</p>
   </section>
 
   <div id="match-banner" class="match-banner hidden" role="status"></div>
+
+  <div id="loading-screen" class="loading-screen hidden" role="status" aria-live="polite">
+    <div class="loading-content">
+      <div id="loading-players" class="loading-players"></div>
+      <div class="loading-bar" aria-label="Loading level">
+        <span></span>
+      </div>
+    </div>
+  </div>
+
+  <section id="card-selection" class="card-selection hidden" aria-label="Choose a card">
+    <h2 class="card-selection-title">Choose a card</h2>
+    <div class="card-options"></div>
+    <div class="card-hand" aria-label="Your cards"></div>
+  </section>
 
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script type="module" src="../js/main.js"></script>

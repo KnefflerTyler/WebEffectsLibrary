@@ -7,7 +7,8 @@ export const ApiMessageType = Object.freeze({
 });
 
 export const PlayerActionType = Object.freeze({
-  FIRE: 'fire'
+  FIRE: 'fire',
+  CARD_SELECT: 'cardSelect'
 });
 // #endregion
 
@@ -62,10 +63,12 @@ export class PlayerActionModel extends SerializableModel {
     super();
     this.type = action.type;
     this.target = action.target ? PointModel.from(action.target) : null;
+    this.cardId = action.cardId ? String(action.cardId).slice(0, 64) : null;
   }
 
   get valid() {
-    return this.type === PlayerActionType.FIRE && Boolean(this.target);
+    return (this.type === PlayerActionType.FIRE && Boolean(this.target))
+      || (this.type === PlayerActionType.CARD_SELECT && Boolean(this.cardId));
   }
 
   static from(action) {

@@ -3,6 +3,7 @@ import { NETWORK_HZ } from './config.js';
 import { PlayerActionType } from './api/models.js';
 import { loadProjectileData } from './objects/Projectile/Projectile.js';
 import { loadTankData } from './objects/player/Tank.js';
+import { loadCardData } from './managers/CardManager.js';
 import GameManager from './managers/GameManager.js';
 import NetworkManager from './managers/NetworkManager.js';
 import KeyboardInput from './input/keyboardInput.js';
@@ -16,6 +17,7 @@ const canvas = document.getElementById('game-canvas');
 const renderer = await WebGLRenderer.create(canvas);
 await loadTankData();
 await loadProjectileData();
+await loadCardData();
 const world = new GameManager();
 await world.loadLevel('default.level.json');
 const availableLevels = await loadAvailableLevels();
@@ -27,6 +29,7 @@ const mouse = new MouseInput(canvas);
 let lastTime = performance.now();
 let lastNetworkSend = 0;
 let pendingNetworkMoveDt = 0;
+let lastLocalFire = -Infinity;
 // #endregion
 
 // #region Network
@@ -36,7 +39,10 @@ const network = new NetworkManager({
   getGameState: () => world.serializeGameState(),
 
   onReady: ({ id, roomCode, role, name }) => {
-    if (role === 'host') world.addHost(id, name);
+    if (role === 'host') {
+      world.addHost(id, name);
+      sessionStorage.setItem('connTanksHostLobby', JSON.stringify({ roomCode, name }));
+    }
     ui.showGame(roomCode, role);
     ui.updatePlayerCount(world.players.size);
     ui.updateMatchState(world.serializeGameState(), world.serialize(), network.localId);
@@ -52,7 +58,15 @@ const network = new NetworkManager({
     ui.updatePlayerCount(world.players.size);
   },
 
-  onLevelData: level => world.loadLevelData(level),
+  onLevelData: async level => {
+    ui.setLoading(true);
+    try {
+      await world.loadLevelData(level);
+    } catch (error) {
+      ui.setLoading(false);
+      throw error;
+    }
+  },
   onGameState: game => world.applyGameState(game),
   onSnapshot: players => {
     world.applySnapshot(players);
@@ -69,30 +83,48 @@ const network = new NetworkManager({
 
 // #region UI
 const ui = new GameUI({
-  onHost: name => network.host(name),
+  onHost: (name, roomCode) => network.host(name, roomCode),
   onJoin: (roomCode, name) => network.join(roomCode, name),
-  onStartGame: async levels => {
-    const level = levels[Math.floor(Math.random() * levels.length)];
-    ui.setHostStatus(`Loading ${level.name ?? level.id}…`);
+  onStartGame: async (levels, winsRequired) => {
+    ui.setHostStatus(`Loading ${levels[0].name ?? levels[0].id}…`);
     try {
-      await world.startGame(level);
+      await world.startGame(levels, winsRequired);
+      sessionStorage.removeItem('connTanksHostLobby');
       network.broadcastSnapshot();
       ui.updateMatchState(world.serializeGameState(), world.serialize(), network.localId);
     } catch (error) {
       ui.setHostStatus(error.message);
     }
+  },
+  onSelectCard: cardId => {
+    if (network.role === 'host') world.selectCard(network.localId, cardId);
+    else network.sendLocalAction({ type: PlayerActionType.CARD_SELECT, cardId });
+  },
+  onEndRound: () => world.endRoundWithoutWinner(),
+  onExit: () => {
+    sessionStorage.removeItem('connTanksHostLobby');
+    network.destroy();
+    location.replace(location.pathname);
   }
 });
 ui.setLevels(availableLevels);
 world.onGameStateChanged = () => {
+  if (network.role === 'host' && world.phase === 'lobby' && network.localId) {
+    const name = world.players.get(network.localId)?.name || 'Player';
+    sessionStorage.setItem('connTanksHostLobby', JSON.stringify({
+      roomCode: network.localId,
+      name
+    }));
+  }
   network.broadcastSnapshot();
   ui.updateMatchState(world.serializeGameState(), world.serialize(), network.localId);
 };
+window.addEventListener('pagehide', () => network.destroy());
 // #endregion
 
 // #region Debug
 const debugState = {
-  showAimLine: true,
+  showAimLine: false,
   showColliders: true
 };
 
@@ -114,23 +146,13 @@ function getDebugLines() {
 function getColliderDebugLines() {
   return world.sprites.flatMap(sprite => {
     if (!sprite.collider?.enabled) return [];
-    return createBoundsDebugLines(sprite.collider.getBounds());
+    const points = sprite.collider.getGeometry()?.points ?? [];
+    return points.map((point, index) => ({
+      start: point,
+      end: points[(index + 1) % points.length],
+      color: [0.2, 1, 0.35, 0.9]
+    }));
   });
-}
-
-function createBoundsDebugLines(bounds) {
-  const topLeft = { x: bounds.left, y: bounds.top };
-  const topRight = { x: bounds.right, y: bounds.top };
-  const bottomRight = { x: bounds.right, y: bounds.bottom };
-  const bottomLeft = { x: bounds.left, y: bounds.bottom };
-  const color = [0.2, 1, 0.35, 0.9];
-
-  return [
-    { start: topLeft, end: topRight, color },
-    { start: topRight, end: bottomRight, color },
-    { start: bottomRight, end: bottomLeft, color },
-    { start: bottomLeft, end: topLeft, color }
-  ];
 }
 
 window.connTanksDebug = {
@@ -152,9 +174,18 @@ function update(dt, now) {
   if (state) pendingNetworkMoveDt += dt;
   world.updateAim(network.localId, mouse.getPosition());
   const click = mouse.consumePrimaryClick();
-  if (click) {
-    world.fireProjectile(network.localId);
-    network.sendLocalAction({ type: PlayerActionType.FIRE, target: click });
+  const localPlayer = world.players.get(network.localId);
+  const weapon = localPlayer?.projectileModifiers ?? {};
+  const automaticReady = weapon.automatic
+    && mouse.isPrimaryDown
+    && now - lastLocalFire >= (weapon.fireInterval ?? 0.11) * 1000;
+  const fireTarget = click ?? (automaticReady ? mouse.getPosition() : null);
+  if (fireTarget) {
+    const projectiles = world.fireProjectile(network.localId);
+    if (projectiles) {
+      lastLocalFire = now;
+      network.sendLocalAction({ type: PlayerActionType.FIRE, target: fireTarget });
+    }
   }
   world.update(dt, { authoritative: network.role === 'host' });
 
@@ -182,6 +213,12 @@ function animate(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.05);
   lastTime = now;
   update(dt, now);
+  ui.updateAmmo([...world.players.values()].map(player => ({
+    ...player.serialize(),
+    x: player.x,
+    y: player.y
+  })));
+  ui.setScreenWrap(world.screenWrap);
   renderer.render(world.sprites, {
     shapes: world.levelShapes,
     screenWrap: world.screenWrap,

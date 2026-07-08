@@ -1,7 +1,7 @@
 {
   "id": "default",
   "name": "Default Test Level",
-  "screenWrap": false,
+  "screenWrap": true,
   "spawns": [
     {
       "id": "host",

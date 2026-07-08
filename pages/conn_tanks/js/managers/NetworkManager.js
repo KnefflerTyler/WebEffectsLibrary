@@ -51,9 +51,16 @@ export class NetworkManager {
   // #endregion
 
   // #region Session Setup
-  host(name) {
+  host(name, roomCode = null, retryCount = 0) {
     this.role = 'host';
-    this.peer = this.createPeer();
+    this.peer?.destroy();
+    this.peer = this.createPeer(roomCode, error => {
+      if (roomCode && error?.type === 'unavailable-id' && retryCount < 6) {
+        setTimeout(() => this.host(name, roomCode, retryCount + 1), 500);
+        return;
+      }
+      this.handlers.onError(error);
+    });
     this.peer.on('open', id => {
       this.localId = id;
       this.handlers.onReady({ id, roomCode: id, role: this.role, name });
@@ -83,9 +90,9 @@ export class NetworkManager {
   // #endregion
 
   // #region Peer Connections
-  createPeer() {
-    const peer = new this.PeerClass();
-    peer.on('error', error => this.handlers.onError(error));
+  createPeer(id = null, onError = error => this.handlers.onError(error)) {
+    const peer = id ? new this.PeerClass(id) : new this.PeerClass();
+    peer.on('error', onError);
     return peer;
   }
 

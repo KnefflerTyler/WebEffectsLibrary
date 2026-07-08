@@ -2,7 +2,9 @@
 import { PLAYER_BOUNDS, PLAYER_COLORS } from '../config.js';
 import LevelManager from '../managers/LevelManager.js';
 import Player from '../objects/player/Player.js';
-import Projectile from '../objects/Projectile/Projectile.js';
+import Projectile, { getProjectileData } from '../objects/Projectile/Projectile.js';
+import Explosion from '../objects/Projectile/Explosion.js';
+import Mine from '../objects/Projectile/Mine.js';
 // #endregion
 
 // #region Constants and Helpers
@@ -19,6 +21,9 @@ export class GameWorld {
     this.levelManager = levelManager;
     this.players = new Map();
     this.projectiles = [];
+    this.explosions = [];
+    this.mines = [];
+    this.behaviorStates = new Map();
   }
   // #endregion
 
@@ -28,11 +33,17 @@ export class GameWorld {
       ...this.levelManager.sprites,
       ...[...this.players.values()].filter(player => player.alive).flatMap(player => player.sprites),
       ...this.projectiles
+      , ...this.mines
     ];
   }
 
   get levelShapes() {
-    return this.levelManager.colliders.map(collider => collider.getRenderShape());
+    return [
+      ...this.levelManager.colliders.map(collider => collider.getRenderShape()),
+      ...this.explosions.flatMap(explosion =>
+        explosion.getRenderShapes({ wrap: this.screenWrap })
+      )
+    ];
   }
 
   get screenWrap() {
@@ -73,7 +84,7 @@ export class GameWorld {
     this.levelManager.applyObjectState(states);
   }
 
-  resetPlayers(lives = 3) {
+  resetPlayers(lives = 100) {
     let index = 0;
     for (const player of this.players.values()) {
       player.resetForMatch(this.getSpawnLocation(index) ?? fallbackSpawn(index), lives);
@@ -90,6 +101,10 @@ export class GameWorld {
   clearProjectiles() {
     for (const projectile of this.projectiles) projectile.removeCollider?.();
     this.projectiles = [];
+    this.explosions = [];
+    for (const mine of this.mines) mine.removeCollider?.();
+    this.mines = [];
+    this.behaviorStates.clear();
   }
   // #endregion
 
@@ -187,15 +202,37 @@ export class GameWorld {
     const player = this.players.get(id);
     if (!player?.alive) return null;
 
-    const projectile = new Projectile({
-      id: `${id}:projectile:${performance.now()}`,
-      ownerId: id,
-      x: player.x,
-      y: player.y,
-      rotation: player.aimRotation
+    const projectileData = getProjectileData();
+    const modifiers = player.projectileModifiers ?? {};
+    const reloadDuration = projectileData.reload.default * projectileData.reload.scaler;
+    if (!player.consumeAmmo(reloadDuration)) return null;
+    const projectileCount = 1 + Math.max(0, Math.floor(modifiers.additionalProjectiles ?? 0));
+    const spread = Math.max(0, Number(modifiers.spread) || 0);
+    const firedAt = performance.now();
+    const projectiles = Array.from({ length: projectileCount }, (_, index) => {
+      const spreadPosition = projectileCount === 1 ? 0 : index / (projectileCount - 1) - 0.5;
+      return new Projectile({
+        id: `${id}:projectile:${firedAt}:${index}`,
+        ownerId: id,
+        volleyId: `${id}:${firedAt}`,
+        x: player.x,
+        y: player.y,
+        rotation: player.aimRotation + spreadPosition * spread,
+        speed: projectileData.speed.default * (modifiers.speed ?? 1),
+        size: projectileData.size.default * (modifiers.size ?? 1),
+        ttl: projectileData.ttl.default * (modifiers.ttl ?? 1),
+        damage: projectileData.damage * (modifiers.damage ?? 1),
+        explosion: {
+          ...projectileData.explosion,
+          damage: projectileData.explosion.damage * (modifiers.damage ?? 1)
+        },
+        ownerImmune: modifiers.ownerImmune ?? false,
+        collideProjectiles: modifiers.collideProjectiles ?? true
+        , cardBehaviors: player.cardBehaviors ?? []
+      });
     });
-    this.projectiles.push(projectile);
-    return projectile;
+    this.projectiles.push(...projectiles);
+    return projectiles;
   }
 
   verifyPlayerAction(id, action) {
@@ -206,29 +243,121 @@ export class GameWorld {
   // #endregion
 
   // #region Update and Serialization
-  update(dt, { authoritative = false } = {}) {
+  update(dt, { authoritative = false, behaviorsActive = true } = {}) {
     this.levelManager.update(dt);
     for (const player of this.players.values()) player.update(dt);
-    for (const projectile of this.projectiles) projectile.update(dt);
+    for (const projectile of this.projectiles) {
+      projectile.update(dt, { wrap: this.screenWrap });
+      if (projectile.hitLevelCollider) this.runProjectileLevelBehaviors(projectile);
+    }
+    if (behaviorsActive) this.updatePlayerBehaviors(dt);
+    for (const mine of this.mines) mine.update(dt, this.players, { wrap: this.screenWrap });
+    for (const explosion of this.explosions) {
+      explosion.update(dt, this.players, {
+        authoritative,
+        wrap: this.screenWrap
+      });
+    }
     if (authoritative) {
       for (const projectile of this.projectiles) {
         if (projectile.hitLevelObjectId) {
-          this.levelManager.damageObject(projectile.hitLevelObjectId, 1);
+          this.levelManager.damageObject(projectile.hitLevelObjectId, projectile.levelDamage);
         }
         if (!projectile.hitPlayerId) continue;
         const player = this.players.get(projectile.hitPlayerId);
-        if (player?.loseLife() && player.alive) this.respawnPlayer(player);
+        player?.loseLife(projectile.damage);
       }
     }
     const expired = this.projectiles.filter(projectile => projectile.expired);
-    for (const projectile of expired) projectile.removeCollider?.();
+    for (const projectile of expired) {
+      projectile.removeCollider?.();
+      this.explosions.push(new Explosion({
+        x: projectile.x,
+        y: projectile.y,
+        ...projectile.explosion
+      }));
+    }
     this.projectiles = this.projectiles.filter(projectile => !projectile.expired);
+    this.explosions = this.explosions.filter(explosion => !explosion.expired);
+    const detonatedMines = this.mines.filter(mine => mine.detonated);
+    for (const mine of detonatedMines) {
+      mine.removeCollider?.();
+      this.explosions.push(new Explosion({
+        x: mine.x,
+        y: mine.y,
+        ...mine.explosion,
+        ignoredPlayerIds: [mine.ownerId]
+      }));
+    }
+    this.mines = this.mines.filter(mine => !mine.detonated);
+  }
+
+  runProjectileLevelBehaviors(projectile) {
+    projectile.cardBehaviors.forEach((behavior, index) => {
+      behavior.module.onProjectileLevelHit?.({
+        world: this,
+        projectile,
+        collider: projectile.hitLevelCollider,
+        options: behavior.options,
+        state: getBehaviorState(projectile.behaviorState, `${behavior.id}:${index}`),
+        spawnFan: options => this.spawnProjectileFan(projectile, options)
+      });
+    });
+  }
+
+  updatePlayerBehaviors(dt) {
+    for (const player of this.players.values()) {
+      player.cardBehaviors?.forEach((behavior, index) => {
+        const key = `${player.id}:${behavior.id}:${index}`;
+        behavior.module.updatePlayer?.({
+          world: this,
+          player,
+          dt,
+          options: behavior.options,
+          state: getBehaviorState(this.behaviorStates, key),
+          spawnMine: options => this.spawnMine(player, options)
+        });
+      });
+    }
+  }
+
+  spawnProjectileFan(source, { count = 3, spread = 0.5, rotation = source.rotation + Math.PI } = {}) {
+    const total = Math.max(1, Math.floor(count));
+    const volleyId = `${source.id}:burst:${performance.now()}`;
+    const spawned = Array.from({ length: total }, (_, index) => new Projectile({
+      ownerId: source.ownerId,
+      volleyId,
+      x: source.x,
+      y: source.y,
+      rotation: rotation + (total === 1 ? 0 : (index / (total - 1) - 0.5) * spread),
+      speed: source.speed / getProjectileData().speed.scaler,
+      size: source.size,
+      ttl: Math.max(0.1, source.ttl - source.age),
+      damage: source.damage,
+      explosion: source.explosion,
+      ownerImmune: source.ownerImmune,
+      collideProjectiles: source.collideProjectiles,
+      cardBehaviors: []
+    }));
+    this.projectiles.push(...spawned);
+    return spawned;
+  }
+
+  spawnMine(player, options = {}) {
+    const mine = new Mine({ ownerId: player.id, x: player.x, y: player.y, ...options });
+    this.mines.push(mine);
+    return mine;
   }
 
   serialize() {
     return [...this.players.values()].map(player => player.serialize());
   }
   // #endregion
+}
+
+function getBehaviorState(states, key) {
+  if (!states.has(key)) states.set(key, {});
+  return states.get(key);
 }
 
 function fallbackSpawn(index) {

@@ -73,7 +73,10 @@ export class Collider {
       return false;
     }
 
-    return geometriesIntersect(this.getGeometry(), other.getGeometry());
+    if (!geometriesIntersect(this.getGeometry(), other.getGeometry())) return false;
+    if (this.owner?.shouldIgnoreCollision?.(other)
+      || other.owner?.shouldIgnoreCollision?.(this)) return false;
+    return true;
   }
 
   getGeometry() {

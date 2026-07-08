@@ -44,7 +44,7 @@ export class SnapshotRequest extends ApiRequest {
   get valid() {
     return Array.isArray(this.players)
       && this.game
-      && ['lobby', 'playing', 'gameOver'].includes(this.game.phase)
+      && ['lobby', 'loading', 'playing', 'gameOver', 'cardSelection'].includes(this.game.phase)
       && Number.isInteger(this.game.levelRevision)
       && this.game.levelRevision >= 0;
   }

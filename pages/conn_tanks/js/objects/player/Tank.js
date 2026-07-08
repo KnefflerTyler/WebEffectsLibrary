@@ -75,6 +75,9 @@ function normalizeColliderData(collider) {
       : null,
     offsetX: collider.offsetX ?? 0,
     offsetY: collider.offsetY ?? 0,
+    rotateWithOwner: collider.rotateWithOwner ?? false,
+    pixelWidth: collider.pixelWidth ?? null,
+    pixelHeight: collider.pixelHeight ?? null,
     width: collider.width ?? 0.045,
     height: collider.height ?? 0.06
   };
@@ -120,6 +123,11 @@ export class Tank {
     this.move_speed = options.move_speed ?? data.speed.default;
     this.rotation_speed = options.rotation_speed ?? data.rotation.default;
     this.aim_speed = options.aim_speed ?? data.aim.default;
+    this.baseStats = {
+      move_speed: this.move_speed,
+      rotation_speed: this.rotation_speed,
+      aim_speed: this.aim_speed
+    };
 
     const spriteHeight = this.size * data.size.scaler;
     const spriteWidth = spriteHeight * (spriteSheet.frameWidth / spriteSheet.frameHeight);
@@ -178,6 +186,12 @@ export class Tank {
 
   get sprites() {
     return [this.bottomSprite, this.topSprite];
+  }
+
+  applyModifiers({ moveSpeed = 1, rotationSpeed = 1, aimSpeed = 1 } = {}) {
+    this.move_speed = this.baseStats.move_speed * moveSpeed;
+    this.rotation_speed = this.baseStats.rotation_speed * rotationSpeed;
+    this.aim_speed = this.baseStats.aim_speed * aimSpeed;
   }
 
   syncSprites() {

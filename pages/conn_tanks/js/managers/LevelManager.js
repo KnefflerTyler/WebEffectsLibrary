@@ -20,7 +20,7 @@ export class LevelManager {
   get sprites() { return this.currentLevel?.sprites ?? []; }
   get colliders() { return this.currentLevel?.colliders ?? []; }
   get spawns() { return this.currentLevel?.spawns ?? []; }
-  get screenWrap() { return this.currentLevel.screenWrap; }
+  get screenWrap() { return this.currentLevel?.screenWrap ?? false; }
   damageObject(id, amount) { return this.currentLevel?.damageObject(id, amount) ?? false; }
   serializeObjectState() { return this.currentLevel?.serializeObjectState() ?? []; }
   applyObjectState(states) { this.currentLevel?.applyObjectState(states); }

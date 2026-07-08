@@ -1,25 +1,43 @@
+import CardSelectionView from './cardSelectionView.js';
+import AmmoView from './ammoView.js';
+
 export class GameUI {
-  constructor({ onHost, onJoin, onStartGame } = {}) {
+  constructor({ onHost, onJoin, onStartGame, onSelectCard, onEndRound, onExit } = {}) {
     this.elements = {
       menu: document.getElementById('menu'),
       hud: document.getElementById('hud'),
+      hudToggle: document.getElementById('hud-toggle'),
+      screenBorder: document.getElementById('screen-border'),
       menuStatus: document.getElementById('menu-status'),
       roomCode: document.getElementById('room-code'),
       connectionStatus: document.getElementById('connection-status'),
       playerName: document.getElementById('player-name'),
-      livesStatus: document.getElementById('lives-status'),
+      winsStatus: document.getElementById('wins-status'),
+      endRound: document.getElementById('end-round'),
       hostControls: document.getElementById('host-controls'),
       levelList: document.getElementById('level-list'),
+      winsRequired: document.getElementById('wins-required'),
       startGame: document.getElementById('start-game'),
       hostStatus: document.getElementById('host-status'),
-      matchBanner: document.getElementById('match-banner')
+      matchBanner: document.getElementById('match-banner'),
+      loadingScreen: document.getElementById('loading-screen'),
+      loadingPlayers: document.getElementById('loading-players')
     };
+    this.cardSelection = new CardSelectionView(
+      document.getElementById('card-selection'),
+      cardId => onSelectCard?.(cardId)
+    );
+    this.ammoView = new AmmoView(document.getElementById('tank-ammo-layer'));
 
     document.getElementById('host-button').addEventListener('click', () => {
       this.setMenuStatus('Creating room…');
-      onHost?.(this.playerName);
+      document.getElementById('host-button').disabled = true;
+      onHost?.(this.playerName, null);
     });
     this.elements.roomCode.addEventListener('click', () => this.copyRoomLink());
+    this.elements.hudToggle.addEventListener('click', () => this.toggleHud());
+    this.elements.endRound.addEventListener('click', () => onEndRound?.());
+    document.getElementById('exit-game').addEventListener('click', () => onExit?.());
     this.elements.startGame.addEventListener('click', async () => {
       const levels = this.selectedLevels;
       if (!levels.length) {
@@ -28,7 +46,7 @@ export class GameUI {
       }
       this.elements.startGame.disabled = true;
       try {
-        await onStartGame?.(levels);
+        await onStartGame?.(levels, this.requiredWins);
       } finally {
         this.elements.startGame.disabled = false;
       }
@@ -40,6 +58,14 @@ export class GameUI {
       this.elements.playerName.disabled = true;
       this.setMenuStatus('Connecting to host…');
       onJoin?.(inviteCode, this.playerName);
+    } else {
+      const savedHost = readSavedHost();
+      if (savedHost) {
+        this.elements.playerName.value = savedHost.name;
+        document.getElementById('host-button').disabled = true;
+        this.setMenuStatus('Restoring lobby…');
+        onHost?.(savedHost.name, savedHost.roomCode);
+      }
     }
   }
 
@@ -76,19 +102,30 @@ export class GameUI {
     return (this.levels ?? []).filter(level => selected.has(level.id));
   }
 
+  get requiredWins() {
+    return Math.max(1, Math.min(20, Math.floor(Number(this.elements.winsRequired.value) || 3)));
+  }
+
   updateMatchState(game, players = [], localId = null) {
     const phase = game?.phase ?? 'lobby';
+    this.cardSelection.update(game, localId);
+    this.updateLoadingPlayers(game, players);
+    this.setLoading(phase === 'loading' || phase === 'gameOver');
+    this.elements.endRound.classList.toggle('hidden', this.role !== 'host' || phase !== 'playing');
     this.elements.hostControls.classList.toggle('hidden', this.role !== 'host' || phase !== 'lobby');
     if (phase === 'lobby') {
-      this.elements.hostStatus.textContent = 'Select one or more levels. One will be chosen randomly.';
+      this.elements.hostStatus.textContent = 'Select one or more levels. Rounds will cycle through them.';
     }
-    const localPlayer = players.find(player => player.id === localId);
-    this.elements.livesStatus.textContent = `Lives: ${localPlayer?.lives ?? 3}`;
+    const wins = game?.roundWins?.[localId] ?? 0;
+    this.elements.winsStatus.textContent = `Wins: ${wins}/${game?.winsRequired ?? 3}`;
     if (phase === 'gameOver') {
       const winner = players.find(player => player.id === game.winnerId);
-      this.elements.matchBanner.textContent = winner
-        ? `${winner.name || 'Player'} wins!`
-        : 'Game over';
+      const winnerName = winner?.name || 'Player';
+      this.elements.matchBanner.textContent = game.matchWinnerId
+        ? `${winnerName} wins the match!`
+        : winner
+          ? `${winnerName} wins round ${game.roundNumber ?? 1}!`
+          : `Round ${game.roundNumber ?? 1} draw`;
       this.elements.matchBanner.classList.remove('hidden');
     } else {
       this.elements.matchBanner.classList.add('hidden');
@@ -102,6 +139,58 @@ export class GameUI {
 
   setHostStatus(message) {
     this.elements.hostStatus.textContent = message;
+  }
+
+  setLoading(loading) {
+    this.elements.loadingScreen.classList.toggle('hidden', !loading);
+  }
+
+  setScreenWrap(screenWrap) {
+    this.elements.screenBorder.classList.toggle('hidden', Boolean(screenWrap));
+  }
+
+  updateAmmo(players) {
+    this.ammoView.update(players);
+  }
+
+  toggleHud() {
+    const collapsed = this.elements.hud.classList.toggle('collapsed');
+    this.elements.hudToggle.textContent = collapsed ? '▼' : '▲';
+    this.elements.hudToggle.setAttribute('aria-expanded', String(!collapsed));
+    this.elements.hudToggle.setAttribute(
+      'aria-label',
+      collapsed ? 'Expand header controls' : 'Collapse header controls'
+    );
+  }
+
+  updateLoadingPlayers(game = {}, players = []) {
+    const winsRequired = Math.max(1, Math.floor(Number(game.winsRequired) || 3));
+    const scores = game.roundWins ?? {};
+    const rows = players.map(player => {
+      const wins = Math.max(0, Math.floor(Number(scores[player.id]) || 0));
+      const row = document.createElement('div');
+      row.className = 'loading-player';
+      if (player.id === game.matchWinnerId) row.classList.add('winner');
+
+      const icon = document.createElement('span');
+      icon.className = 'loading-player-icon';
+      icon.style.setProperty('--player-color', player.color || '#ffffff');
+
+      const dots = document.createElement('span');
+      dots.className = 'round-dots';
+      for (let index = 0; index < winsRequired; index += 1) {
+        const dot = document.createElement('span');
+        dot.className = `round-dot${index < wins ? ' filled' : ''}`;
+        dots.append(dot);
+      }
+
+      const name = document.createElement('span');
+      name.className = 'loading-player-name';
+      name.textContent = player.name || 'Player';
+      row.append(icon, dots, name);
+      return row;
+    });
+    this.elements.loadingPlayers.replaceChildren(...rows);
   }
 
   showDisconnected() {
@@ -127,6 +216,15 @@ export class GameUI {
     } catch {
       this.elements.roomCode.textContent = 'Copy failed';
     }
+  }
+}
+
+function readSavedHost() {
+  try {
+    const value = JSON.parse(sessionStorage.getItem('connTanksHostLobby'));
+    return value?.roomCode && value?.name ? value : null;
+  } catch {
+    return null;
   }
 }
 
