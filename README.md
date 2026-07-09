@@ -71,7 +71,7 @@ https://tylerkneffler.github.io/WebEffectsLibrary/
 | [PeerJS Chat](https://tylerkneffler.github.io/WebEffectsLibrary/conn_peerjs_chat/)            | Browser chat demo using PeerJS signaling              |
 | [Connection Stress Test](https://tylerkneffler.github.io/WebEffectsLibrary/conn_stress_test/) | Network stress testing utilities and connection demos |
 | [Tic Tac Toe - P2P](https://tylerkneffler.github.io/WebEffectsLibrary/conn_ticktacktoe/)      | Peer-to-peer multiplayer Tic-Tac-Toe                  |
-
+| [Tanks ](https://tylerkneffler.github.io/WebEffectsLibrary/conn_tanks/)      | Peer-to-peer multiplayer Tanks     Game             |
 ## Technologies Used
 
 * JavaScript
