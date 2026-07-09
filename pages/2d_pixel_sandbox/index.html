@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pixel Sandbox</title>
+  <script src="../../shared/preview.js"></script>
+  <script defer src="../../shared/back-button.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="app">
+    <section class="stage" aria-label="Pixel world">
+      <div class="world-frame">
+        <canvas id="world" width="220" height="136" aria-label="Pixel sandbox simulation"></canvas>
+      </div>
+    </section>
+
+    <aside class="toolbar" aria-label="Pixel sandbox controls">
+      <div class="title">
+        <p class="eyebrow">Cellular sim</p>
+        <h1>Pixel Sandbox</h1>
+      </div>
+
+      <section class="tool-group" aria-label="Materials">
+        <div class="group-label">Material</div>
+        <div class="materials">
+          <button class="material active" type="button" data-material="water"><span class="swatch water"></span>Water</button>
+          <button class="material" type="button" data-material="dirt"><span class="swatch dirt"></span>Dirt</button>
+          <button class="material" type="button" data-material="wood"><span class="swatch wood"></span>Wood</button>
+          <button class="material" type="button" data-material="seed"><span class="swatch seed"></span>Seed</button>
+          <button class="material" type="button" data-material="root"><span class="swatch root"></span>Root</button>
+          <button class="material" type="button" data-material="leaf"><span class="swatch leaf"></span>Leaf</button>
+          <button class="material" type="button" data-material="fire"><span class="swatch fire"></span>Fire</button>
+          <button class="material" type="button" data-material="steam"><span class="swatch steam"></span>Steam</button>
+          <button class="material" type="button" data-material="wetWood"><span class="swatch wet-wood"></span>Wet wood</button>
+          <button class="material" type="button" data-material="mud"><span class="swatch mud"></span>Mud</button>
+          <button class="material" type="button" data-material="ash"><span class="swatch ash"></span>Ash</button>
+          <button class="material" type="button" data-material="air"><span class="swatch air"></span>Air</button>
+          <button class="material" type="button" data-material="oxygen"><span class="swatch oxygen"></span>Oxygen</button>
+          <button class="material" type="button" data-material="nitrogen"><span class="swatch nitrogen"></span>Nitrogen</button>
+          <button class="material" type="button" data-material="space"><span class="swatch space"></span>Space</button>
+        </div>
+      </section>
+
+      <section class="tool-group" aria-label="Brush">
+        <div class="group-label">Brush</div>
+        <label class="range-row">
+          Size
+          <output id="brush-value">6</output>
+          <input id="brush-size" type="range" min="1" max="18" value="6">
+        </label>
+        <label class="range-row">
+          Speed
+          <output id="speed-value">4</output>
+          <input id="sim-speed" type="range" min="1" max="10" value="4">
+        </label>
+        <div class="brush-options">
+          <label class="check-row"><input id="brush-static" type="checkbox"> Static</label>
+          <label class="check-row"><input id="brush-no-gravity" type="checkbox"> No gravity</label>
+        </div>
+      </section>
+
+      <section class="tool-group" aria-label="Actions">
+        <div class="group-label">World</div>
+        <div class="actions">
+          <button id="pause" type="button">Pause</button>
+          <button id="step" type="button">Step</button>
+          <button id="reset" type="button">Reset</button>
+          <button id="clear" type="button">Clear</button>
+        </div>
+      </section>
+
+      <section class="stats" aria-label="Simulation stats">
+        <div class="stat-line"><span>Pixels</span><strong id="pixel-count">0</strong></div>
+        <div class="stat-line"><span>Fire</span><strong id="fire-count">0</strong></div>
+        <div class="stat-line"><span>Water</span><strong id="water-count">0</strong></div>
+      </section>
+    </aside>
+  </main>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

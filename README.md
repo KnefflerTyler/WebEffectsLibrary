@@ -32,6 +32,7 @@ https://tylerkneffler.github.io/WebEffectsLibrary/index.html
 | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | [2D Particles](https://tylerkneffler.github.io/WebEffectsLibrary/pages/2d_particles/index.html)              | GPU fireworks particle system using GLSL vertex and fragment shaders |
 | [2D Collisions](https://tylerkneffler.github.io/WebEffectsLibrary/pages/2d_collisions/index.html)            | Real-time 2D physics collision simulation                            |
+| [Pixel Sandbox](https://tylerkneffler.github.io/WebEffectsLibrary/pages/2d_pixel_sandbox/index.html)         | Cellular pixel world with water, dirt, wood, fire, and smoke         |
 | [Cloth Simulation](https://tylerkneffler.github.io/WebEffectsLibrary/pages/sim_cloth/index.html)             | Interactive cloth physics simulation                                 |
 | [Fluid Simulation - 2D](https://tylerkneffler.github.io/WebEffectsLibrary/pages/sim_fluid/index.html)        | GPU-based 2D fluid simulation                                        |
 | [Fluid Simulation - 3D](https://tylerkneffler.github.io/WebEffectsLibrary/pages/sim_fluid_3d/index.html)     | 3D fluid simulation with volumetric rendering                        |

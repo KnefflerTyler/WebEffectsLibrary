@@ -1,0 +1,52 @@
+{
+  "name": "Default Pixel Sandbox",
+  "version": 1,
+  "width": 660,
+  "height": 408,
+  "encoding": "rows-rle",
+  "rows": [
+    {
+      "repeat": 120,
+      "runs": [["air", 660]]
+    },
+    {
+      "repeat": 18,
+      "runs": [["air", 66], ["dirt", 36], ["air", 144], ["dirt", 48], ["air", 366]]
+    },
+    {
+      "repeat": 30,
+      "runs": [["air", 660]]
+    },
+    {
+      "repeat": 15,
+      "runs": [["air", 438], ["smoke", 24, 48], ["air", 198]]
+    },
+    {
+      "repeat": 30,
+      "runs": [["air", 660]]
+    },
+    {
+      "repeat": 12,
+      "runs": [["air", 414], ["fire", 36, 36], ["air", 210]]
+    },
+    {
+      "repeat": 54,
+      "runs": [["air", 378], ["wood", 168], ["air", 114]]
+    },
+    {
+      "repeat": 27,
+      "runs": [["air", 48], ["water", 180], ["air", 150], ["wood", 168], ["air", 114]]
+    },
+    {
+      "runs": [["dirt", 30], ["water", 228], ["seed", 1], ["dirt", 101], ["wood", 168], ["dirt", 132]]
+    },
+    {
+      "repeat": 32,
+      "runs": [["dirt", 30], ["water", 228], ["dirt", 102], ["wood", 168], ["dirt", 132]]
+    },
+    {
+      "repeat": 69,
+      "runs": [["dirt", 660]]
+    }
+  ]
+}

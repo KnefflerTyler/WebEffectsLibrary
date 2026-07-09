@@ -1,0 +1,50 @@
+import { AirPixel } from './pixels/AirPixel.js';
+import { AshPixel } from './pixels/AshPixel.js';
+import { DirtPixel } from './pixels/DirtPixel.js';
+import { FirePixel } from './pixels/FirePixel.js';
+import { LeafPixel } from './pixels/LeafPixel.js';
+import { MudPixel } from './pixels/MudPixel.js';
+import { NitrogenPixel } from './pixels/NitrogenPixel.js';
+import { OxygenPixel } from './pixels/OxygenPixel.js';
+import { RootPixel } from './pixels/RootPixel.js';
+import { SpacePixel } from './pixels/SpacePixel.js';
+import { TreeSeedPixel } from './pixels/TreeSeedPixel.js';
+import { SmokePixel } from './pixels/SmokePixel.js';
+import { SteamPixel } from './pixels/SteamPixel.js';
+import { WaterPixel } from './pixels/WaterPixel.js';
+import { WetWoodPixel } from './pixels/WetWoodPixel.js';
+import { WoodPixel } from './pixels/WoodPixel.js';
+
+export { MATERIAL } from './Pixel.js';
+
+const PIXEL_LIST = [
+  new SpacePixel(),
+  new WaterPixel(),
+  new WoodPixel(),
+  new DirtPixel(),
+  new FirePixel(),
+  new SmokePixel(),
+  new SteamPixel(),
+  new WetWoodPixel(),
+  new MudPixel(),
+  new AshPixel(),
+  new TreeSeedPixel(),
+  new LeafPixel(),
+  new RootPixel(),
+  new OxygenPixel(),
+  new AirPixel(),
+  new NitrogenPixel(),
+];
+
+export const PIXELS = Object.freeze(PIXEL_LIST);
+
+export const PIXEL_BY_ID = Object.freeze(PIXEL_LIST.reduce((pixels, pixel) => {
+  pixels[pixel.id] = pixel;
+  return pixels;
+}, []));
+
+export const MATERIAL_BY_NAME = Object.freeze(PIXEL_LIST.reduce((materials, pixel) => {
+  materials[pixel.name] = pixel.id;
+  if (pixel.name === 'air') materials.atmosphere = pixel.id;
+  return materials;
+}, {}));
