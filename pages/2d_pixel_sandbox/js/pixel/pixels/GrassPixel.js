@@ -12,6 +12,7 @@ export class GrassPixel extends Pixel {
       displaceable: true,
       acceptsDisplacementFrom: new Set([MATERIAL.WATER, MATERIAL.FIRE, MATERIAL.SMOKE, MATERIAL.STEAM, MATERIAL.ASH]),
       flammability: 0.028,
+      igniteTemperature: 250,
       burnLifeMin: 28,
       burnLifeMax: 54,
       burnoutChance: 0.012,

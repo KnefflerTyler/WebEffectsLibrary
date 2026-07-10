@@ -10,6 +10,10 @@
       "options": { "layer": "backdrop" }
     }
   ],
+  "templates": [
+    { "file": "templates/lake-shore-detail.json", "x": 8, "y": 137 },
+    { "file": "templates/meadow-detail.json", "x": 132, "y": 137 }
+  ],
   "layers": {
     "foreground": [
       { "repeat": 60, "runs": [["air", 330]] },
@@ -18,11 +22,16 @@
       { "repeat": 8, "runs": [["air", 219], ["smoke", 12, 48], ["air", 99]] },
       { "repeat": 15, "runs": [["air", 330]] },
       { "repeat": 6, "runs": [["air", 207], ["fire", 18, 36], ["air", 105]] },
-      { "repeat": 27, "runs": [["air", 189], ["wood", 84], ["air", 57]] },
-      { "repeat": 13, "runs": [["air", 24], ["water", 90], ["air", 75], ["wood", 84], ["air", 57]] },
-      { "runs": [["dirt", 15], ["water", 114], ["seed", 1], ["grass", 12], ["dirt", 38], ["wood", 84], ["dirt", 66]] },
-      { "repeat": 16, "runs": [["dirt", 15], ["water", 114], ["dirt", 51], ["wood", 84], ["dirt", 66]] },
-      { "repeat": 34, "runs": [["dirt", 330]] }
+      { "repeat": 27, "runs": [["air", 330]] },
+      { "repeat": 13, "runs": [["air", 24], ["water", 90], ["air", 216]] },
+      { "runs": [["dirt", 15], ["water", 114], ["seed", 1], ["grass", 12], ["dirt", 188]] },
+      { "repeat": 16, "runs": [["dirt", 15], ["water", 114], ["dirt", 201]] },
+      { "repeat": 34, "runs": [["dirt", 330]] },
+      { "shape": "ellipse", "material": "rock", "x": 145, "y": 154, "radiusX": 4, "radiusY": 2 },
+      { "shape": "circle", "material": "rock", "x": 119, "y": 153, "radius": 2 },
+      { "shape": "square", "material": "flower", "x": 154, "y": 151, "width": 2, "height": 2 },
+      { "shape": "circle", "material": "flower", "x": 167, "y": 150, "radius": 1 },
+      { "shape": "ellipse", "material": "grass", "x": 191, "y": 151, "radiusX": 8, "radiusY": 2 }
     ],
     "background": [
       { "repeat": 60, "runs": [["air", 330]] },
@@ -35,7 +44,10 @@
       { "repeat": 13, "runs": [["air", 24], ["water", 90], ["air", 75], ["wood", 84], ["air", 57]] },
       { "runs": [["dirt", 15], ["water", 114], ["seed", 1], ["grass", 12], ["dirt", 38], ["wood", 84], ["dirt", 66]] },
       { "repeat": 16, "runs": [["dirt", 15], ["water", 114], ["dirt", 51], ["wood", 84], ["dirt", 66]] },
-      { "repeat": 34, "runs": [["dirt", 330]] }
+      { "repeat": 34, "runs": [["dirt", 330]] },
+      { "shape": "ellipse", "material": "rock", "x": 220, "y": 143, "radiusX": 11, "radiusY": 4 },
+      { "shape": "circle", "material": "leaf", "x": 190, "y": 137, "radius": 8 },
+      { "shape": "circle", "material": "leaf", "x": 244, "y": 132, "radius": 9 }
     ]
   }
 }

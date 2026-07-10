@@ -9,10 +9,12 @@ export class ClothPixel extends Pixel {
       usesCustomColor: true,
       weight: 32,
       flammability: 0.045,
+      igniteTemperature: 230,
       burnLifeMin: 42,
       burnLifeMax: 76,
       burnoutChance: 0.009,
       burnsTo: MATERIAL.ASH,
+      burnsToChance: 0.25,
       scorchable: true,
       scorchTo: MATERIAL.ASH,
     });

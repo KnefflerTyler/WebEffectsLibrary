@@ -84,22 +84,28 @@ canvas {
 .toolbar-toggle {
   position: fixed;
   z-index: 31;
-  top: 16px;
-  right: 16px;
+  top: 50%;
+  right: 0;
   width: 40px;
   min-height: 40px;
   padding: 0;
+  border-radius: 10px 0 0 10px;
   border-color: rgba(116, 215, 170, 0.46);
   background: rgba(9, 12, 14, 0.88);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(12px);
   font-size: 22px;
   line-height: 1;
+  transform: translateY(-50%);
   transition: right 0.22s ease, border-color 0.15s, background 0.15s, transform 0.15s;
 }
 
 .toolbar-toggle[aria-expanded="true"] {
-  right: calc(min(320px, calc(100vw - 24px)) + 18px);
+  right: calc(min(320px, calc(100vw - 24px)) + 12px);
+}
+
+.toolbar-toggle:active {
+  transform: translateY(calc(-50% + 1px));
 }
 
 .title {
@@ -201,12 +207,14 @@ button:active {
 .seed { background: #bd9144; }
 .root { background: #745230; }
 .leaf { background: #41964e; }
+.flower { background: #e868b2; }
 .dirt { background: #8d6a3d; }
 .fire { background: #ff8a1c; }
 .steam { background: #b2d2dc; }
 .wet-wood { background: #594834; }
 .mud { background: #5b4c34; }
 .charcoal { background: #2a2722; }
+.rock { background: #686760; }
 .ash { background: #56534c; }
 
 .range-row {
@@ -244,6 +252,33 @@ output {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+}
+
+.paint-modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.paint-mode {
+  min-height: 34px;
+  padding: 0 6px;
+  font-size: 12px;
+}
+
+.paint-mode.active {
+  border-color: rgba(116, 215, 170, 0.78);
+  background: rgba(63, 152, 104, 0.22);
+}
+
+.visibility-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.visibility-options .check-row:last-child {
+  grid-column: 1 / -1;
 }
 
 .check-row {
@@ -373,13 +408,13 @@ output {
   }
 
   .toolbar-toggle {
-    top: 12px;
-    right: 12px;
+    top: 50%;
+    right: 0;
   }
 
   .toolbar-toggle[aria-expanded="true"] {
     right: auto;
-    left: 12px;
+    left: 8px;
   }
 
   .toolbar.open .title {

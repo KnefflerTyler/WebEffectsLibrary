@@ -10,6 +10,8 @@ import { MudPixel } from './pixels/MudPixel.js';
 import { NitrogenPixel } from './pixels/NitrogenPixel.js';
 import { OxygenPixel } from './pixels/OxygenPixel.js';
 import { PlasmaPixel } from './pixels/PlasmaPixel.js';
+import { FlowerPixel } from './pixels/FlowerPixel.js';
+import { RockPixel } from './pixels/RockPixel.js';
 import { RootPixel } from './pixels/RootPixel.js';
 import { SpacePixel } from './pixels/SpacePixel.js';
 import { TreeSeedPixel } from './pixels/TreeSeedPixel.js';
@@ -42,6 +44,8 @@ const PIXEL_LIST = [
   new CharcoalPixel(),
   new ClothPixel(),
   new PlasmaPixel(),
+  new RockPixel(),
+  new FlowerPixel(),
 ];
 
 export const PIXELS = Object.freeze(PIXEL_LIST);

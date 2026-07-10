@@ -1,0 +1,26 @@
+{
+  "name": "Lake Shore Detail",
+  "version": 1,
+  "width": 170,
+  "height": 22,
+  "encoding": "layers-rows-rle",
+  "transparent": true,
+  "layers": {
+    "foreground": [
+      { "runs": [["air", 17], ["leaf", 1], ["air", 11], ["leaf", 1], ["air", 140]] },
+      { "runs": [["air", 16], ["leaf", 2], ["air", 10], ["leaf", 2], ["air", 140]] },
+      { "runs": [["air", 15], ["root", 1], ["leaf", 2], ["air", 9], ["root", 1], ["leaf", 2], ["air", 140]] },
+      { "runs": [["air", 14], ["root", 2], ["grass", 2], ["air", 8], ["root", 2], ["grass", 2], ["air", 140]] },
+      { "runs": [["air", 11], ["grass", 5], ["root", 2], ["air", 6], ["grass", 5], ["root", 2], ["air", 22], ["grass", 9], ["air", 108]] },
+      { "runs": [["air", 8], ["grass", 9], ["mud", 3], ["air", 3], ["grass", 10], ["mud", 3], ["air", 14], ["grass", 15], ["air", 105]] },
+      { "runs": [["air", 5], ["grass", 14], ["mud", 5], ["air", 1], ["grass", 13], ["mud", 4], ["air", 7], ["grass", 18], ["dirt", 3], ["air", 100]] },
+      { "runs": [["air", 3], ["mud", 4], ["grass", 14], ["mud", 7], ["grass", 13], ["mud", 5], ["water", 9], ["grass", 12], ["dirt", 6], ["air", 97]] },
+      { "runs": [["mud", 8], ["grass", 11], ["mud", 11], ["grass", 9], ["mud", 9], ["water", 18], ["dirt", 9], ["air", 95]] },
+      { "runs": [["mud", 11], ["water", 4], ["mud", 12], ["water", 6], ["mud", 12], ["water", 27], ["dirt", 10], ["air", 88]] },
+      { "runs": [["air", 6], ["water", 22], ["air", 14], ["water", 11], ["air", 9], ["water", 39], ["air", 69]] },
+      { "runs": [["air", 10], ["water", 15], ["air", 23], ["water", 21], ["air", 16], ["water", 30], ["air", 55]] },
+      { "runs": [["air", 15], ["water", 8], ["air", 31], ["water", 13], ["air", 25], ["water", 15], ["air", 63]] },
+      { "repeat": 9, "runs": [["air", 170]] }
+    ]
+  }
+}

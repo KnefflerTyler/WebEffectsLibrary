@@ -76,6 +76,7 @@ export class PixelObject {
     const state = {
       material: world.cells[source],
       data: world.data[source],
+      temperature: world.temperature[source],
       burnSource: world.burnSource[source],
       tint: [world.tintR[source], world.tintG[source], world.tintB[source]],
       shade: world.shade[source],
@@ -99,8 +100,10 @@ export class PixelObject {
       flags: state.flags,
       color: state.tint,
       burnSource: state.burnSource,
+      temperature: state.temperature,
     });
     world.data[target] = state.data;
+    world.temperature[target] = state.temperature;
     world.shade[target] = state.shade;
     return true;
   }

@@ -1,6 +1,13 @@
 import { MATERIAL } from '../Pixel.js';
 
 export class GasExpansionHelper {
+  static tryFillSpace(world, x, y, material, chance = 1) {
+    const candidates = this.spaceCandidates(world, x, y);
+    if (candidates.length === 0 || Math.random() >= chance) return false;
+    const target = candidates[Math.floor(Math.random() * candidates.length)];
+    return world.setCell(target, material, 0, { flags: 0 });
+  }
+
   static tryMoveIntoSpace(world, i, x, y, options = {}) {
     if (world.isStatic(i) || world.hasNoGravity(i)) return false;
 

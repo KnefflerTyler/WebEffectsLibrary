@@ -19,8 +19,9 @@ uniform usampler2D u_backgroundState;
 uniform usampler2D u_backgroundColor;
 uniform usampler2D u_foregroundState;
 uniform usampler2D u_foregroundColor;
-uniform vec3 u_palette[20];
+uniform vec3 u_palette[32];
 uniform int u_height;
+uniform ivec3 u_layerVisibility;
 out vec4 outColor;
 
 bool transparentType(uint type) {
@@ -107,19 +108,26 @@ void main() {
   uvec4 bgState = texelFetch(u_backgroundState, cell, 0);
   uvec4 state;
   uvec4 tint;
+  float layerTint = 0.0;
 
-  if (!transparentType(fgState.r)) {
+  if (u_layerVisibility.z != 0 && !transparentType(fgState.r)) {
     state = fgState;
     tint = texelFetch(u_foregroundColor, cell, 0);
-  } else if (!transparentType(bgState.r)) {
+  } else if (u_layerVisibility.y != 0 && !transparentType(bgState.r)) {
     state = bgState;
     tint = texelFetch(u_backgroundColor, cell, 0);
-  } else {
+    layerTint = 0.025;
+  } else if (u_layerVisibility.x != 0) {
     state = texelFetch(u_backdropState, cell, 0);
     tint = texelFetch(u_backdropColor, cell, 0);
+    layerTint = 0.05;
+  } else {
+    outColor = vec4(0.02, 0.027, 0.043, 1.0);
+    return;
   }
 
   vec3 color = materialColor(state, tint);
+  color = mix(color, vec3(5.0, 7.0, 11.0), layerTint);
   if ((state.a & 1u) != 0u) color = min(vec3(255.0), color + vec3(30.0));
   outColor = vec4(clamp(color / 255.0, 0.0, 1.0), 1.0);
 }`;
@@ -132,6 +140,7 @@ export class PixelRenderer {
     this.canvas.height = world.height;
     this.stats = { pixels: 0, fires: 0, waters: 0 };
     this.statsTick = -1;
+    this.layerVisibility = { backdrop: true, background: true, foreground: true };
     this.uploadBuffers = new Map();
     this.gl = canvas.getContext('webgl2', {
       alpha: false,
@@ -172,13 +181,15 @@ export class PixelRenderer {
       this.world.markLayerFullyDirty(this.world.layers[name]);
     }
 
-    const palette = new Float32Array(20 * 3);
+    const palette = new Float32Array(32 * 3);
     for (const pixel of PIXEL_BY_ID) {
       if (!pixel) continue;
       palette.set(pixel.color, pixel.id * 3);
     }
     gl.uniform3fv(gl.getUniformLocation(this.program, 'u_palette[0]'), palette);
     gl.uniform1i(gl.getUniformLocation(this.program, 'u_height'), this.world.height);
+    this.visibilityUniform = gl.getUniformLocation(this.program, 'u_layerVisibility');
+    this.updateVisibilityUniform();
     gl.viewport(0, 0, this.world.width, this.world.height);
     gl.disable(gl.BLEND);
     gl.disable(gl.DEPTH_TEST);
@@ -268,6 +279,22 @@ export class PixelRenderer {
     return this.updateStats();
   }
 
+  setLayerVisibility(name, visible) {
+    if (!(name in this.layerVisibility)) throw new Error(`Unknown render layer "${name}".`);
+    this.layerVisibility[name] = Boolean(visible);
+    if (this.gl) this.updateVisibilityUniform();
+  }
+
+  updateVisibilityUniform() {
+    this.gl.useProgram(this.program);
+    this.gl.uniform3i(
+      this.visibilityUniform,
+      Number(this.layerVisibility.backdrop),
+      Number(this.layerVisibility.background),
+      Number(this.layerVisibility.foreground),
+    );
+  }
+
   updateStats() {
     if (this.statsTick === this.world.tick) return this.stats;
     let pixels = 0;
@@ -298,15 +325,30 @@ export class PixelRenderer {
     for (let i = 0; i < this.world.total; i++) {
       const fgType = foreground.cells[i];
       const bgType = background.cells[i];
-      const layer = fgType !== MATERIAL.SPACE && fgType !== MATERIAL.AIR
-        ? foreground
-        : (bgType !== MATERIAL.SPACE && bgType !== MATERIAL.AIR ? background : backdrop);
+      let layer = null;
+      let layerTint = 0;
+      if (this.layerVisibility.foreground && fgType !== MATERIAL.SPACE && fgType !== MATERIAL.AIR) {
+        layer = foreground;
+      } else if (this.layerVisibility.background && bgType !== MATERIAL.SPACE && bgType !== MATERIAL.AIR) {
+        layer = background;
+        layerTint = 0.025;
+      } else if (this.layerVisibility.backdrop) {
+        layer = backdrop;
+        layerTint = 0.05;
+      }
+      if (!layer) {
+        out[p++] = 5;
+        out[p++] = 7;
+        out[p++] = 11;
+        out[p++] = 255;
+        continue;
+      }
       const type = layer.cells[i];
       const color = PIXEL_BY_ID[type].renderColor(layer.shade[i], layer.data[i], [layer.tintR[i], layer.tintG[i], layer.tintB[i]]);
       const highlight = (layer.flags[i] & CELL_FLAGS.STATIC) !== 0 ? 30 : 0;
-      out[p++] = Math.min(255, color[0] + highlight);
-      out[p++] = Math.min(255, color[1] + highlight);
-      out[p++] = Math.min(255, color[2] + highlight);
+      out[p++] = Math.min(255, color[0] * (1 - layerTint) + 5 * layerTint + highlight);
+      out[p++] = Math.min(255, color[1] * (1 - layerTint) + 7 * layerTint + highlight);
+      out[p++] = Math.min(255, color[2] * (1 - layerTint) + 11 * layerTint + highlight);
       out[p++] = 255;
     }
     this.ctx.putImageData(this.image, 0, 0);

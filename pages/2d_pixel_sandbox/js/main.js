@@ -27,6 +27,8 @@ const pixelCount = document.getElementById('pixel-count');
 const fireCount = document.getElementById('fire-count');
 const waterCount = document.getElementById('water-count');
 const materialButtons = [...document.querySelectorAll('.material')];
+const paintModeButtons = [...document.querySelectorAll('.paint-mode')];
+const layerVisibilityInputs = [...document.querySelectorAll('.layer-visibility')];
 
 const world = new PixelWorld(WORLD_WIDTH, WORLD_HEIGHT);
 const renderer = new PixelRenderer(canvas, world);
@@ -39,6 +41,7 @@ let drawing = false;
 let drawPoint = null;
 let strokeRadius = 0;
 let frame = 0;
+let paintMode = 'brush';
 
 function setToolbarOpen(open) {
   toolbar.classList.toggle('open', open);
@@ -99,6 +102,12 @@ function paintCurrentStroke() {
   paintAt(drawPoint.clientX, drawPoint.clientY, Math.min(strokeRadius, brushSize));
 }
 
+function fillAt(clientX, clientY) {
+  const point = canvasToWorld(clientX, clientY);
+  world.fillConnected(point.x, point.y, material, getBrushFlags(), getPaintOptions(), brushLayerInput.value);
+  render(true);
+}
+
 function runSteps(count) {
   for (let i = 0; i < count; i++) world.step();
 }
@@ -132,19 +141,70 @@ function placeTent() {
 async function loadSelectedScene() {
   const sceneUrl = `${SAVE_DIRECTORY}/${sceneSelect.value}`;
   try {
-    const response = await fetch(sceneUrl);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    world.loadSave(await response.json());
+    world.loadSave(await loadSceneWithTemplates(sceneUrl));
   } catch (error) {
     console.warn(`Pixel sandbox scene "${sceneSelect.value}" failed to load; using generated seed.`, error);
     world.seed();
   }
 }
 
+async function loadJson(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  return response.json();
+}
+
+async function loadSceneWithTemplates(sceneUrl) {
+  const scene = await loadJson(sceneUrl);
+  const baseUrl = new URL(sceneUrl, window.location.href);
+  scene.templates = await resolveTemplateReferences(scene.templates ?? [], baseUrl, new Set());
+  return scene;
+}
+
+async function resolveTemplateReferences(references, baseUrl, loading) {
+  if (!Array.isArray(references)) throw new Error('Save templates must be an array.');
+
+  return Promise.all(references.map(async (reference) => {
+    const file = typeof reference === 'string' ? reference : (reference.file ?? reference.path ?? reference.name);
+    if (!file) return reference;
+
+    const templateUrl = new URL(file, baseUrl);
+    if (loading.has(templateUrl.href)) throw new Error(`Circular save template reference "${file}".`);
+
+    loading.add(templateUrl.href);
+    const template = await loadJson(templateUrl.href);
+    const nestedTemplates = await resolveTemplateReferences(template.templates ?? [], templateUrl, loading);
+    loading.delete(templateUrl.href);
+
+    const resolved = typeof reference === 'string' ? { file } : { ...reference };
+    return {
+      ...resolved,
+      template: {
+        ...template,
+        templates: nestedTemplates,
+      },
+    };
+  }));
+}
+
 materialButtons.forEach((button) => {
   button.addEventListener('click', () => {
     material = MATERIAL_BY_NAME[button.dataset.material];
     materialButtons.forEach((item) => item.classList.toggle('active', item === button));
+  });
+});
+
+paintModeButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    paintMode = button.dataset.paintMode;
+    paintModeButtons.forEach((item) => item.classList.toggle('active', item === button));
+  });
+});
+
+layerVisibilityInputs.forEach((input) => {
+  input.addEventListener('change', () => {
+    renderer.setLayerVisibility(input.value, input.checked);
+    render();
   });
 });
 
@@ -186,17 +246,23 @@ clearBtn.addEventListener('click', () => {
 
 canvas.addEventListener('pointerdown', (event) => {
   if (toolbar.classList.contains('open')) setToolbarOpen(false);
+  if (paintMode === 'bucket') {
+    fillAt(event.clientX, event.clientY);
+    return;
+  }
   drawing = true;
   drawPoint = { clientX: event.clientX, clientY: event.clientY };
   strokeRadius = 0;
   canvas.setPointerCapture(event.pointerId);
-  paintCurrentStroke();
+  if (paintMode === 'pencil') paintAt(event.clientX, event.clientY, 0);
+  else paintCurrentStroke();
 });
 
 canvas.addEventListener('pointermove', (event) => {
   if (!drawing) return;
   drawPoint = { clientX: event.clientX, clientY: event.clientY };
-  paintCurrentStroke();
+  if (paintMode === 'pencil') paintAt(event.clientX, event.clientY, 0);
+  else paintCurrentStroke();
 });
 
 canvas.addEventListener('pointerup', () => {
@@ -211,7 +277,7 @@ canvas.addEventListener('pointercancel', () => {
 
 function loop() {
   frame++;
-  if (drawing) {
+  if (drawing && paintMode === 'brush') {
     strokeRadius = Math.min(brushSize, strokeRadius + 0.55);
     paintCurrentStroke();
   }

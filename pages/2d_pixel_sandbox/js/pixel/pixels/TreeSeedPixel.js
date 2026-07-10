@@ -10,6 +10,7 @@ export class TreeSeedPixel extends Pixel {
       weight: 62,
       displaceable: true,
       flammability: 0.045,
+      igniteTemperature: 260,
       scorchable: true,
       scorchTo: MATERIAL.ASH,
     });

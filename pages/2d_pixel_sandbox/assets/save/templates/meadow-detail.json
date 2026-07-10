@@ -1,0 +1,24 @@
+{
+  "name": "Meadow Detail",
+  "version": 1,
+  "width": 126,
+  "height": 31,
+  "encoding": "layers-rows-rle",
+  "transparent": true,
+  "layers": {
+    "foreground": [
+      { "repeat": 4, "runs": [["air", 126]] },
+      { "runs": [["air", 7], ["leaf", 1], ["air", 22], ["leaf", 2], ["air", 44], ["leaf", 1], ["air", 49]] },
+      { "runs": [["air", 6], ["leaf", 2], ["air", 21], ["leaf", 3], ["air", 43], ["leaf", 2], ["air", 49]] },
+      { "runs": [["air", 5], ["root", 1], ["leaf", 2], ["air", 19], ["root", 1], ["leaf", 3], ["air", 42], ["root", 1], ["leaf", 2], ["air", 50]] },
+      { "runs": [["air", 4], ["grass", 5], ["air", 17], ["grass", 7], ["air", 39], ["grass", 6], ["air", 48]] },
+      { "runs": [["air", 2], ["grass", 9], ["air", 12], ["grass", 12], ["air", 35], ["grass", 10], ["air", 46]] },
+      { "runs": [["grass", 13], ["air", 8], ["grass", 16], ["air", 30], ["grass", 14], ["air", 45]] },
+      { "runs": [["mud", 3], ["grass", 10], ["dirt", 3], ["air", 5], ["mud", 3], ["grass", 14], ["dirt", 4], ["air", 22], ["mud", 2], ["grass", 15], ["dirt", 5], ["air", 40]] },
+      { "runs": [["dirt", 17], ["air", 3], ["dirt", 23], ["air", 18], ["dirt", 28], ["air", 37]] },
+      { "runs": [["air", 15], ["ash", 2], ["air", 8], ["dirt", 8], ["air", 21], ["ash", 3], ["air", 69]] },
+      { "runs": [["air", 40], ["seed", 1], ["air", 85]] },
+      { "repeat": 17, "runs": [["air", 126]] }
+    ]
+  }
+}

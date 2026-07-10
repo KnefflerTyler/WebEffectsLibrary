@@ -7,6 +7,7 @@ export class LeafPixel extends Pixel {
       name: 'leaf',
       color: [65, 150, 78],
       flammability: 0.072,
+      igniteTemperature: 220,
       scorchable: true,
       scorchTo: MATERIAL.ASH,
       plantGrowThrough: true,

@@ -20,6 +20,8 @@ export const MATERIAL = Object.freeze({
   GRASS: 17,
   CLOTH: 18,
   PLASMA: 19,
+  ROCK: 23,
+  FLOWER: 24,
 });
 
 export class Pixel {
@@ -53,6 +55,11 @@ export class Pixel {
     plantConsumesTo = null,
     plantGrowThrough = false,
     rootGrowThrough = false,
+    waterproof = false,
+    reactsWhileStatic = false,
+    temperature = 20,
+    igniteTemperature = null,
+    heatOutput = 0,
   }) {
     this.id = id;
     this.name = name;
@@ -84,6 +91,11 @@ export class Pixel {
     this.plantConsumesTo = plantConsumesTo;
     this.plantGrowThrough = plantGrowThrough;
     this.rootGrowThrough = rootGrowThrough;
+    this.waterproof = waterproof;
+    this.reactsWhileStatic = reactsWhileStatic;
+    this.temperature = temperature;
+    this.igniteTemperature = igniteTemperature ?? (flammability > 0 ? 180 : Infinity);
+    this.heatOutput = heatOutput;
   }
 
   canBeDisplacedBy(sourcePixel) {

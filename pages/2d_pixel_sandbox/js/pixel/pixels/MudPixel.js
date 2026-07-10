@@ -11,8 +11,8 @@ export class MudPixel extends Pixel {
       displaceable: true,
       acceptsDisplacementFrom: new Set([MATERIAL.WATER, MATERIAL.FIRE, MATERIAL.SMOKE, MATERIAL.STEAM]),
       scorchable: true,
-      mixesWithWaterTo: MATERIAL.MUD,
       scorchTo: MATERIAL.DIRT,
+      waterproof: true,
       plantMoisture: 10,
       plantMoistureDrain: 28,
       plantConsumesTo: MATERIAL.DIRT,
@@ -38,14 +38,6 @@ export class MudPixel extends Pixel {
       return;
     }
 
-    if (Math.random() > 0.55) {
-      world.keepActive(i);
-      return;
-    }
-    const dir = Math.random() < 0.5 ? -1 : 1;
-    if (world.tryDisplaceInto(i, x, y + 1, 1)) return;
-    if (world.tryDisplaceInto(i, x + dir, y + 1, 1)) return;
-    world.tryDisplaceInto(i, x - dir, y + 1, 1);
-    world.keepActive(i);
+    if (world.hasNeighborWhere(x, y, (pixel) => pixel.burns)) world.keepActive(i);
   }
 }

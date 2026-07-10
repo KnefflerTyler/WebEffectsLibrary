@@ -35,11 +35,13 @@
           <button class="material" type="button" data-material="seed"><span class="swatch seed"></span>Seed</button>
           <button class="material" type="button" data-material="root"><span class="swatch root"></span>Root</button>
           <button class="material" type="button" data-material="leaf"><span class="swatch leaf"></span>Leaf</button>
+          <button class="material" type="button" data-material="flower"><span class="swatch flower"></span>Flower</button>
           <button class="material" type="button" data-material="fire"><span class="swatch fire"></span>Fire</button>
           <button class="material" type="button" data-material="steam"><span class="swatch steam"></span>Steam</button>
           <button class="material" type="button" data-material="wetWood"><span class="swatch wet-wood"></span>Wet wood</button>
           <button class="material" type="button" data-material="mud"><span class="swatch mud"></span>Mud</button>
           <button class="material" type="button" data-material="charcoal"><span class="swatch charcoal"></span>Charcoal</button>
+          <button class="material" type="button" data-material="rock"><span class="swatch rock"></span>Rock</button>
           <button class="material" type="button" data-material="ash"><span class="swatch ash"></span>Ash</button>
           <button class="material" type="button" data-material="air"><span class="swatch air"></span>Air</button>
           <button class="material" type="button" data-material="oxygen"><span class="swatch oxygen"></span>Oxygen</button>
@@ -57,6 +59,11 @@
             <option value="background">Background</option>
           </select>
         </label>
+        <div class="paint-modes" role="group" aria-label="Paint tool">
+          <button class="paint-mode" type="button" data-paint-mode="pencil">Pencil</button>
+          <button class="paint-mode active" type="button" data-paint-mode="brush">Brush</button>
+          <button class="paint-mode" type="button" data-paint-mode="bucket">Bucket</button>
+        </div>
         <label class="range-row">
           Size
           <output id="brush-value">6</output>
@@ -75,6 +82,15 @@
           Cloth
           <input id="cloth-color" type="color" value="#bc3638">
         </label>
+      </section>
+
+      <section class="tool-group" aria-label="Layer visibility">
+        <div class="group-label">Visible layers</div>
+        <div class="visibility-options">
+          <label class="check-row"><input class="layer-visibility" type="checkbox" value="foreground" checked> Foreground</label>
+          <label class="check-row"><input class="layer-visibility" type="checkbox" value="background" checked> Background</label>
+          <label class="check-row"><input class="layer-visibility" type="checkbox" value="backdrop" checked> Backdrop</label>
+        </div>
       </section>
 
       <section class="tool-group" aria-label="Actions">

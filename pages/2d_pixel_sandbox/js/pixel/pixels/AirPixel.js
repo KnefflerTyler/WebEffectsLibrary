@@ -26,6 +26,10 @@ export class AirPixel extends Pixel {
   }
 
   update(world, i, x, y) {
+    if (GasExpansionHelper.tryFillSpace(world, x, y, MATERIAL.AIR, 0.72)) {
+      world.keepActive(i);
+      return;
+    }
     GasExpansionHelper.tryMoveIntoSpace(world, i, x, y);
   }
 }

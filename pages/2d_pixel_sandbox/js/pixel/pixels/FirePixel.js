@@ -12,11 +12,13 @@ export class FirePixel extends Pixel {
       displaceable: true,
       burns: true,
       scorchTo: MATERIAL.ASH,
+      temperature: 900,
+      heatOutput: 160,
     });
   }
 
   getInitialData(value = 0) {
-    return value || 18 + Math.floor(Math.random() * 18);
+    return value || 30 + Math.floor(Math.random() * 26);
   }
 
   renderColor(tone, life) {
@@ -28,9 +30,9 @@ export class FirePixel extends Pixel {
     ];
   }
 
-  update(world, i, x, y) {
+  update(world, i, x, y, isStatic = false) {
     if (world.hasNeighborWhere(x, y, (pixel) => pixel.extinguishPower > 0)) {
-      if (world.isStatic(i)) {
+      if (isStatic) {
         world.emitIntoNeighbor(x, y, MATERIAL.STEAM, 18, 0.78);
         world.keepActive(i);
       } else {
@@ -41,16 +43,23 @@ export class FirePixel extends Pixel {
       return;
     }
 
-    if (!CombustionHelper.consumeOxygenNear(world, x, y, 0.62)) {
+    if (!CombustionHelper.consumeOxygenNear(world, x, y, 0.22)) {
+      world.data[i] = Math.max(0, world.data[i] - 2);
+      if (world.data[i] > 0) {
+        world.emitIntoNeighbor(x, y, MATERIAL.SMOKE, 12, 0.1);
+        world.keepActive(i);
+        return;
+      }
       const residue = world.getBurnResidue(i);
       world.setCell(i, residue, residue === MATERIAL.SMOKE ? 12 : 0, { force: true, flags: 0 });
       world.touched[i] = world.tick;
       return;
     }
 
-    if (world.isStatic(i)) {
+    if (isStatic) {
       world.emitIntoNeighbor(x, y, MATERIAL.SMOKE, 18, 0.06);
-      world.igniteFlammableNeighbors(x, y, 5.15);
+      world.heatNeighbors(x, y, this.heatOutput);
+      world.tryIgniteHeatedNeighbors(x, y);
       world.scorchLowFlammabilityNeighbors(x, y, 0.005);
       world.touched[i] = world.tick;
       world.keepActive(i);
@@ -58,7 +67,8 @@ export class FirePixel extends Pixel {
     }
 
     world.data[i] = Math.max(0, world.data[i] - 1);
-    world.igniteFlammableNeighbors(x, y, 5.15);
+    world.heatNeighbors(x, y, this.heatOutput);
+    world.tryIgniteHeatedNeighbors(x, y);
     world.scorchLowFlammabilityNeighbors(x, y, 0.005);
 
     if (world.data[i] <= 0 || Math.random() < world.getBurnoutChance(i)) {

@@ -7,6 +7,7 @@ export class TentObject extends PixelObject {
     super({ x, y });
     this.clothColor = clothColor;
     this.shadowColor = clothColor.map((channel) => Math.max(0, Math.floor(channel * 0.72)));
+    this.interiorColor = clothColor.map((channel) => Math.max(0, Math.floor(channel * 0.48)));
     this.width = width;
     this.height = height;
     this.doorCells = [];
@@ -28,12 +29,12 @@ export class TentObject extends PixelObject {
       const right = edge;
       this.addCloth(left, y, 0, this.clothColor);
       this.addCloth(right, y, 1, this.shadowColor);
+      for (let x = left + 1; x < right; x++) {
+        this.addCloth(x, y, 5 + level * this.width + x, this.interiorColor, 'canopy-fill');
+      }
       if (level > 4 && level < this.height - 1) {
         if (level % 3 === 0) this.addCloth(left + 1, y, 2, this.clothColor);
         if (level % 4 === 0) this.addCloth(right - 1, y, 3, this.shadowColor);
-      }
-      if (level === this.height) {
-        for (let x = left + 1; x < right; x += 2) this.addCloth(x, y, 4, this.clothColor);
       }
     }
   }

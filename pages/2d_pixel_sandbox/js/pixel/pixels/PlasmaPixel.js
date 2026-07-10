@@ -14,6 +14,8 @@ export class PlasmaPixel extends Pixel {
       gas: true,
       gasSpread: 1,
       plantGrowThrough: true,
+      temperature: 2000,
+      heatOutput: 320,
     });
   }
 
@@ -38,7 +40,8 @@ export class PlasmaPixel extends Pixel {
     }
 
     world.data[i] = Math.max(0, world.data[i] - 1);
-    world.igniteFlammableNeighbors(x, y, 3.4);
+    world.heatNeighbors(x, y, this.heatOutput);
+    world.tryIgniteHeatedNeighbors(x, y);
     if (world.data[i] === 0) {
       world.setCell(i, Math.random() < 0.55 ? MATERIAL.SMOKE : MATERIAL.SPACE, 14);
       return;

@@ -13,6 +13,7 @@ export class SteamPixel extends Pixel {
       gasSpread: 1,
       displaceable: true,
       plantGrowThrough: true,
+      temperature: 100,
     });
   }
 

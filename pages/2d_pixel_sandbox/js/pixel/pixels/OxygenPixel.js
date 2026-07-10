@@ -12,7 +12,6 @@ export class OxygenPixel extends Pixel {
       gas: true,
       gasSpread: 1,
       oxygen: 1,
-      flammability: 0.2,
       displaceable: true,
       plantGrowThrough: true,
     });

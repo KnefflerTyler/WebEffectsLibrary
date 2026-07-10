@@ -7,6 +7,7 @@ export class RootPixel extends Pixel {
       name: 'root',
       color: [116, 82, 48],
       flammability: 0.018,
+      igniteTemperature: 300,
       scorchable: true,
       scorchTo: MATERIAL.ASH,
       rootGrowThrough: true,

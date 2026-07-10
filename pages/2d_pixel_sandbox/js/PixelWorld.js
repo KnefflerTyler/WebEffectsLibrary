@@ -36,6 +36,7 @@ export class PixelWorld {
     return {
       cells: new Uint8Array(this.total),
       data: new Uint8Array(this.total),
+      temperature: new Uint16Array(this.total),
       burnSource: new Uint8Array(this.total),
       tintR: new Uint8Array(this.total),
       tintG: new Uint8Array(this.total),
@@ -60,7 +61,7 @@ export class PixelWorld {
     const layer = this.layers[name];
     if (!layer) throw new Error(`Unknown pixel layer "${name}".`);
     this.activeLayerName = name;
-    for (const key of ['cells', 'data', 'burnSource', 'tintR', 'tintG', 'tintB', 'shade', 'flags', 'touched', 'activeFlags', 'nextActiveFlags', 'activeList', 'nextActiveList']) {
+    for (const key of ['cells', 'data', 'temperature', 'burnSource', 'tintR', 'tintG', 'tintB', 'shade', 'flags', 'touched', 'activeFlags', 'nextActiveFlags', 'activeList', 'nextActiveList']) {
       this[key] = layer[key];
     }
     return layer;
@@ -148,6 +149,18 @@ export class PixelWorld {
     return (this.flags[i] & CELL_FLAGS.STATIC) !== 0;
   }
 
+  canReactWhileStatic(i) {
+    if (!this.isStatic(i)) return true;
+    const pixel = this.getPixelAtIndex(i);
+    return pixel.reactsWhileStatic
+      || pixel.burns
+      || pixel.flammability > 0
+      || pixel.scorchable
+      || pixel.wetTo !== null
+      || pixel.mixesWithWaterTo !== null
+      || pixel.extinguishPower > 0;
+  }
+
   addObject(object) {
     object.place(this);
     this.objects.push(object);
@@ -173,6 +186,7 @@ export class PixelWorld {
     const previousFlags = this.flags[i];
     this.cells[i] = type;
     this.data[i] = pixel.getInitialData(value);
+    this.temperature[i] = options.temperature ?? pixel.temperature;
     this.burnSource[i] = type === MATERIAL.FIRE ? (options.burnSource ?? this.burnSource[i]) : 0;
     const tint = pixel.usesCustomColor ? (options.color ?? pixel.color) : pixel.color;
     this.tintR[i] = tint[0];
@@ -192,6 +206,7 @@ export class PixelWorld {
   swapCells(a, b) {
     const cellA = this.cells[a];
     const dataA = this.data[a];
+    const temperatureA = this.temperature[a];
     const shadeA = this.shade[a];
     const burnSourceA = this.burnSource[a];
     const tintRA = this.tintR[a];
@@ -200,6 +215,7 @@ export class PixelWorld {
     const flagsA = this.flags[a];
     this.cells[a] = this.cells[b];
     this.data[a] = this.data[b];
+    this.temperature[a] = this.temperature[b];
     this.shade[a] = this.shade[b];
     this.burnSource[a] = this.burnSource[b];
     this.tintR[a] = this.tintR[b];
@@ -208,6 +224,7 @@ export class PixelWorld {
     this.flags[a] = this.flags[b];
     this.cells[b] = cellA;
     this.data[b] = dataA;
+    this.temperature[b] = temperatureA;
     this.shade[b] = shadeA;
     this.burnSource[b] = burnSourceA;
     this.tintR[b] = tintRA;
@@ -225,6 +242,7 @@ export class PixelWorld {
   moveInto(a, b) {
     this.cells[b] = this.cells[a];
     this.data[b] = this.data[a];
+    this.temperature[b] = this.temperature[a];
     this.shade[b] = this.shade[a];
     this.burnSource[b] = this.burnSource[a];
     this.tintR[b] = this.tintR[a];
@@ -253,6 +271,7 @@ export class PixelWorld {
 
     const sourcePixel = this.getPixelAtIndex(source);
     const targetPixel = this.getPixelAtIndex(target);
+    if (sourcePixel.id === MATERIAL.WATER && targetPixel?.waterproof) return false;
     if (!targetPixel?.canBeDisplacedBy(sourcePixel)) return false;
     if (sourcePixel.id === targetPixel.id) return false;
 
@@ -293,20 +312,20 @@ export class PixelWorld {
     const target = this.index(x, y);
     const sourcePixel = this.getPixelAtIndex(source);
     const targetPixel = this.getPixelAtIndex(target);
-    if (this.isStatic(source)) return false;
+    if (!this.canReactWhileStatic(source)) return false;
     if (!targetPixel.burns || sourcePixel.extinguishPower <= 0) return false;
 
     if (!this.isStatic(target)) {
       this.setCell(target, MATERIAL.STEAM, 18);
     }
-    this.setCell(source, MATERIAL.STEAM, 12);
+    this.setCell(source, MATERIAL.STEAM, 12, { force: this.isStatic(source) });
     this.touched[source] = this.tick;
     this.touched[target] = this.tick;
     return true;
   }
 
   tryWaterReactWithNeighbor(source, x, y) {
-    if (!this.inBounds(x, y) || this.isStatic(source)) return false;
+    if (!this.inBounds(x, y) || !this.canReactWhileStatic(source)) return false;
 
     const target = this.index(x, y);
     const sourcePixel = this.getPixelAtIndex(source);
@@ -314,40 +333,41 @@ export class PixelWorld {
     if (sourcePixel.extinguishPower <= 0) return false;
 
     if (targetPixel.burns) {
-      if (!this.isStatic(target)) {
+      if (this.isStatic(target)) {
+        this.emitIntoNeighbor(x, y, MATERIAL.STEAM, 18, 0.85);
+      } else {
         this.setCell(target, MATERIAL.STEAM, 18);
       }
-      this.setCell(source, MATERIAL.STEAM, 14);
+      this.setCell(source, MATERIAL.STEAM, 14, { force: this.isStatic(source) });
       this.touched[source] = this.tick;
       this.touched[target] = this.tick;
       return true;
     }
 
     const hydratedMaterial = targetPixel.wetTo ?? targetPixel.mixesWithWaterTo;
-    if (hydratedMaterial === null || this.isStatic(target)) return false;
+    if (hydratedMaterial === null || hydratedMaterial === targetPixel.id || !this.canReactWhileStatic(target)) return false;
 
-    this.setCell(target, hydratedMaterial);
-    this.setCell(source, MATERIAL.SPACE);
+    this.setCell(target, hydratedMaterial, 0, { force: this.isStatic(target) });
+    this.setCell(source, MATERIAL.SPACE, 0, { force: this.isStatic(source), flags: 0 });
     this.touched[source] = this.tick;
     this.touched[target] = this.tick;
     return true;
   }
 
   tryHydrateFromNeighbors(target, x, y) {
-    if (this.isStatic(target)) return false;
+    if (!this.canReactWhileStatic(target)) return false;
 
     const targetPixel = this.getPixelAtIndex(target);
     const hydratedMaterial = targetPixel.wetTo ?? targetPixel.mixesWithWaterTo;
-    if (hydratedMaterial === null) return false;
+    if (hydratedMaterial === null || hydratedMaterial === targetPixel.id) return false;
 
     let hydrated = false;
     this.forNeighbors(x, y, (n) => {
-      if (this.isStatic(n)) return true;
       const neighbor = this.getPixelAtIndex(n);
       if (neighbor.extinguishPower <= 0) return true;
 
-      this.setCell(target, hydratedMaterial);
-      this.setCell(n, MATERIAL.SPACE);
+      this.setCell(target, hydratedMaterial, 0, { force: this.isStatic(target) });
+      this.setCell(n, MATERIAL.SPACE, 0, { force: this.isStatic(n), flags: 0 });
       this.touched[target] = this.tick;
       this.touched[n] = this.tick;
       hydrated = true;
@@ -358,29 +378,50 @@ export class PixelWorld {
   }
 
   tryIgniteFromNeighbors(i, x, y) {
-    if (this.isStatic(i)) return false;
+    if (!this.canReactWhileStatic(i)) return false;
 
     const pixel = this.getPixelAtIndex(i);
     if (pixel.flammability <= 0) return false;
-    if (!this.hasNeighborWhereAcrossLayers(x, y, (neighbor) => neighbor.burns)) return false;
+    if (this.temperature[i] < pixel.igniteTemperature) return false;
     if (pixel.oxygen <= 0 && !this.hasNeighborWhereAcrossLayers(x, y, (neighbor) => neighbor.oxygen > 0)) return false;
-    if (Math.random() >= pixel.flammability) return false;
+    const heatMargin = Math.min(6, Math.max(1, (this.temperature[i] - pixel.igniteTemperature) / 18));
+    if (Math.random() >= Math.min(0.95, pixel.flammability * heatMargin)) return false;
 
-    this.setCell(i, MATERIAL.FIRE, pixel.getBurnLife(), { burnSource: pixel.id });
+    this.setCell(i, MATERIAL.FIRE, pixel.getBurnLife(), {
+      force: this.isStatic(i),
+      burnSource: pixel.id,
+      temperature: Math.max(this.temperature[i], PIXEL_BY_ID[MATERIAL.FIRE].temperature),
+    });
     this.touched[i] = this.tick;
     return true;
   }
 
   igniteFlammableNeighbors(x, y, heat = 1) {
+    this.heatNeighbors(x, y, Math.round(heat * 26));
+  }
+
+  heatNeighbors(x, y, amount = 80) {
+    const sourceLayer = this.activeLayerName;
+    const heatCell = (n) => {
+      const pixel = this.getPixelAtIndex(n);
+      if (pixel.id === MATERIAL.SPACE) return true;
+      this.temperature[n] = Math.min(65535, this.temperature[n] + amount);
+      this.keepActive(n);
+      this.markRenderDirty(n);
+      return true;
+    };
+    this.forNeighbors(x, y, heatCell);
+    this.withLayer(this.otherLayerName(sourceLayer), () => {
+      if (this.inBounds(x, y)) heatCell(this.index(x, y));
+      this.forNeighbors(x, y, heatCell);
+    });
+  }
+
+  tryIgniteHeatedNeighbors(x, y) {
     const sourceLayer = this.activeLayerName;
     const tryIgnite = (n, nx, ny) => {
-      if (this.isStatic(n)) return true;
       const pixel = this.getPixelAtIndex(n);
-      if (pixel.oxygen <= 0 && !this.hasNeighborWhereAcrossLayers(nx, ny, (neighbor) => neighbor.oxygen > 0)) return true;
-      if (pixel.flammability > 0 && Math.random() < pixel.flammability * heat) {
-        this.setCell(n, MATERIAL.FIRE, pixel.getBurnLife(), { burnSource: pixel.id });
-        this.touched[n] = this.tick;
-      }
+      if (pixel.flammability > 0) this.tryIgniteFromNeighbors(n, nx, ny);
       return true;
     };
     this.forNeighbors(x, y, tryIgnite);
@@ -390,16 +431,25 @@ export class PixelWorld {
     });
   }
 
+  coolCell(i, amount = 3) {
+    const ambient = this.getPixelAtIndex(i).temperature;
+    if (this.temperature[i] > ambient) this.temperature[i] = Math.max(ambient, this.temperature[i] - amount);
+    else if (this.temperature[i] < ambient) this.temperature[i] = Math.min(ambient, this.temperature[i] + 1);
+  }
+
   getBurnResidue(i) {
     const sourcePixel = PIXEL_BY_ID[this.burnSource[i]];
+    if (sourcePixel?.gas) {
+      return Math.random() < 0.72 ? MATERIAL.SMOKE : MATERIAL.SPACE;
+    }
     if (sourcePixel && sourcePixel.burnsTo !== null && Math.random() < sourcePixel.burnsToChance) {
       return sourcePixel.burnsTo;
     }
-    return Math.random() < 0.45 ? MATERIAL.SMOKE : MATERIAL.ASH;
+    return Math.random() < 0.82 ? MATERIAL.SMOKE : MATERIAL.ASH;
   }
 
   getBurnoutChance(i) {
-    return PIXEL_BY_ID[this.burnSource[i]]?.burnoutChance ?? 0.018;
+    return PIXEL_BY_ID[this.burnSource[i]]?.burnoutChance ?? 0.008;
   }
 
   canBurningCellDrift(i) {
@@ -409,10 +459,10 @@ export class PixelWorld {
 
   scorchLowFlammabilityNeighbors(x, y, chance) {
     this.forNeighbors(x, y, (n) => {
-      if (this.isStatic(n)) return true;
+      if (!this.canReactWhileStatic(n)) return true;
       const pixel = this.getPixelAtIndex(n);
       if (pixel.scorchable && pixel.flammability === 0 && Math.random() < chance) {
-        this.setCell(n, pixel.scorchTo);
+        this.setCell(n, pixel.scorchTo, 0, { force: this.isStatic(n) });
         this.touched[n] = this.tick;
       }
       return true;
@@ -422,10 +472,10 @@ export class PixelWorld {
   consumeExtinguishingNeighbors(x, y, chance) {
     let consumed = false;
     this.forNeighbors(x, y, (n) => {
-      if (this.isStatic(n)) return true;
+      if (!this.canReactWhileStatic(n)) return true;
       const pixel = this.getPixelAtIndex(n);
       if (pixel.extinguishPower > 0 && (!consumed || Math.random() < chance * pixel.extinguishPower)) {
-        this.setCell(n, MATERIAL.STEAM, 12);
+        this.setCell(n, MATERIAL.STEAM, 12, { force: this.isStatic(n) });
         this.touched[n] = this.tick;
         consumed = true;
         return false;
@@ -529,6 +579,45 @@ export class PixelWorld {
     }
   }
 
+  fillConnected(cx, cy, material, flags = 0, options = {}, layerName = this.activeLayerName) {
+    if (layerName !== this.activeLayerName) {
+      return this.withLayer(layerName, () => this.fillConnected(cx, cy, material, flags, options, layerName));
+    }
+    if (!this.inBounds(cx, cy)) return 0;
+
+    const start = this.index(cx, cy);
+    const targetMaterial = this.cells[start];
+    const visited = new Uint8Array(this.total);
+    const queue = new Int32Array(this.total);
+    let head = 0;
+    let tail = 0;
+    let filled = 0;
+    queue[tail++] = start;
+    visited[start] = 1;
+
+    while (head < tail) {
+      const index = queue[head++];
+      if (this.cells[index] !== targetMaterial || this.isStatic(index)) continue;
+
+      this.setCell(index, material, 0, { flags, ...options });
+      filled++;
+
+      const x = index % this.width;
+      const y = Math.floor(index / this.width);
+      for (const [dx, dy] of [[0, -1], [1, 0], [-1, 0], [0, 1]]) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (!this.inBounds(nx, ny)) continue;
+        const neighbor = this.index(nx, ny);
+        if (visited[neighbor] || this.cells[neighbor] !== targetMaterial) continue;
+        visited[neighbor] = 1;
+        queue[tail++] = neighbor;
+      }
+    }
+
+    return filled;
+  }
+
   clear() {
     for (const name of Object.keys(this.layers)) this.clearLayer(name);
     this.objects.length = 0;
@@ -541,6 +630,7 @@ export class PixelWorld {
     this.withLayer(name, () => {
       this.cells.fill(MATERIAL.SPACE);
       this.data.fill(0);
+      this.temperature.fill(PIXEL_BY_ID[MATERIAL.SPACE].temperature);
       this.burnSource.fill(0);
       this.tintR.fill(0);
       this.tintG.fill(0);
@@ -571,11 +661,100 @@ export class PixelWorld {
       if (!Array.isArray(save.layers[name])) throw new Error(`Save ${name} layer must be an array of rows.`);
       this.loadSaveLayer(name, save.layers[name]);
     }
+    this.drawSaveTemplates(save.templates ?? []);
     for (const name of ['backdrop', 'background', 'foreground']) {
       this.withLayer(name, () => this.activateAllDynamic());
     }
     this.bindLayer('foreground');
     loadPixelObjects(this, save.objects ?? []);
+  }
+
+  drawSaveTemplates(references = []) {
+    if (!Array.isArray(references)) throw new Error('Save templates must be an array.');
+
+    for (const reference of references) {
+      const template = reference?.template ?? reference;
+      if (!template || template.encoding !== 'layers-rows-rle' || !template.layers) {
+        throw new Error('Save template references must be resolved before loading.');
+      }
+
+      const x = reference.x ?? 0;
+      const y = reference.y ?? 0;
+      if (!Number.isInteger(x) || !Number.isInteger(y)) throw new Error('Save template x/y must be integers.');
+
+      const transparent = reference.transparent ?? template.transparent ?? true;
+      const layerOverride = reference.layer ?? null;
+      if (layerOverride !== null) {
+        const sourceLayerName = template.layers[layerOverride] ? layerOverride : (template.layers.foreground ? 'foreground' : Object.keys(template.layers)[0]);
+        this.drawSaveTemplateLayer(layerOverride, template, sourceLayerName, x, y, transparent);
+        continue;
+      }
+
+      for (const sourceLayerName of ['backdrop', 'background', 'foreground']) {
+        if (template.layers[sourceLayerName] === undefined) continue;
+        this.drawSaveTemplateLayer(sourceLayerName, template, sourceLayerName, x, y, transparent);
+      }
+    }
+  }
+
+  drawSaveTemplateLayer(targetLayerName, template, sourceLayerName, offsetX, offsetY, transparent) {
+    const rows = template.layers[sourceLayerName];
+    if (!this.layers[targetLayerName]) throw new Error(`Unknown template target layer "${targetLayerName}".`);
+    if (!Array.isArray(rows)) throw new Error(`Template ${sourceLayerName} layer must be an array of rows.`);
+
+    this.withLayer(targetLayerName, () => {
+      this.suspendActivation = true;
+      let y = 0;
+      try {
+        for (const rowEntry of rows) {
+          if (rowEntry.shape) {
+            this.drawLayerShape({
+              ...rowEntry,
+              x: offsetX + (rowEntry.x ?? 0),
+              y: offsetY + (rowEntry.y ?? 0),
+            });
+            continue;
+          }
+          const repeat = rowEntry.repeat ?? 1;
+          if (!Number.isInteger(repeat) || repeat < 1) throw new Error('Template row repeat must be a positive integer.');
+          for (let i = 0; i < repeat; i++) {
+            if (y >= template.height) throw new Error(`Template ${sourceLayerName} layer defines more rows than its height.`);
+            this.drawSaveTemplateRow(offsetY + y, offsetX, template.width, rowEntry.runs, transparent);
+            y++;
+          }
+        }
+      } finally {
+        this.suspendActivation = false;
+      }
+      if (y !== template.height) throw new Error(`Template ${sourceLayerName} layer defines ${y} rows, expected ${template.height}.`);
+    });
+  }
+
+  drawSaveTemplateRow(worldY, offsetX, templateWidth, runs, transparent) {
+    if (!Array.isArray(runs)) throw new Error('Template row is missing runs.');
+
+    let x = 0;
+    for (const run of runs) {
+      const [materialName, count, value = 0, runOptions = {}] = run;
+      const material = MATERIAL_BY_NAME[materialName];
+      if (material === undefined) throw new Error(`Unknown material "${materialName}" in template row.`);
+      if (!Number.isInteger(count) || count < 1) throw new Error('Invalid template run length.');
+
+      for (let i = 0; i < count; i++) {
+        if (x >= templateWidth) throw new Error(`Template row is wider than ${templateWidth} pixels.`);
+        const worldX = offsetX + x;
+        if (
+          this.inBounds(worldX, worldY)
+          && (!transparent || (material !== MATERIAL.SPACE && material !== MATERIAL.AIR))
+        ) {
+          const flags = runOptions.static ? CELL_FLAGS.STATIC : (runOptions.noGravity ? CELL_FLAGS.NO_GRAVITY : 0);
+          this.setCell(this.index(worldX, worldY), material, value, { force: true, flags, silent: true });
+        }
+        x++;
+      }
+    }
+
+    if (x !== templateWidth) throw new Error(`Template row defines ${x} pixels, expected ${templateWidth}.`);
   }
 
   loadSaveLayer(name, rows) {
@@ -584,6 +763,10 @@ export class PixelWorld {
       let y = 0;
       try {
         for (const rowEntry of rows) {
+          if (rowEntry.shape) {
+            this.drawLayerShape(rowEntry);
+            continue;
+          }
           const repeat = rowEntry.repeat ?? 1;
           if (!Number.isInteger(repeat) || repeat < 1) throw new Error('Save row repeat must be a positive integer.');
           for (let i = 0; i < repeat; i++) {
@@ -606,7 +789,7 @@ export class PixelWorld {
 
     let x = 0;
     for (const run of runs) {
-      const [materialName, count, value = 0] = run;
+      const [materialName, count, value = 0, runOptions = {}] = run;
       const material = MATERIAL_BY_NAME[materialName];
       if (material === undefined) {
         throw new Error(`Unknown material "${materialName}" in save row ${y}.`);
@@ -617,13 +800,96 @@ export class PixelWorld {
 
       for (let i = 0; i < count; i++) {
         if (x >= this.width) throw new Error(`Save row ${y} is wider than ${this.width} pixels.`);
-        this.setCell(this.index(x, y), material, value, { force: true, flags: 0, silent: true });
+        const flags = runOptions.static ? CELL_FLAGS.STATIC : (runOptions.noGravity ? CELL_FLAGS.NO_GRAVITY : 0);
+        this.setCell(this.index(x, y), material, value, { force: true, flags, silent: true });
         x++;
       }
     }
 
     if (x !== this.width) {
       throw new Error(`Save row ${y} defines ${x} pixels, expected ${this.width}.`);
+    }
+  }
+
+  drawLayerShape(shape) {
+    const material = MATERIAL_BY_NAME[shape.material];
+    if (material === undefined) throw new Error(`Unknown shape material "${shape.material}".`);
+
+    const kind = shape.shape;
+    const x = shape.x ?? 0;
+    const y = shape.y ?? 0;
+    const value = shape.value ?? 0;
+    const flags = shape.static ? CELL_FLAGS.STATIC : (shape.noGravity ? CELL_FLAGS.NO_GRAVITY : 0);
+    const options = { force: true, flags, silent: true };
+    if (shape.temperature !== undefined) options.temperature = shape.temperature;
+
+    if (kind === 'square' || kind === 'rect' || kind === 'rectangle') {
+      const width = shape.width ?? shape.size ?? 1;
+      const height = shape.height ?? shape.size ?? width;
+      this.drawRectShape(x, y, width, height, material, value, options);
+      return;
+    }
+
+    if (kind === 'circle') {
+      const radius = shape.radius ?? Math.floor((shape.size ?? 1) / 2);
+      this.drawEllipseShape(x, y, radius, radius, material, value, options);
+      return;
+    }
+
+    if (kind === 'ellipse') {
+      const radiusX = shape.radiusX ?? shape.rx ?? Math.floor((shape.width ?? 1) / 2);
+      const radiusY = shape.radiusY ?? shape.ry ?? Math.floor((shape.height ?? 1) / 2);
+      this.drawEllipseShape(x, y, radiusX, radiusY, material, value, options);
+      return;
+    }
+
+    if (kind === 'donut') {
+      const outerX = shape.outerRadiusX ?? shape.radiusX ?? shape.outerRadius ?? shape.radius ?? 1;
+      const outerY = shape.outerRadiusY ?? shape.radiusY ?? shape.outerRadius ?? shape.radius ?? outerX;
+      const innerX = shape.innerRadiusX ?? shape.innerRadius ?? Math.max(0, outerX - 1);
+      const innerY = shape.innerRadiusY ?? shape.innerRadius ?? Math.max(0, outerY - 1);
+      this.drawDonutShape(x, y, outerX, outerY, innerX, innerY, material, value, options);
+      return;
+    }
+
+    throw new Error(`Unknown layer shape "${kind}".`);
+  }
+
+  drawRectShape(x, y, width, height, material, value, options) {
+    for (let yy = y; yy < y + height; yy++) {
+      for (let xx = x; xx < x + width; xx++) {
+        if (this.inBounds(xx, yy)) this.setCell(this.index(xx, yy), material, value, options);
+      }
+    }
+  }
+
+  drawEllipseShape(cx, cy, radiusX, radiusY, material, value, options) {
+    const rx = Math.max(0.5, radiusX);
+    const ry = Math.max(0.5, radiusY);
+    for (let y = Math.floor(cy - ry); y <= Math.ceil(cy + ry); y++) {
+      for (let x = Math.floor(cx - rx); x <= Math.ceil(cx + rx); x++) {
+        const dx = (x - cx) / rx;
+        const dy = (y - cy) / ry;
+        if (dx * dx + dy * dy <= 1 && this.inBounds(x, y)) this.setCell(this.index(x, y), material, value, options);
+      }
+    }
+  }
+
+  drawDonutShape(cx, cy, outerX, outerY, innerX, innerY, material, value, options) {
+    const ox = Math.max(0.5, outerX);
+    const oy = Math.max(0.5, outerY);
+    const ix = Math.max(0.5, innerX);
+    const iy = Math.max(0.5, innerY);
+    for (let y = Math.floor(cy - oy); y <= Math.ceil(cy + oy); y++) {
+      for (let x = Math.floor(cx - ox); x <= Math.ceil(cx + ox); x++) {
+        const odx = (x - cx) / ox;
+        const ody = (y - cy) / oy;
+        const idx = (x - cx) / ix;
+        const idy = (y - cy) / iy;
+        if (odx * odx + ody * ody <= 1 && idx * idx + idy * idy > 1 && this.inBounds(x, y)) {
+          this.setCell(this.index(x, y), material, value, options);
+        }
+      }
     }
   }
 
@@ -702,7 +968,8 @@ export class PixelWorld {
 
       const pixel = PIXEL_BY_ID[this.cells[i]];
       if (!pixel) continue;
-      pixel.update(this, i, i % this.width, Math.floor(i / this.width));
+      pixel.update(this, i, i % this.width, Math.floor(i / this.width), this.isStatic(i));
+      this.coolCell(i);
       this.markRenderDirty(i);
     }
 

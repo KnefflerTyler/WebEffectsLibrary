@@ -13,6 +13,7 @@ export class SmokePixel extends Pixel {
       gasSpread: 1,
       displaceable: true,
       plantGrowThrough: true,
+      temperature: 120,
     });
   }
 
