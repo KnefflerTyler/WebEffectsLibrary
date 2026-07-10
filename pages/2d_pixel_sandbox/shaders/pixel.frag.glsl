@@ -106,11 +106,11 @@ void main() {
   } else if (u_layerVisibility.y != 0 && !transparentType(bgState.r)) {
     state = bgState;
     tint = texelFetch(u_backgroundColor, cell, 0);
-    layerTint = 0.025;
+    layerTint = 0.05;
   } else if (u_layerVisibility.x != 0) {
     state = texelFetch(u_backdropState, cell, 0);
     tint = texelFetch(u_backdropColor, cell, 0);
-    layerTint = 0.05;
+    layerTint = 0.10;
   } else {
     outColor = vec4(0.02, 0.027, 0.043, 1.0);
     return;

@@ -222,10 +222,10 @@ export class PixelRenderer {
         layer = foreground;
       } else if (this.layerVisibility.background && bgType !== MATERIAL.SPACE && bgType !== MATERIAL.AIR) {
         layer = background;
-        layerTint = 0.025;
+        layerTint = 0.05;
       } else if (this.layerVisibility.backdrop) {
         layer = backdrop;
-        layerTint = 0.05;
+        layerTint = 0.10;
       }
       if (!layer) {
         out[p++] = 5;

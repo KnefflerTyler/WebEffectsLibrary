@@ -3,6 +3,7 @@ import { MoonObject } from './sky/MoonObject.js';
 import { StarObject } from './sky/StarObject.js';
 import { SunObject } from './sky/SunObject.js';
 import { TentObject } from './TentObject.js';
+import { TreeObject } from './TreeObject.js';
 
 export const PIXEL_OBJECTS = Object.freeze({
   tent: TentObject,
@@ -10,6 +11,7 @@ export const PIXEL_OBJECTS = Object.freeze({
   moon: MoonObject,
   star: StarObject,
   sun: SunObject,
+  tree: TreeObject,
 });
 
 export function loadPixelObjects(world, references = []) {

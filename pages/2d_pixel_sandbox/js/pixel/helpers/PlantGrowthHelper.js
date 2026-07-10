@@ -115,8 +115,10 @@ export class PlantGrowthHelper {
     return false;
   }
 
-  static tryGrowTree(world, x, y, energy) {
-    const height = Math.min(18, 1 + Math.floor(energy / 14));
+  static tryGrowTree(world, x, y, energy, options = {}) {
+    const maxHeight = options.maxHeight ?? 18;
+    const maxCrownRadius = options.maxCrownRadius ?? 7;
+    const height = Math.min(maxHeight, 1 + Math.floor(energy / 14));
     const sourceLayer = world.activeLayerName;
 
     for (let h = 1; h <= height; h++) {
@@ -140,7 +142,7 @@ export class PlantGrowthHelper {
     if (energy < 112) return false;
 
     const crownY = y - height;
-    const radius = Math.min(7, 2 + Math.floor((energy - 112) / 32));
+    const radius = Math.min(maxCrownRadius, 2 + Math.floor((energy - 112) / 32));
     for (let dy = -radius; dy <= radius; dy++) {
       for (let dx = -radius; dx <= radius; dx++) {
         const oval = dx * dx + dy * dy * 1.35;
