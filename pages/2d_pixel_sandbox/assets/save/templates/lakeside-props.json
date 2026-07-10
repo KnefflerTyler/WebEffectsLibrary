@@ -1,0 +1,33 @@
+{
+  "name": "Lakeside Camp Props",
+  "version": 1,
+  "width": 170,
+  "height": 35,
+  "encoding": "layers-rows-rle",
+  "transparent": true,
+  "layers": {
+    "foreground": [
+      { "shape": "rect", "material": "wood", "x": 18, "y": 20, "width": 54, "height": 3, "static": true },
+      { "shape": "rect", "material": "wood", "x": 18, "y": 24, "width": 54, "height": 1, "static": true },
+      { "shape": "rect", "material": "wood", "x": 22, "y": 23, "width": 2, "height": 9, "static": true },
+      { "shape": "rect", "material": "wood", "x": 64, "y": 23, "width": 2, "height": 9, "static": true },
+
+      { "shape": "rect", "material": "wood", "x": 25, "y": 14, "width": 9, "height": 2, "static": true },
+      { "shape": "rect", "material": "wood", "x": 26, "y": 16, "width": 2, "height": 4, "static": true },
+      { "shape": "rect", "material": "wood", "x": 32, "y": 16, "width": 2, "height": 4, "static": true },
+
+      { "shape": "rect", "material": "wood", "x": 35, "y": 10, "width": 1, "height": 10, "static": true },
+      { "shape": "rect", "material": "wood", "x": 34, "y": 9, "width": 1, "height": 3, "static": true },
+      { "shape": "rect", "material": "wood", "x": 33, "y": 7, "width": 1, "height": 3, "static": true },
+      { "shape": "rect", "material": "wood", "x": 32, "y": 5, "width": 1, "height": 3, "static": true },
+      { "shape": "rect", "material": "root", "x": 31, "y": 4, "width": 1, "height": 8, "noGravity": true },
+
+      { "shape": "rect", "material": "wood", "x": 84, "y": 13, "width": 2, "height": 12, "static": true },
+      { "shape": "circle", "material": "fire", "x": 85, "y": 11, "radius": 2, "static": true },
+      { "shape": "rect", "material": "wood", "x": 144, "y": 13, "width": 2, "height": 12, "static": true },
+      { "shape": "circle", "material": "fire", "x": 145, "y": 11, "radius": 2, "static": true },
+
+      { "repeat": 35, "runs": [["air", 170]] }
+    ]
+  }
+}

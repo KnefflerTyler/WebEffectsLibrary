@@ -1,0 +1,21 @@
+{
+  "name": "Wooden Camp Bench",
+  "version": 1,
+  "width": 24,
+  "height": 12,
+  "encoding": "layers-rows-rle",
+  "transparent": true,
+  "layers": {
+    "foreground": [
+      { "runs": [["air", 24]] },
+      { "runs": [["air", 2], ["wood", 20, 0, {"static": true}], ["air", 2]] },
+      { "runs": [["air", 2], ["wood", 20, 0, {"static": true}], ["air", 2]] },
+      { "runs": [["air", 3], ["wood", 2, 0, {"static": true}], ["air", 14], ["wood", 2, 0, {"static": true}], ["air", 3]] },
+      { "runs": [["air", 1], ["wood", 22, 0, {"static": true}], ["air", 1]] },
+      { "runs": [["air", 1], ["wood", 22, 0, {"static": true}], ["air", 1]] },
+      { "runs": [["air", 3], ["wood", 3, 0, {"static": true}], ["air", 12], ["wood", 3, 0, {"static": true}], ["air", 3]] },
+      { "repeat": 4, "runs": [["air", 3], ["wood", 3, 0, {"static": true}], ["air", 12], ["wood", 3, 0, {"static": true}], ["air", 3]] },
+      { "runs": [["air", 24]] }
+    ]
+  }
+}

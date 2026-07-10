@@ -31,7 +31,7 @@ export class NightSkyTerrainGenerator {
         x: options.moonX ?? Math.round(world.width * 0.82),
         y: options.moonY ?? Math.round(world.height * 0.16),
         radius: options.moonRadius ?? Math.max(9, Math.round(world.height * 0.04)),
-        crescent: options.moonCrescent ?? 0.3,
+        crescent: options.moonCrescent ?? 0,
         layer: layerName,
       }));
     });

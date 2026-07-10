@@ -31,7 +31,7 @@ const paintModeButtons = [...document.querySelectorAll('.paint-mode')];
 const layerVisibilityInputs = [...document.querySelectorAll('.layer-visibility')];
 
 const world = new PixelWorld(WORLD_WIDTH, WORLD_HEIGHT);
-const renderer = new PixelRenderer(canvas, world);
+const renderer = await PixelRenderer.create(canvas, world);
 
 let material = MATERIAL.WATER;
 let brushSize = Number(brushInput.value);

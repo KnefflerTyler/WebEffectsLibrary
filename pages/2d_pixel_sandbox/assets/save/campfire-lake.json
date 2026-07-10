@@ -43,6 +43,21 @@
       "file": "templates/campsite-detail.json",
       "x": 176,
       "y": 150
+    },
+    {
+      "file": "templates/bench.json",
+      "x": 181,
+      "y": 153
+    },
+    {
+      "file": "templates/bench.json",
+      "x": 241,
+      "y": 153
+    },
+    {
+      "file": "templates/lakeside-props.json",
+      "x": 110,
+      "y": 140
     }
   ],
   "objects": [
@@ -67,6 +82,14 @@
       { "shape": "ellipse", "material": "ash", "x": 222, "y": 173, "radiusX": 11, "radiusY": 3 },
       { "shape": "circle", "material": "rock", "x": 184, "y": 164, "radius": 2 },
       { "shape": "ellipse", "material": "rock", "x": 197, "y": 165, "radiusX": 3, "radiusY": 2 },
+      { "shape": "rect", "material": "wood", "x": 173, "y": 161, "width": 8, "height": 2, "static": true },
+      { "shape": "rect", "material": "wood", "x": 175, "y": 158, "width": 8, "height": 2, "static": true },
+      { "shape": "circle", "material": "rock", "x": 251, "y": 169, "radius": 1 },
+      { "shape": "circle", "material": "rock", "x": 258, "y": 171, "radius": 1 },
+      { "shape": "circle", "material": "rock", "x": 265, "y": 170, "radius": 1 },
+      { "shape": "circle", "material": "rock", "x": 272, "y": 172, "radius": 1 },
+      { "shape": "square", "material": "flower", "x": 188, "y": 161, "width": 1, "height": 2 },
+      { "shape": "square", "material": "flower", "x": 192, "y": 162, "width": 1, "height": 2 },
       { "shape": "square", "material": "flower", "x": 296, "y": 164, "width": 2, "height": 2 },
       { "shape": "circle", "material": "flower", "x": 304, "y": 163, "radius": 1 }
     ]
