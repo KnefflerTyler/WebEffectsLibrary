@@ -8,6 +8,11 @@ export class WetWoodPixel extends Pixel {
       color: [89, 72, 52],
       weight: 82,
       flammability: 0.004,
+      burnLifeMin: 64,
+      burnLifeMax: 104,
+      burnoutChance: 0.0025,
+      burnsTo: MATERIAL.CHARCOAL,
+      burnsToChance: 0.55,
       wetTo: MATERIAL.WET_WOOD,
     });
   }

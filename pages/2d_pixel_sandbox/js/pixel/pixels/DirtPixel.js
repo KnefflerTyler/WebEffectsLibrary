@@ -1,3 +1,4 @@
+import { PlantGrowthHelper } from '../helpers/PlantGrowthHelper.js';
 import { MATERIAL, Pixel } from '../Pixel.js';
 
 export class DirtPixel extends Pixel {
@@ -18,6 +19,8 @@ export class DirtPixel extends Pixel {
   }
 
   update(world, i, x, y) {
+    const grassNearby = world.hasNeighborWhere(x, y, (pixel) => pixel.id === MATERIAL.GRASS);
+    if (PlantGrowthHelper.tryGrowGrassOnDirt(world, i, x, y, grassNearby ? 0.045 : 0.012)) return;
     if (world.tryHydrateFromNeighbors(i, x, y)) return;
 
     const dir = Math.random() < 0.5 ? -1 : 1;

@@ -12,11 +12,13 @@
   <main class="app">
     <section class="stage" aria-label="Pixel world">
       <div class="world-frame">
-        <canvas id="world" width="220" height="136" aria-label="Pixel sandbox simulation"></canvas>
+        <canvas id="world" width="330" height="204" aria-label="Pixel sandbox simulation"></canvas>
       </div>
     </section>
 
-    <aside class="toolbar" aria-label="Pixel sandbox controls">
+    <button class="toolbar-toggle" id="toolbar-toggle" type="button" aria-controls="toolbar" aria-expanded="false" aria-label="Show controls">&lt;</button>
+
+    <aside class="toolbar" id="toolbar" aria-label="Pixel sandbox controls" aria-hidden="true">
       <div class="title">
         <p class="eyebrow">Cellular sim</p>
         <h1>Pixel Sandbox</h1>
@@ -27,7 +29,9 @@
         <div class="materials">
           <button class="material active" type="button" data-material="water"><span class="swatch water"></span>Water</button>
           <button class="material" type="button" data-material="dirt"><span class="swatch dirt"></span>Dirt</button>
+          <button class="material" type="button" data-material="grass"><span class="swatch grass"></span>Grass</button>
           <button class="material" type="button" data-material="wood"><span class="swatch wood"></span>Wood</button>
+          <button class="material" type="button" data-material="cloth"><span class="swatch cloth"></span>Cloth</button>
           <button class="material" type="button" data-material="seed"><span class="swatch seed"></span>Seed</button>
           <button class="material" type="button" data-material="root"><span class="swatch root"></span>Root</button>
           <button class="material" type="button" data-material="leaf"><span class="swatch leaf"></span>Leaf</button>
@@ -35,6 +39,7 @@
           <button class="material" type="button" data-material="steam"><span class="swatch steam"></span>Steam</button>
           <button class="material" type="button" data-material="wetWood"><span class="swatch wet-wood"></span>Wet wood</button>
           <button class="material" type="button" data-material="mud"><span class="swatch mud"></span>Mud</button>
+          <button class="material" type="button" data-material="charcoal"><span class="swatch charcoal"></span>Charcoal</button>
           <button class="material" type="button" data-material="ash"><span class="swatch ash"></span>Ash</button>
           <button class="material" type="button" data-material="air"><span class="swatch air"></span>Air</button>
           <button class="material" type="button" data-material="oxygen"><span class="swatch oxygen"></span>Oxygen</button>
@@ -45,6 +50,13 @@
 
       <section class="tool-group" aria-label="Brush">
         <div class="group-label">Brush</div>
+        <label class="range-row">
+          Layer
+          <select id="brush-layer">
+            <option value="foreground">Foreground</option>
+            <option value="background">Background</option>
+          </select>
+        </label>
         <label class="range-row">
           Size
           <output id="brush-value">6</output>
@@ -59,14 +71,26 @@
           <label class="check-row"><input id="brush-static" type="checkbox"> Static</label>
           <label class="check-row"><input id="brush-no-gravity" type="checkbox"> No gravity</label>
         </div>
+        <label class="color-row">
+          Cloth
+          <input id="cloth-color" type="color" value="#bc3638">
+        </label>
       </section>
 
       <section class="tool-group" aria-label="Actions">
         <div class="group-label">World</div>
+        <label class="scene-row">
+          Scene
+          <select id="scene-select">
+            <option value="default-simulation.json">Default Simulation</option>
+            <option value="campfire-lake.json">Campfire by the Lake</option>
+          </select>
+        </label>
         <div class="actions">
           <button id="pause" type="button">Pause</button>
           <button id="step" type="button">Step</button>
           <button id="reset" type="button">Reset</button>
+          <button id="tent" type="button">Tent</button>
           <button id="clear" type="button">Clear</button>
         </div>
       </section>

@@ -7,7 +7,12 @@ export class WoodPixel extends Pixel {
       name: 'wood',
       color: [129, 82, 42],
       weight: 70,
-      flammability: 0.035,
+      flammability: 0.018,
+      burnLifeMin: 78,
+      burnLifeMax: 126,
+      burnoutChance: 0.0035,
+      burnsTo: MATERIAL.CHARCOAL,
+      burnsToChance: 0.82,
       wetTo: MATERIAL.WET_WOOD,
     });
   }

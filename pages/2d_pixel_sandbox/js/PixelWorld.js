@@ -1,4 +1,6 @@
 import { MATERIAL, MATERIAL_BY_NAME, PIXEL_BY_ID } from './pixel/pixelRegistry.js';
+import { loadPixelObjects } from './pixel/objects/objectRegistry.js';
+import { runTerrainGenerators } from './terrain-generators/terrainGeneratorRegistry.js';
 
 export { MATERIAL, MATERIAL_BY_NAME } from './pixel/pixelRegistry.js';
 
@@ -12,19 +14,70 @@ export class PixelWorld {
     this.width = width;
     this.height = height;
     this.total = width * height;
-    this.cells = new Uint8Array(this.total);
-    this.data = new Uint8Array(this.total);
-    this.shade = new Uint8Array(this.total);
-    this.flags = new Uint8Array(this.total);
-    this.touched = new Uint32Array(this.total);
-    this.activeFlags = new Uint8Array(this.total);
-    this.nextActiveFlags = new Uint8Array(this.total);
-    this.activeList = [];
-    this.nextActiveList = [];
+    this.layers = {
+      foreground: this.createLayerState(),
+      background: this.createLayerState(),
+      backdrop: this.createLayerState(),
+    };
+    this.activeLayerName = 'foreground';
+    this.bindLayer('foreground');
+    this.objects = [];
+    this.backdropObjects = [];
     this.flagsVersion = 0;
     this.suspendActivation = false;
     this.tick = 1;
     this.clear();
+  }
+
+  createLayerState() {
+    const dirtyTileSize = 32;
+    const dirtyTileColumns = Math.ceil(this.width / dirtyTileSize);
+    const dirtyTileRows = Math.ceil(this.height / dirtyTileSize);
+    return {
+      cells: new Uint8Array(this.total),
+      data: new Uint8Array(this.total),
+      burnSource: new Uint8Array(this.total),
+      tintR: new Uint8Array(this.total),
+      tintG: new Uint8Array(this.total),
+      tintB: new Uint8Array(this.total),
+      shade: new Uint8Array(this.total),
+      flags: new Uint8Array(this.total),
+      touched: new Uint32Array(this.total),
+      activeFlags: new Uint8Array(this.total),
+      nextActiveFlags: new Uint8Array(this.total),
+      activeList: [],
+      nextActiveList: [],
+      dirtyTileSize,
+      dirtyTileColumns,
+      dirtyTileRows,
+      dirtyTileFlags: new Uint8Array(dirtyTileColumns * dirtyTileRows),
+      dirtyTileList: [],
+      fullRenderDirty: true,
+    };
+  }
+
+  bindLayer(name) {
+    const layer = this.layers[name];
+    if (!layer) throw new Error(`Unknown pixel layer "${name}".`);
+    this.activeLayerName = name;
+    for (const key of ['cells', 'data', 'burnSource', 'tintR', 'tintG', 'tintB', 'shade', 'flags', 'touched', 'activeFlags', 'nextActiveFlags', 'activeList', 'nextActiveList']) {
+      this[key] = layer[key];
+    }
+    return layer;
+  }
+
+  withLayer(name, fn) {
+    const previous = this.activeLayerName;
+    this.bindLayer(name);
+    try {
+      return fn();
+    } finally {
+      this.bindLayer(previous);
+    }
+  }
+
+  otherLayerName(name = this.activeLayerName) {
+    return name === 'foreground' ? 'background' : 'foreground';
   }
 
   index(x, y) {
@@ -39,6 +92,50 @@ export class PixelWorld {
     return Math.floor(Math.random() * 256);
   }
 
+  markRenderDirty(i) {
+    if (i < 0 || i >= this.total) return;
+    const layer = this.layers[this.activeLayerName];
+    if (layer.fullRenderDirty) return;
+    const x = i % this.width;
+    const y = Math.floor(i / this.width);
+    const tileX = Math.floor(x / layer.dirtyTileSize);
+    const tileY = Math.floor(y / layer.dirtyTileSize);
+    const tile = tileY * layer.dirtyTileColumns + tileX;
+    if (layer.dirtyTileFlags[tile]) return;
+    layer.dirtyTileFlags[tile] = 1;
+    layer.dirtyTileList.push(tile);
+  }
+
+  markLayerFullyDirty(layer) {
+    layer.fullRenderDirty = true;
+    layer.dirtyTileList.length = 0;
+    layer.dirtyTileFlags.fill(0);
+  }
+
+  consumeRenderDirty(name) {
+    const layer = this.layers[name];
+    if (layer.fullRenderDirty) {
+      layer.fullRenderDirty = false;
+      return [{ x: 0, y: 0, width: this.width, height: this.height }];
+    }
+    if (layer.dirtyTileList.length === 0) return [];
+    const regions = layer.dirtyTileList.map((tile) => {
+      const tileX = tile % layer.dirtyTileColumns;
+      const tileY = Math.floor(tile / layer.dirtyTileColumns);
+      const x = tileX * layer.dirtyTileSize;
+      const y = tileY * layer.dirtyTileSize;
+      layer.dirtyTileFlags[tile] = 0;
+      return {
+        x,
+        y,
+        width: Math.min(layer.dirtyTileSize, this.width - x),
+        height: Math.min(layer.dirtyTileSize, this.height - y),
+      };
+    });
+    layer.dirtyTileList.length = 0;
+    return regions;
+  }
+
   isEmpty(type) {
     return PIXEL_BY_ID[type]?.displaceable ?? false;
   }
@@ -49,6 +146,18 @@ export class PixelWorld {
 
   isStatic(i) {
     return (this.flags[i] & CELL_FLAGS.STATIC) !== 0;
+  }
+
+  addObject(object) {
+    object.place(this);
+    this.objects.push(object);
+    return object;
+  }
+
+  addBackdropObject(object) {
+    object.placeBackdrop(this);
+    this.backdropObjects.push(object);
+    return object;
   }
 
   hasNoGravity(i) {
@@ -64,8 +173,14 @@ export class PixelWorld {
     const previousFlags = this.flags[i];
     this.cells[i] = type;
     this.data[i] = pixel.getInitialData(value);
+    this.burnSource[i] = type === MATERIAL.FIRE ? (options.burnSource ?? this.burnSource[i]) : 0;
+    const tint = pixel.usesCustomColor ? (options.color ?? pixel.color) : pixel.color;
+    this.tintR[i] = tint[0];
+    this.tintG[i] = tint[1];
+    this.tintB[i] = tint[2];
     this.shade[i] = this.randomByte();
     this.flags[i] = options.flags ?? this.flags[i];
+    this.markRenderDirty(i);
     if (this.flags[i] !== previousFlags) this.flagsVersion++;
     if (!options.silent) {
       this.touched[i] = this.tick;
@@ -78,31 +193,51 @@ export class PixelWorld {
     const cellA = this.cells[a];
     const dataA = this.data[a];
     const shadeA = this.shade[a];
+    const burnSourceA = this.burnSource[a];
+    const tintRA = this.tintR[a];
+    const tintGA = this.tintG[a];
+    const tintBA = this.tintB[a];
     const flagsA = this.flags[a];
     this.cells[a] = this.cells[b];
     this.data[a] = this.data[b];
     this.shade[a] = this.shade[b];
+    this.burnSource[a] = this.burnSource[b];
+    this.tintR[a] = this.tintR[b];
+    this.tintG[a] = this.tintG[b];
+    this.tintB[a] = this.tintB[b];
     this.flags[a] = this.flags[b];
     this.cells[b] = cellA;
     this.data[b] = dataA;
     this.shade[b] = shadeA;
+    this.burnSource[b] = burnSourceA;
+    this.tintR[b] = tintRA;
+    this.tintG[b] = tintGA;
+    this.tintB[b] = tintBA;
     this.flags[b] = flagsA;
     this.touched[a] = this.tick;
     this.touched[b] = this.tick;
     this.markActiveAroundIndex(a);
     this.markActiveAroundIndex(b);
+    this.markRenderDirty(a);
+    this.markRenderDirty(b);
   }
 
   moveInto(a, b) {
     this.cells[b] = this.cells[a];
     this.data[b] = this.data[a];
     this.shade[b] = this.shade[a];
+    this.burnSource[b] = this.burnSource[a];
+    this.tintR[b] = this.tintR[a];
+    this.tintG[b] = this.tintG[a];
+    this.tintB[b] = this.tintB[a];
     this.flags[b] = this.flags[a];
     this.setCell(a, MATERIAL.SPACE, 0, { force: true, flags: 0 });
     this.touched[a] = this.tick;
     this.touched[b] = this.tick;
     this.markActiveAroundIndex(a);
     this.markActiveAroundIndex(b);
+    this.markRenderDirty(a);
+    this.markRenderDirty(b);
   }
 
   tryDisplaceInto(i, x, y, verticalDirection = 0) {
@@ -140,6 +275,17 @@ export class PixelWorld {
       }
     }
     return false;
+  }
+
+  hasNeighborWhereAcrossLayers(x, y, predicate) {
+    if (this.hasNeighborWhere(x, y, predicate)) return true;
+    return this.withLayer(this.otherLayerName(), () => {
+      if (this.inBounds(x, y)) {
+        const index = this.index(x, y);
+        if (predicate(this.getPixelAtIndex(index), index, x, y)) return true;
+      }
+      return this.hasNeighborWhere(x, y, predicate);
+    });
   }
 
   tryExtinguishNeighbor(source, x, y) {
@@ -216,26 +362,49 @@ export class PixelWorld {
 
     const pixel = this.getPixelAtIndex(i);
     if (pixel.flammability <= 0) return false;
-    if (!this.hasNeighborWhere(x, y, (neighbor) => neighbor.burns)) return false;
-    if (pixel.oxygen <= 0 && !this.hasNeighborWhere(x, y, (neighbor) => neighbor.oxygen > 0)) return false;
+    if (!this.hasNeighborWhereAcrossLayers(x, y, (neighbor) => neighbor.burns)) return false;
+    if (pixel.oxygen <= 0 && !this.hasNeighborWhereAcrossLayers(x, y, (neighbor) => neighbor.oxygen > 0)) return false;
     if (Math.random() >= pixel.flammability) return false;
 
-    this.setCell(i, MATERIAL.FIRE, 24 + Math.floor(Math.random() * 20));
+    this.setCell(i, MATERIAL.FIRE, pixel.getBurnLife(), { burnSource: pixel.id });
     this.touched[i] = this.tick;
     return true;
   }
 
   igniteFlammableNeighbors(x, y, heat = 1) {
-    this.forNeighbors(x, y, (n, nx, ny) => {
+    const sourceLayer = this.activeLayerName;
+    const tryIgnite = (n, nx, ny) => {
       if (this.isStatic(n)) return true;
       const pixel = this.getPixelAtIndex(n);
-      if (pixel.oxygen <= 0 && !this.hasNeighborWhere(nx, ny, (neighbor) => neighbor.oxygen > 0)) return true;
+      if (pixel.oxygen <= 0 && !this.hasNeighborWhereAcrossLayers(nx, ny, (neighbor) => neighbor.oxygen > 0)) return true;
       if (pixel.flammability > 0 && Math.random() < pixel.flammability * heat) {
-        this.setCell(n, MATERIAL.FIRE, 18 + Math.floor(Math.random() * 24));
+        this.setCell(n, MATERIAL.FIRE, pixel.getBurnLife(), { burnSource: pixel.id });
         this.touched[n] = this.tick;
       }
       return true;
+    };
+    this.forNeighbors(x, y, tryIgnite);
+    this.withLayer(this.otherLayerName(sourceLayer), () => {
+      if (this.inBounds(x, y)) tryIgnite(this.index(x, y), x, y);
+      this.forNeighbors(x, y, tryIgnite);
     });
+  }
+
+  getBurnResidue(i) {
+    const sourcePixel = PIXEL_BY_ID[this.burnSource[i]];
+    if (sourcePixel && sourcePixel.burnsTo !== null && Math.random() < sourcePixel.burnsToChance) {
+      return sourcePixel.burnsTo;
+    }
+    return Math.random() < 0.45 ? MATERIAL.SMOKE : MATERIAL.ASH;
+  }
+
+  getBurnoutChance(i) {
+    return PIXEL_BY_ID[this.burnSource[i]]?.burnoutChance ?? 0.018;
+  }
+
+  canBurningCellDrift(i) {
+    const sourcePixel = PIXEL_BY_ID[this.burnSource[i]];
+    return !sourcePixel || sourcePixel.gas;
   }
 
   scorchLowFlammabilityNeighbors(x, y, chance) {
@@ -342,7 +511,10 @@ export class PixelWorld {
     }
   }
 
-  paintCircle(cx, cy, radius, material, flags = 0) {
+  paintCircle(cx, cy, radius, material, flags = 0, options = {}, layerName = this.activeLayerName) {
+    if (layerName !== this.activeLayerName) {
+      return this.withLayer(layerName, () => this.paintCircle(cx, cy, radius, material, flags, options, layerName));
+    }
     const radiusSq = radius * radius;
 
     for (let y = cy - radius; y <= cy + radius; y++) {
@@ -352,57 +524,79 @@ export class PixelWorld {
         const dy = y - cy;
         if (dx * dx + dy * dy > radiusSq) continue;
         if (Math.random() < 0.08 && material !== MATERIAL.SPACE && radius > 2) continue;
-        this.setCell(this.index(x, y), material, 0, { flags });
+        this.setCell(this.index(x, y), material, 0, { flags, ...options });
       }
     }
   }
 
   clear() {
-    this.cells.fill(MATERIAL.SPACE);
-    this.data.fill(0);
-    this.flags.fill(0);
-    this.activeFlags.fill(0);
-    this.nextActiveFlags.fill(0);
-    this.activeList.length = 0;
-    this.nextActiveList.length = 0;
+    for (const name of Object.keys(this.layers)) this.clearLayer(name);
+    this.objects.length = 0;
+    this.backdropObjects.length = 0;
     this.flagsVersion++;
-    for (let i = 0; i < this.total; i++) this.shade[i] = this.randomByte();
+    this.bindLayer('foreground');
+  }
+
+  clearLayer(name) {
+    this.withLayer(name, () => {
+      this.cells.fill(MATERIAL.SPACE);
+      this.data.fill(0);
+      this.burnSource.fill(0);
+      this.tintR.fill(0);
+      this.tintG.fill(0);
+      this.tintB.fill(0);
+      this.flags.fill(0);
+      this.touched.fill(0);
+      this.activeFlags.fill(0);
+      this.nextActiveFlags.fill(0);
+      this.activeList.length = 0;
+      this.nextActiveList.length = 0;
+      for (let i = 0; i < this.total; i++) this.shade[i] = this.randomByte();
+      this.markLayerFullyDirty(this.layers[name]);
+    });
   }
 
   loadSave(save) {
     if (save.width !== this.width || save.height !== this.height) {
       throw new Error(`Save dimensions ${save.width}x${save.height} do not match world ${this.width}x${this.height}.`);
     }
-    if (save.encoding !== 'rows-rle' || !Array.isArray(save.rows)) {
+    if (save.encoding !== 'layers-rows-rle' || !save.layers) {
       throw new Error('Unsupported save format.');
     }
 
     this.clear();
-    this.suspendActivation = true;
+    runTerrainGenerators(this, save.generators ?? []);
+    for (const name of ['backdrop', 'background', 'foreground']) {
+      if (save.layers[name] === undefined) continue;
+      if (!Array.isArray(save.layers[name])) throw new Error(`Save ${name} layer must be an array of rows.`);
+      this.loadSaveLayer(name, save.layers[name]);
+    }
+    for (const name of ['backdrop', 'background', 'foreground']) {
+      this.withLayer(name, () => this.activateAllDynamic());
+    }
+    this.bindLayer('foreground');
+    loadPixelObjects(this, save.objects ?? []);
+  }
 
-    let y = 0;
-    try {
-      for (const rowEntry of save.rows) {
-        const repeat = rowEntry.repeat ?? 1;
-        if (!Number.isInteger(repeat) || repeat < 1) {
-          throw new Error('Save row repeat must be a positive integer.');
+  loadSaveLayer(name, rows) {
+    this.withLayer(name, () => {
+      this.suspendActivation = true;
+      let y = 0;
+      try {
+        for (const rowEntry of rows) {
+          const repeat = rowEntry.repeat ?? 1;
+          if (!Number.isInteger(repeat) || repeat < 1) throw new Error('Save row repeat must be a positive integer.');
+          for (let i = 0; i < repeat; i++) {
+            if (y >= this.height) throw new Error(`Save ${name} layer defines more rows than the world height.`);
+            this.loadSaveRow(y, rowEntry.runs);
+            y++;
+          }
         }
-
-        for (let i = 0; i < repeat; i++) {
-          if (y >= this.height) throw new Error('Save defines more rows than the world height.');
-          this.loadSaveRow(y, rowEntry.runs);
-          y++;
-        }
+      } finally {
+        this.suspendActivation = false;
       }
-    } finally {
-      this.suspendActivation = false;
-    }
-
-    if (y !== this.height) {
-      throw new Error(`Save defines ${y} rows, expected ${this.height}.`);
-    }
-
-    this.activateAllDynamic();
+      if (y !== this.height) throw new Error(`Save ${name} layer defines ${y} rows, expected ${this.height}.`);
+    });
   }
 
   loadSaveRow(y, runs) {
@@ -435,6 +629,7 @@ export class PixelWorld {
 
   seed() {
     this.clear();
+    this.bindLayer('foreground');
     this.suspendActivation = true;
 
     for (let x = 0; x < this.width; x++) {
@@ -476,12 +671,24 @@ export class PixelWorld {
     this.tick++;
     if (this.tick > 4000000000) {
       this.tick = 1;
-      this.touched.fill(0);
+      for (const layer of Object.values(this.layers)) layer.touched.fill(0);
     }
 
-    if (this.activeList.length === 0 && this.nextActiveList.length > 0) {
-      this.promoteNextActive();
-    }
+    this.bindLayer('foreground');
+    for (const object of this.objects) object.update(this);
+    this.objects = this.objects.filter((object) => !object.destroyed);
+
+    this.bindLayer('backdrop');
+    for (const object of this.backdropObjects) object.updateBackdrop(this);
+
+    this.stepLayer('foreground');
+    this.stepLayer('background');
+    this.bindLayer('foreground');
+  }
+
+  stepLayer(name) {
+    this.bindLayer(name);
+    if (this.activeList.length === 0 && this.nextActiveList.length > 0) this.promoteNextActive();
 
     const processingList = this.activeList;
     const processingFlags = this.activeFlags;
@@ -496,6 +703,7 @@ export class PixelWorld {
       const pixel = PIXEL_BY_ID[this.cells[i]];
       if (!pixel) continue;
       pixel.update(this, i, i % this.width, Math.floor(i / this.width));
+      this.markRenderDirty(i);
     }
 
     processingList.length = 0;
@@ -503,5 +711,10 @@ export class PixelWorld {
     this.activeFlags = upcomingFlags;
     this.nextActiveList = processingList;
     this.nextActiveFlags = processingFlags;
+    const layer = this.layers[name];
+    layer.activeList = this.activeList;
+    layer.activeFlags = this.activeFlags;
+    layer.nextActiveList = this.nextActiveList;
+    layer.nextActiveFlags = this.nextActiveFlags;
   }
 }

@@ -1,21 +1,28 @@
 import { CELL_FLAGS, MATERIAL, MATERIAL_BY_NAME, PixelWorld } from './PixelWorld.js';
 import { PixelRenderer } from './PixelRenderer.js';
+import { TentObject } from './pixel/objects/TentObject.js';
 
-const WORLD_WIDTH = 660;
-const WORLD_HEIGHT = 408;
-const DEFAULT_SAVE_URL = 'assets/save/default-simulation.json';
+const WORLD_WIDTH = 330;
+const WORLD_HEIGHT = 204;
+const SAVE_DIRECTORY = 'assets/save';
 
 const canvas = document.getElementById('world');
+const toolbar = document.getElementById('toolbar');
+const toolbarToggle = document.getElementById('toolbar-toggle');
 const brushInput = document.getElementById('brush-size');
+const brushLayerInput = document.getElementById('brush-layer');
 const brushStaticInput = document.getElementById('brush-static');
 const brushNoGravityInput = document.getElementById('brush-no-gravity');
+const clothColorInput = document.getElementById('cloth-color');
 const speedInput = document.getElementById('sim-speed');
 const brushValue = document.getElementById('brush-value');
 const speedValue = document.getElementById('speed-value');
 const pauseBtn = document.getElementById('pause');
 const stepBtn = document.getElementById('step');
 const resetBtn = document.getElementById('reset');
+const tentBtn = document.getElementById('tent');
 const clearBtn = document.getElementById('clear');
+const sceneSelect = document.getElementById('scene-select');
 const pixelCount = document.getElementById('pixel-count');
 const fireCount = document.getElementById('fire-count');
 const waterCount = document.getElementById('water-count');
@@ -32,6 +39,22 @@ let drawing = false;
 let drawPoint = null;
 let strokeRadius = 0;
 let frame = 0;
+
+function setToolbarOpen(open) {
+  toolbar.classList.toggle('open', open);
+  toolbar.setAttribute('aria-hidden', String(!open));
+  toolbarToggle.setAttribute('aria-expanded', String(open));
+  toolbarToggle.textContent = open ? '>' : '<';
+  toolbarToggle.setAttribute('aria-label', open ? 'Hide controls' : 'Show controls');
+}
+
+toolbarToggle.addEventListener('click', () => setToolbarOpen(!toolbar.classList.contains('open')));
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && toolbar.classList.contains('open')) {
+    setToolbarOpen(false);
+    toolbarToggle.focus();
+  }
+});
 
 function canvasToWorld(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
@@ -52,9 +75,22 @@ function render(forceStats = false) {
   if (forceStats || frame % 8 === 0) updateStats(stats);
 }
 
+function hexToRgb(hex) {
+  const value = hex.replace('#', '');
+  return [
+    Number.parseInt(value.slice(0, 2), 16),
+    Number.parseInt(value.slice(2, 4), 16),
+    Number.parseInt(value.slice(4, 6), 16),
+  ];
+}
+
+function getPaintOptions() {
+  return material === MATERIAL.CLOTH ? { color: hexToRgb(clothColorInput.value) } : {};
+}
+
 function paintAt(clientX, clientY, radius = brushSize) {
   const point = canvasToWorld(clientX, clientY);
-  world.paintCircle(point.x, point.y, Math.round(radius), material, getBrushFlags());
+  world.paintCircle(point.x, point.y, Math.round(radius), material, getBrushFlags(), getPaintOptions(), brushLayerInput.value);
   render(true);
 }
 
@@ -74,13 +110,33 @@ function getBrushFlags() {
   return flags;
 }
 
-async function loadDefaultWorld() {
+function findSurfaceY(x) {
+  for (let y = 0; y < world.height; y++) {
+    const pixel = world.getPixelAtIndex(world.index(x, y));
+    if (world.cells[world.index(x, y)] !== MATERIAL.SPACE && !pixel.gas) return Math.max(0, y - 1);
+  }
+  return world.height - 42;
+}
+
+function placeTent() {
+  const x = Math.floor(world.width * 0.46);
+  const y = findSurfaceY(x);
+  world.addObject(new TentObject({
+    x,
+    y,
+    clothColor: hexToRgb(clothColorInput.value),
+  }));
+  render(true);
+}
+
+async function loadSelectedScene() {
+  const sceneUrl = `${SAVE_DIRECTORY}/${sceneSelect.value}`;
   try {
-    const response = await fetch(DEFAULT_SAVE_URL);
+    const response = await fetch(sceneUrl);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     world.loadSave(await response.json());
   } catch (error) {
-    console.warn('Default pixel sandbox save failed to load; using generated seed.', error);
+    console.warn(`Pixel sandbox scene "${sceneSelect.value}" failed to load; using generated seed.`, error);
     world.seed();
   }
 }
@@ -113,8 +169,14 @@ stepBtn.addEventListener('click', () => {
   render(true);
 });
 
+tentBtn.addEventListener('click', placeTent);
+
 resetBtn.addEventListener('click', () => {
-  loadDefaultWorld().then(() => render(true));
+  loadSelectedScene().then(() => render(true));
+});
+
+sceneSelect.addEventListener('change', () => {
+  loadSelectedScene().then(() => render(true));
 });
 
 clearBtn.addEventListener('click', () => {
@@ -123,6 +185,7 @@ clearBtn.addEventListener('click', () => {
 });
 
 canvas.addEventListener('pointerdown', (event) => {
+  if (toolbar.classList.contains('open')) setToolbarOpen(false);
   drawing = true;
   drawPoint = { clientX: event.clientX, clientY: event.clientY };
   strokeRadius = 0;
@@ -157,6 +220,6 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-await loadDefaultWorld();
+await loadSelectedScene();
 render(true);
 requestAnimationFrame(loop);

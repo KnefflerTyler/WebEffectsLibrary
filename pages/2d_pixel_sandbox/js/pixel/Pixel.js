@@ -16,6 +16,10 @@ export const MATERIAL = Object.freeze({
   OXYGEN: 13,
   ATMOSPHERE: 14,
   NITROGEN: 15,
+  CHARCOAL: 16,
+  GRASS: 17,
+  CLOTH: 18,
+  PLASMA: 19,
 });
 
 export class Pixel {
@@ -23,11 +27,17 @@ export class Pixel {
     id,
     name,
     color,
+    usesCustomColor = false,
     weight = 0,
     buoyancy = 0,
     swapBuffer = 1,
     displaceable = false,
     flammability = 0,
+    burnLifeMin = 18,
+    burnLifeMax = 42,
+    burnoutChance = 0.018,
+    burnsTo = null,
+    burnsToChance = 1,
     burns = false,
     gas = false,
     gasSpread = 0,
@@ -47,12 +57,18 @@ export class Pixel {
     this.id = id;
     this.name = name;
     this.color = color;
+    this.usesCustomColor = usesCustomColor;
     this.weight = weight;
     this.buoyancy = buoyancy;
     this.density = weight - buoyancy;
     this.swapBuffer = swapBuffer;
     this.displaceable = displaceable;
     this.flammability = flammability;
+    this.burnLifeMin = burnLifeMin;
+    this.burnLifeMax = burnLifeMax;
+    this.burnoutChance = burnoutChance;
+    this.burnsTo = burnsTo;
+    this.burnsToChance = burnsToChance;
     this.burns = burns;
     this.gas = gas;
     this.gasSpread = gasSpread;
@@ -79,15 +95,21 @@ export class Pixel {
     return value;
   }
 
+  getBurnLife() {
+    const min = Math.max(1, this.burnLifeMin);
+    const max = Math.max(min, this.burnLifeMax);
+    return min + Math.floor(Math.random() * (max - min + 1));
+  }
+
   update() {}
 
-  renderColor(tone) {
+  renderColor(tone, value = 0, tint = this.color) {
     if (this.id === MATERIAL.SPACE) return this.color;
     const wobble = (tone % 23) - 11;
     return [
-      this.color[0] + wobble,
-      this.color[1] + wobble,
-      this.color[2] + wobble,
+      tint[0] + wobble,
+      tint[1] + wobble,
+      tint[2] + wobble,
     ];
   }
 }

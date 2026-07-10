@@ -66,6 +66,7 @@ export class PlantGrowthHelper {
       } else {
         world.touched[index] = world.tick;
         world.markActiveAroundIndex(index);
+        world.markRenderDirty(index);
       }
       return;
     }
@@ -75,12 +76,52 @@ export class PlantGrowthHelper {
     }
   }
 
+  static tryGrowGrassOnDirt(world, i, x, y, chance = 0.02) {
+    if (world.isStatic(i)) return false;
+    if (!this.hasGrowableSurfaceAbove(world, x, y)) return false;
+    if (!this.hasMoistureNear(world, x, y, 7)) return false;
+    if (Math.random() >= chance) {
+      world.keepActive(i);
+      return false;
+    }
+
+    world.setCell(i, MATERIAL.GRASS);
+    world.touched[i] = world.tick;
+    return true;
+  }
+
+  static hasGrowableSurfaceAbove(world, x, y) {
+    if (!world.inBounds(x, y - 1)) return true;
+    const above = world.getPixelAtIndex(world.index(x, y - 1));
+    return above.plantGrowThrough || above.gas;
+  }
+
+  static hasMoistureNear(world, x, y, radius = 7) {
+    const radiusSq = radius * radius;
+
+    for (let yy = y - radius; yy <= y + radius; yy++) {
+      if (yy < 0 || yy >= world.height) continue;
+      for (let xx = x - radius; xx <= x + radius; xx++) {
+        if (xx < 0 || xx >= world.width) continue;
+        const dx = xx - x;
+        const dy = yy - y;
+        if (dx * dx + dy * dy > radiusSq) continue;
+
+        const pixel = world.getPixelAtIndex(world.index(xx, yy));
+        if (pixel.extinguishPower > 0 || pixel.plantMoisture > 0) return true;
+      }
+    }
+
+    return false;
+  }
+
   static tryGrowTree(world, x, y, energy) {
     const height = Math.min(18, 1 + Math.floor(energy / 14));
+    const sourceLayer = world.activeLayerName;
 
     for (let h = 1; h <= height; h++) {
-      if (this.isMaterialAt(world, x, y - h, MATERIAL.WOOD)) continue;
-      if (this.tryGrowCell(world, x, y - h, MATERIAL.WOOD)) return true;
+      if (this.isMaterialAt(world, x, y - h, MATERIAL.WOOD, 'background')) continue;
+      if (this.tryGrowAerialCell(world, x, y - h, MATERIAL.WOOD, sourceLayer)) return true;
       break;
     }
 
@@ -90,8 +131,8 @@ export class PlantGrowthHelper {
       for (let length = 1; length <= branchLength; length++) {
         const bx = x + side * length;
         const by = y - branchStart - Math.floor(length * 0.55);
-        if (this.isMaterialAt(world, bx, by, MATERIAL.WOOD)) continue;
-        if (this.tryGrowCell(world, bx, by, MATERIAL.WOOD)) return true;
+        if (this.isMaterialAt(world, bx, by, MATERIAL.WOOD, 'background')) continue;
+        if (this.tryGrowAerialCell(world, bx, by, MATERIAL.WOOD, sourceLayer)) return true;
         break;
       }
     }
@@ -109,8 +150,8 @@ export class PlantGrowthHelper {
 
         const lx = x + dx;
         const ly = crownY + dy;
-        if (this.isMaterialAt(world, lx, ly, MATERIAL.LEAF)) continue;
-        if (this.tryGrowCell(world, lx, ly, MATERIAL.LEAF)) return true;
+        if (this.isMaterialAt(world, lx, ly, MATERIAL.LEAF, 'background')) continue;
+        if (this.tryGrowAerialCell(world, lx, ly, MATERIAL.LEAF, sourceLayer)) return true;
       }
     }
 
@@ -238,7 +279,13 @@ export class PlantGrowthHelper {
     return world.setCell(index, material, value);
   }
 
-  static isMaterialAt(world, x, y, material) {
-    return world.inBounds(x, y) && world.cells[world.index(x, y)] === material;
+  static tryGrowAerialCell(world, x, y, material, sourceLayer) {
+    if (world.withLayer('background', () => this.tryGrowCell(world, x, y, material))) return true;
+    if (sourceLayer === 'background') return false;
+    return world.withLayer(sourceLayer, () => this.tryGrowCell(world, x, y, material));
+  }
+
+  static isMaterialAt(world, x, y, material, layerName = world.activeLayerName) {
+    return world.withLayer(layerName, () => world.inBounds(x, y) && world.cells[world.index(x, y)] === material);
   }
 }

@@ -1,0 +1,54 @@
+{
+  "name": "Campfire by the Lake",
+  "version": 3,
+  "width": 330,
+  "height": 204,
+  "encoding": "layers-rows-rle",
+  "generators": [
+    {
+      "name": "night-sky",
+      "options": { "layer": "backdrop" }
+    },
+    {
+      "name": "rolling-ground",
+      "options": {
+        "layer": "background",
+        "baseY": 175,
+        "amplitude": 5
+      }
+    }
+  ],
+  "objects": [
+    {
+      "type": "tent",
+      "options": {
+        "x": 268,
+        "y": 173,
+        "width": 21,
+        "height": 15,
+        "clothColor": [176, 48, 42]
+      }
+    }
+  ],
+  "layers": {
+    "foreground": [
+      { "repeat": 150, "runs": [["air", 330]] },
+      { "repeat": 6, "runs": [["air", 216], ["smoke", 4, 44], ["air", 110]] },
+      { "repeat": 4, "runs": [["air", 213], ["fire", 10, 38], ["air", 107]] },
+      { "repeat": 3, "runs": [["air", 210], ["fire", 16, 42], ["air", 104]] },
+      { "repeat": 2, "runs": [["air", 207], ["wood", 22], ["air", 101]] },
+      { "runs": [["dirt", 20], ["grass", 4], ["water", 150], ["grass", 4], ["dirt", 29], ["wood", 25], ["dirt", 98]] },
+      { "repeat": 12, "runs": [["dirt", 20], ["water", 158], ["dirt", 32], ["wood", 21], ["dirt", 99]] },
+      { "repeat": 26, "runs": [["dirt", 330]] }
+    ],
+    "background": [
+      { "repeat": 115, "runs": [["air", 330]] },
+      { "repeat": 15, "runs": [["air", 15], ["leaf", 50], ["air", 130], ["leaf", 50], ["air", 85]] },
+      { "repeat": 20, "runs": [["air", 25], ["leaf", 70], ["air", 110], ["leaf", 70], ["air", 55]] },
+      { "repeat": 15, "runs": [["air", 45], ["wood", 10], ["air", 150], ["wood", 10], ["air", 115]] },
+      { "repeat": 10, "runs": [["air", 330]] },
+      { "runs": [["grass", 330]] },
+      { "repeat": 28, "runs": [["dirt", 330]] }
+    ]
+  }
+}

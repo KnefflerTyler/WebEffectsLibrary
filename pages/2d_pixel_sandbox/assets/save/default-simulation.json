@@ -1,52 +1,41 @@
 {
   "name": "Default Pixel Sandbox",
-  "version": 1,
-  "width": 660,
-  "height": 408,
-  "encoding": "rows-rle",
-  "rows": [
+  "version": 3,
+  "width": 330,
+  "height": 204,
+  "encoding": "layers-rows-rle",
+  "generators": [
     {
-      "repeat": 120,
-      "runs": [["air", 660]]
-    },
-    {
-      "repeat": 18,
-      "runs": [["air", 66], ["dirt", 36], ["air", 144], ["dirt", 48], ["air", 366]]
-    },
-    {
-      "repeat": 30,
-      "runs": [["air", 660]]
-    },
-    {
-      "repeat": 15,
-      "runs": [["air", 438], ["smoke", 24, 48], ["air", 198]]
-    },
-    {
-      "repeat": 30,
-      "runs": [["air", 660]]
-    },
-    {
-      "repeat": 12,
-      "runs": [["air", 414], ["fire", 36, 36], ["air", 210]]
-    },
-    {
-      "repeat": 54,
-      "runs": [["air", 378], ["wood", 168], ["air", 114]]
-    },
-    {
-      "repeat": 27,
-      "runs": [["air", 48], ["water", 180], ["air", 150], ["wood", 168], ["air", 114]]
-    },
-    {
-      "runs": [["dirt", 30], ["water", 228], ["seed", 1], ["dirt", 101], ["wood", 168], ["dirt", 132]]
-    },
-    {
-      "repeat": 32,
-      "runs": [["dirt", 30], ["water", 228], ["dirt", 102], ["wood", 168], ["dirt", 132]]
-    },
-    {
-      "repeat": 69,
-      "runs": [["dirt", 660]]
+      "name": "day-sky",
+      "options": { "layer": "backdrop" }
     }
-  ]
+  ],
+  "layers": {
+    "foreground": [
+      { "repeat": 60, "runs": [["air", 330]] },
+      { "repeat": 9, "runs": [["air", 33], ["dirt", 18], ["air", 72], ["dirt", 24], ["air", 183]] },
+      { "repeat": 15, "runs": [["air", 330]] },
+      { "repeat": 8, "runs": [["air", 219], ["smoke", 12, 48], ["air", 99]] },
+      { "repeat": 15, "runs": [["air", 330]] },
+      { "repeat": 6, "runs": [["air", 207], ["fire", 18, 36], ["air", 105]] },
+      { "repeat": 27, "runs": [["air", 189], ["wood", 84], ["air", 57]] },
+      { "repeat": 13, "runs": [["air", 24], ["water", 90], ["air", 75], ["wood", 84], ["air", 57]] },
+      { "runs": [["dirt", 15], ["water", 114], ["seed", 1], ["grass", 12], ["dirt", 38], ["wood", 84], ["dirt", 66]] },
+      { "repeat": 16, "runs": [["dirt", 15], ["water", 114], ["dirt", 51], ["wood", 84], ["dirt", 66]] },
+      { "repeat": 34, "runs": [["dirt", 330]] }
+    ],
+    "background": [
+      { "repeat": 60, "runs": [["air", 330]] },
+      { "repeat": 9, "runs": [["air", 33], ["dirt", 18], ["air", 72], ["dirt", 24], ["air", 183]] },
+      { "repeat": 15, "runs": [["air", 330]] },
+      { "repeat": 8, "runs": [["air", 219], ["smoke", 12, 48], ["air", 99]] },
+      { "repeat": 15, "runs": [["air", 330]] },
+      { "repeat": 6, "runs": [["air", 207], ["fire", 18, 36], ["air", 105]] },
+      { "repeat": 27, "runs": [["air", 189], ["wood", 84], ["air", 57]] },
+      { "repeat": 13, "runs": [["air", 24], ["water", 90], ["air", 75], ["wood", 84], ["air", 57]] },
+      { "runs": [["dirt", 15], ["water", 114], ["seed", 1], ["grass", 12], ["dirt", 38], ["wood", 84], ["dirt", 66]] },
+      { "repeat": 16, "runs": [["dirt", 15], ["water", 114], ["dirt", 51], ["wood", 84], ["dirt", 66]] },
+      { "repeat": 34, "runs": [["dirt", 330]] }
+    ]
+  }
 }

@@ -42,7 +42,8 @@ export class FirePixel extends Pixel {
     }
 
     if (!CombustionHelper.consumeOxygenNear(world, x, y, 0.62)) {
-      world.setCell(i, Math.random() < 0.7 ? MATERIAL.SMOKE : MATERIAL.ASH, 12, { force: true, flags: 0 });
+      const residue = world.getBurnResidue(i);
+      world.setCell(i, residue, residue === MATERIAL.SMOKE ? 12 : 0, { force: true, flags: 0 });
       world.touched[i] = world.tick;
       return;
     }
@@ -60,15 +61,18 @@ export class FirePixel extends Pixel {
     world.igniteFlammableNeighbors(x, y, 5.15);
     world.scorchLowFlammabilityNeighbors(x, y, 0.005);
 
-    if (world.data[i] <= 0 || Math.random() < 0.018) {
-      world.setCell(i, Math.random() < 0.45 ? MATERIAL.SMOKE : MATERIAL.ASH, 16);
+    if (world.data[i] <= 0 || Math.random() < world.getBurnoutChance(i)) {
+      const residue = world.getBurnResidue(i);
+      world.setCell(i, residue, residue === MATERIAL.SMOKE ? 16 : 0);
       world.touched[i] = world.tick;
       return;
     }
 
-    if (Math.random() < 0.46 && world.tryDisplaceInto(i, x, y - 1, -1)) return;
-    const dir = Math.random() < 0.5 ? -1 : 1;
-    if (Math.random() < 0.18) world.tryDisplaceInto(i, x + dir, y - 1, -1);
+    if (world.canBurningCellDrift(i)) {
+      if (Math.random() < 0.46 && world.tryDisplaceInto(i, x, y - 1, -1)) return;
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      if (Math.random() < 0.18) world.tryDisplaceInto(i, x + dir, y - 1, -1);
+    }
     world.keepActive(i);
   }
 }

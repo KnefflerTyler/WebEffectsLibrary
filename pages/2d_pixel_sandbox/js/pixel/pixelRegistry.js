@@ -1,11 +1,15 @@
 import { AirPixel } from './pixels/AirPixel.js';
 import { AshPixel } from './pixels/AshPixel.js';
+import { CharcoalPixel } from './pixels/CharcoalPixel.js';
+import { ClothPixel } from './pixels/ClothPixel.js';
 import { DirtPixel } from './pixels/DirtPixel.js';
 import { FirePixel } from './pixels/FirePixel.js';
+import { GrassPixel } from './pixels/GrassPixel.js';
 import { LeafPixel } from './pixels/LeafPixel.js';
 import { MudPixel } from './pixels/MudPixel.js';
 import { NitrogenPixel } from './pixels/NitrogenPixel.js';
 import { OxygenPixel } from './pixels/OxygenPixel.js';
+import { PlasmaPixel } from './pixels/PlasmaPixel.js';
 import { RootPixel } from './pixels/RootPixel.js';
 import { SpacePixel } from './pixels/SpacePixel.js';
 import { TreeSeedPixel } from './pixels/TreeSeedPixel.js';
@@ -22,6 +26,7 @@ const PIXEL_LIST = [
   new WaterPixel(),
   new WoodPixel(),
   new DirtPixel(),
+  new GrassPixel(),
   new FirePixel(),
   new SmokePixel(),
   new SteamPixel(),
@@ -34,6 +39,9 @@ const PIXEL_LIST = [
   new OxygenPixel(),
   new AirPixel(),
   new NitrogenPixel(),
+  new CharcoalPixel(),
+  new ClothPixel(),
+  new PlasmaPixel(),
 ];
 
 export const PIXELS = Object.freeze(PIXEL_LIST);
