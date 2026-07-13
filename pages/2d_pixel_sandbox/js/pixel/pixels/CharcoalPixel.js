@@ -16,6 +16,8 @@ export class CharcoalPixel extends Pixel {
       burnLifeMax: 230,
       burnDurationScale: 3,
       burnoutChance: 0.0012,
+      fireHeatOutputScale: 0.45,
+      fireHeatAbsorption: 0.32,
       burnsTo: MATERIAL.ASH,
       burnsToChance: 0.35,
       acceptsDisplacementFrom: new Set([MATERIAL.WATER, MATERIAL.FIRE, MATERIAL.SMOKE, MATERIAL.STEAM, MATERIAL.ASH]),

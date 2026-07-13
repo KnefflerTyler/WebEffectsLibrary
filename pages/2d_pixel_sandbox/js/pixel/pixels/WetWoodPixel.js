@@ -13,6 +13,8 @@ export class WetWoodPixel extends Pixel {
       burnLifeMax: 104,
       burnDurationScale: 3,
       burnoutChance: 0.0025,
+      fireHeatOutputScale: 0.35,
+      fireHeatAbsorption: 0.25,
       burnsTo: MATERIAL.CHARCOAL,
       burnsToChance: 0.55,
     });

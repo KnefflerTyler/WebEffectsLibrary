@@ -13,6 +13,8 @@ export class ClothPixel extends Pixel {
       burnLifeMin: 42,
       burnLifeMax: 76,
       burnoutChance: 0.009,
+      fireHeatOutputScale: 0.65,
+      fireHeatAbsorption: 0.75,
       burnsTo: MATERIAL.ASH,
       burnsToChance: 0.25,
       scorchable: true,

@@ -415,13 +415,17 @@ export class PixelWorld {
     this.heatNeighbors(x, y, Math.round(heat * 26));
   }
 
-  heatNeighbors(x, y, amount = 80) {
+  heatNeighbors(x, y, amount = 80, burnSource = null) {
     if (this.tick % THERMAL_STEP_INTERVAL !== 0) return;
     const sourceLayer = this.activeLayerName;
+    const sourceHeatScale = burnSource !== null
+      ? (PIXEL_BY_ID[burnSource]?.fireHeatOutputScale ?? 1)
+      : 1;
     const heatCell = (n) => {
       const pixel = this.getPixelAtIndex(n);
       if (pixel.id === MATERIAL.SPACE) return true;
-      this.temperature[n] = Math.min(65535, this.temperature[n] + amount);
+      const transferredHeat = Math.max(1, Math.round(amount * sourceHeatScale * pixel.fireHeatAbsorption));
+      this.temperature[n] = Math.min(65535, this.temperature[n] + transferredHeat);
       this.keepActive(n);
       this.markRenderDirty(n);
       return true;

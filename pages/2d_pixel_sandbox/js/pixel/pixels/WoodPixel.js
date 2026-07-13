@@ -15,6 +15,8 @@ export class WoodPixel extends Pixel {
       burnLifeMax: 126,
       burnDurationScale: 3,
       burnoutChance: 0.0035,
+      fireHeatOutputScale: 0.65,
+      fireHeatAbsorption: 0.45,
       burnsTo: MATERIAL.CHARCOAL,
       burnsToChance: 0.82,
       wetTo: MATERIAL.WET_WOOD,

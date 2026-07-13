@@ -2,12 +2,12 @@
   "name": "Tall Lake Tree",
   "version": 1,
   "width": 21,
-  "height": 38,
+  "height": 48,
   "encoding": "layers-rows-rle",
   "transparent": true,
   "layers": {
     "foreground": [
-      { "repeat": 38, "runs": [["air", 21]] },
+      { "repeat": 48, "runs": [["air", 21]] },
       { "shape": "rect", "material": "wood", "x": 9, "y": 9, "width": 3, "height": 29, "static": true },
       { "shape": "rect", "material": "wood", "x": 5, "y": 16, "width": 5, "height": 2, "static": true },
       { "shape": "rect", "material": "wood", "x": 11, "y": 13, "width": 5, "height": 2, "static": true },
@@ -15,7 +15,14 @@
       { "shape": "circle", "material": "leaf", "x": 5, "y": 11, "radius": 5, "static": true },
       { "shape": "circle", "material": "leaf", "x": 15, "y": 11, "radius": 5, "static": true },
       { "shape": "ellipse", "material": "leaf", "x": 10, "y": 14, "radiusX": 8, "radiusY": 6, "static": true },
-      { "shape": "rect", "material": "wood", "x": 9, "y": 15, "width": 3, "height": 23, "static": true }
+      { "shape": "rect", "material": "wood", "x": 9, "y": 15, "width": 3, "height": 23, "static": true },
+      { "shape": "rect", "material": "root", "x": 9, "y": 36, "width": 3, "height": 12, "static": true },
+      { "shape": "rect", "material": "root", "x": 7, "y": 39, "width": 3, "height": 3, "static": true },
+      { "shape": "rect", "material": "root", "x": 5, "y": 41, "width": 3, "height": 3, "static": true },
+      { "shape": "rect", "material": "root", "x": 3, "y": 43, "width": 3, "height": 2, "static": true },
+      { "shape": "rect", "material": "root", "x": 11, "y": 39, "width": 3, "height": 3, "static": true },
+      { "shape": "rect", "material": "root", "x": 13, "y": 41, "width": 3, "height": 3, "static": true },
+      { "shape": "rect", "material": "root", "x": 15, "y": 43, "width": 3, "height": 2, "static": true }
     ]
   }
 }

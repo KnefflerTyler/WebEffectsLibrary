@@ -63,7 +63,7 @@ export class FirePixel extends Pixel {
 
     if (isStatic) {
       world.emitIntoNeighbor(x, y, MATERIAL.SMOKE, 18, 0.06);
-      world.heatNeighbors(x, y, this.heatOutput);
+      world.heatNeighbors(x, y, this.heatOutput, world.burnSource[i]);
       world.tryIgniteHeatedNeighbors(x, y);
       world.scorchLowFlammabilityNeighbors(x, y, 0.005);
       world.touched[i] = world.tick;
@@ -72,7 +72,7 @@ export class FirePixel extends Pixel {
     }
 
     world.data[i] = Math.max(0, world.data[i] - 1);
-    world.heatNeighbors(x, y, this.heatOutput);
+    world.heatNeighbors(x, y, this.heatOutput, world.burnSource[i]);
     world.tryIgniteHeatedNeighbors(x, y);
     world.scorchLowFlammabilityNeighbors(x, y, 0.005);
 

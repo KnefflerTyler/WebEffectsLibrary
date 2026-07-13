@@ -16,6 +16,8 @@ export class GrassPixel extends Pixel {
       burnLifeMin: 28,
       burnLifeMax: 54,
       burnoutChance: 0.012,
+      fireHeatOutputScale: 0.55,
+      fireHeatAbsorption: 0.8,
       scorchable: true,
       mixesWithWaterTo: MATERIAL.MUD,
       scorchTo: MATERIAL.ASH,

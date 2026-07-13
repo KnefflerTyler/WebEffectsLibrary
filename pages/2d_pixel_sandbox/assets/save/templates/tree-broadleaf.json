@@ -2,12 +2,12 @@
   "name": "Broadleaf Lake Tree",
   "version": 1,
   "width": 25,
-  "height": 32,
+  "height": 42,
   "encoding": "layers-rows-rle",
   "transparent": true,
   "layers": {
     "foreground": [
-      { "repeat": 32, "runs": [["air", 25]] },
+      { "repeat": 42, "runs": [["air", 25]] },
       { "shape": "rect", "material": "wood", "x": 11, "y": 10, "width": 3, "height": 22, "static": true },
       { "shape": "rect", "material": "wood", "x": 8, "y": 14, "width": 4, "height": 2, "static": true },
       { "shape": "rect", "material": "wood", "x": 13, "y": 12, "width": 5, "height": 2, "static": true },
@@ -15,7 +15,14 @@
       { "shape": "circle", "material": "leaf", "x": 6, "y": 9, "radius": 5, "static": true },
       { "shape": "circle", "material": "leaf", "x": 18, "y": 9, "radius": 5, "static": true },
       { "shape": "ellipse", "material": "leaf", "x": 12, "y": 11, "radiusX": 9, "radiusY": 6, "static": true },
-      { "shape": "rect", "material": "wood", "x": 11, "y": 13, "width": 3, "height": 19, "static": true }
+      { "shape": "rect", "material": "wood", "x": 11, "y": 13, "width": 3, "height": 19, "static": true },
+      { "shape": "rect", "material": "root", "x": 11, "y": 30, "width": 3, "height": 12, "static": true },
+      { "shape": "rect", "material": "root", "x": 9, "y": 33, "width": 3, "height": 3, "static": true },
+      { "shape": "rect", "material": "root", "x": 7, "y": 35, "width": 3, "height": 3, "static": true },
+      { "shape": "rect", "material": "root", "x": 5, "y": 37, "width": 3, "height": 2, "static": true },
+      { "shape": "rect", "material": "root", "x": 13, "y": 33, "width": 3, "height": 3, "static": true },
+      { "shape": "rect", "material": "root", "x": 15, "y": 35, "width": 3, "height": 3, "static": true },
+      { "shape": "rect", "material": "root", "x": 17, "y": 37, "width": 3, "height": 2, "static": true }
     ]
   }
 }

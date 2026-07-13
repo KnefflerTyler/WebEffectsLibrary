@@ -42,6 +42,8 @@ export class Pixel {
     burnLifeMax = 42,
     burnDurationScale = 1,
     burnoutChance = 0.018,
+    fireHeatOutputScale = 1,
+    fireHeatAbsorption = 1,
     burnsTo = null,
     burnsToChance = 1,
     burns = false,
@@ -81,6 +83,8 @@ export class Pixel {
     this.burnLifeMax = burnLifeMax;
     this.burnDurationScale = Math.max(1, burnDurationScale);
     this.burnoutChance = burnoutChance;
+    this.fireHeatOutputScale = Math.max(0.05, fireHeatOutputScale);
+    this.fireHeatAbsorption = Math.max(0.05, fireHeatAbsorption);
     this.burnsTo = burnsTo;
     this.burnsToChance = burnsToChance;
     this.burns = burns;

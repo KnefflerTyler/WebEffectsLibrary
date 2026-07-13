@@ -11,6 +11,8 @@ export class FlowerPixel extends Pixel {
       igniteTemperature: 210,
       burnLifeMin: 18,
       burnLifeMax: 34,
+      fireHeatOutputScale: 0.5,
+      fireHeatAbsorption: 0.9,
       burnsTo: MATERIAL.ASH,
       burnsToChance: 0.18,
       plantGrowThrough: true,

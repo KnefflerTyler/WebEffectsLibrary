@@ -38,6 +38,12 @@
   ],
   "templates": [
     {
+      "file": "templates/lake-ground-background.json",
+      "x": 0,
+      "y": 0,
+      "layer": "background"
+    },
+    {
       "file": "templates/tree-tall.json",
       "x": 1,
       "y": 124,
@@ -89,12 +95,6 @@
       "file": "templates/tree-broadleaf.json",
       "x": 310,
       "y": 132,
-      "layer": "background"
-    },
-    {
-      "file": "templates/lake-ground-background.json",
-      "x": 0,
-      "y": 0,
       "layer": "background"
     },
     {
