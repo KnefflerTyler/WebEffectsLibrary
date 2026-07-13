@@ -20,6 +20,9 @@ export const MATERIAL = Object.freeze({
   GRASS: 17,
   CLOTH: 18,
   PLASMA: 19,
+  STAR: 20,
+  PLASTIC: 21,
+  METAL: 22,
   ROCK: 23,
   FLOWER: 24,
 });
@@ -37,6 +40,7 @@ export class Pixel {
     flammability = 0,
     burnLifeMin = 18,
     burnLifeMax = 42,
+    burnDurationScale = 1,
     burnoutChance = 0.018,
     burnsTo = null,
     burnsToChance = 1,
@@ -57,6 +61,8 @@ export class Pixel {
     rootGrowThrough = false,
     waterproof = false,
     reactsWhileStatic = false,
+    opacity = null,
+    emissive = 0,
     temperature = 20,
     igniteTemperature = null,
     heatOutput = 0,
@@ -73,6 +79,7 @@ export class Pixel {
     this.flammability = flammability;
     this.burnLifeMin = burnLifeMin;
     this.burnLifeMax = burnLifeMax;
+    this.burnDurationScale = Math.max(1, burnDurationScale);
     this.burnoutChance = burnoutChance;
     this.burnsTo = burnsTo;
     this.burnsToChance = burnsToChance;
@@ -93,9 +100,23 @@ export class Pixel {
     this.rootGrowThrough = rootGrowThrough;
     this.waterproof = waterproof;
     this.reactsWhileStatic = reactsWhileStatic;
+    this.opacity = opacity ?? this.inferOpacity(name, gas, burns);
+    this.emissive = Math.min(1, Math.max(0, emissive));
     this.temperature = temperature;
     this.igniteTemperature = igniteTemperature ?? (flammability > 0 ? 180 : Infinity);
     this.heatOutput = heatOutput;
+  }
+
+  inferOpacity(name, gas, burns) {
+    if (this.id === MATERIAL.SPACE || this.id === MATERIAL.AIR) return 0;
+    if (name === 'oxygen' || name === 'nitrogen') return 0.08;
+    if (name === 'steam') return 0.32;
+    if (name === 'smoke') return 0.45;
+    if (name === 'water') return 0.48;
+    if (name === 'plasma') return 0.82;
+    if (name === 'fire' || burns) return 0.90;
+    if (gas) return 0.30;
+    return 1;
   }
 
   canBeDisplacedBy(sourcePixel) {
@@ -110,7 +131,7 @@ export class Pixel {
   getBurnLife() {
     const min = Math.max(1, this.burnLifeMin);
     const max = Math.max(min, this.burnLifeMax);
-    return min + Math.floor(Math.random() * (max - min + 1));
+    return Math.round((min + Math.floor(Math.random() * (max - min + 1))) * this.burnDurationScale);
   }
 
   update() {}

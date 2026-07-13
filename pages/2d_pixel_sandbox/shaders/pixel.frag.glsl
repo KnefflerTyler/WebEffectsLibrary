@@ -10,19 +10,27 @@ uniform usampler2D u_backgroundColor;
 uniform usampler2D u_foregroundState;
 uniform usampler2D u_foregroundColor;
 uniform vec3 u_palette[32];
+uniform float u_materialOpacity[32];
+uniform float u_materialEmissive[32];
 uniform int u_height;
 uniform ivec3 u_layerVisibility;
+uniform vec3 u_layerOpacity;
+uniform vec2 u_layerDarkening;
 out vec4 outColor;
 
 bool transparentType(uint type) {
   return type == 0u || type == 14u;
 }
 
+float materialOpacity(uint type) {
+  return u_materialOpacity[int(type)];
+}
+
 vec3 materialColor(uvec4 state, uvec4 tint) {
   int type = int(state.r);
   float value = float(state.g);
   float tone = float(state.b);
-  vec3 base = (type == 18 || type == 19) ? vec3(tint.rgb) : u_palette[type];
+  vec3 base = (type == 2 || type == 3 || type == 18 || type == 19 || type == 20 || type == 21 || type == 22) ? vec3(tint.rgb) : u_palette[type];
 
   if (type == 0) return base;
   if (type == 1) {
@@ -87,6 +95,10 @@ vec3 materialColor(uvec4 state, uvec4 tint) {
     float glow = min(22.0, floor(value / 6.0)) + mod(tone, 7.0);
     return min(vec3(255.0), base + vec3(glow));
   }
+  if (type == 20) {
+    float shimmer = min(8.0, floor(value / 32.0)) + mod(tone, 3.0);
+    return min(vec3(255.0), base + vec3(shimmer));
+  }
 
   float wobble = mod(tone, 23.0) - 11.0;
   return base + vec3(wobble);
@@ -96,28 +108,31 @@ void main() {
   ivec2 cell = ivec2(int(gl_FragCoord.x), u_height - 1 - int(gl_FragCoord.y));
   uvec4 fgState = texelFetch(u_foregroundState, cell, 0);
   uvec4 bgState = texelFetch(u_backgroundState, cell, 0);
-  uvec4 state;
-  uvec4 tint;
-  float layerTint = 0.0;
+  vec3 color = vec3(5.0, 7.0, 11.0);
 
-  if (u_layerVisibility.z != 0 && !transparentType(fgState.r)) {
-    state = fgState;
-    tint = texelFetch(u_foregroundColor, cell, 0);
-  } else if (u_layerVisibility.y != 0 && !transparentType(bgState.r)) {
-    state = bgState;
-    tint = texelFetch(u_backgroundColor, cell, 0);
-    layerTint = 0.05;
-  } else if (u_layerVisibility.x != 0) {
-    state = texelFetch(u_backdropState, cell, 0);
-    tint = texelFetch(u_backdropColor, cell, 0);
-    layerTint = 0.10;
-  } else {
-    outColor = vec4(0.02, 0.027, 0.043, 1.0);
-    return;
+  if (u_layerVisibility.x != 0) {
+    uvec4 state = texelFetch(u_backdropState, cell, 0);
+    uvec4 tint = texelFetch(u_backdropColor, cell, 0);
+    vec3 layerColor = materialColor(state, tint);
+    if ((state.a & 1u) != 0u) layerColor = min(vec3(255.0), layerColor + vec3(30.0));
+    layerColor *= 1.0 - u_layerDarkening.y * (1.0 - u_materialEmissive[int(state.r)]);
+    color = mix(color, layerColor, u_layerOpacity.z * materialOpacity(state.r));
   }
 
-  vec3 color = materialColor(state, tint);
-  color = mix(color, vec3(5.0, 7.0, 11.0), layerTint);
-  if ((state.a & 1u) != 0u) color = min(vec3(255.0), color + vec3(30.0));
+  if (u_layerVisibility.y != 0 && !transparentType(bgState.r)) {
+    uvec4 tint = texelFetch(u_backgroundColor, cell, 0);
+    vec3 layerColor = materialColor(bgState, tint);
+    if ((bgState.a & 1u) != 0u) layerColor = min(vec3(255.0), layerColor + vec3(30.0));
+    layerColor *= 1.0 - u_layerDarkening.x * (1.0 - u_materialEmissive[int(bgState.r)]);
+    color = mix(color, layerColor, u_layerOpacity.y * materialOpacity(bgState.r));
+  }
+
+  if (u_layerVisibility.z != 0 && !transparentType(fgState.r)) {
+    uvec4 tint = texelFetch(u_foregroundColor, cell, 0);
+    vec3 layerColor = materialColor(fgState, tint);
+    if ((fgState.a & 1u) != 0u) layerColor = min(vec3(255.0), layerColor + vec3(30.0));
+    color = mix(color, layerColor, u_layerOpacity.x * materialOpacity(fgState.r));
+  }
+
   outColor = vec4(clamp(color / 255.0, 0.0, 1.0), 1.0);
 }

@@ -10,10 +10,13 @@ import { MudPixel } from './pixels/MudPixel.js';
 import { NitrogenPixel } from './pixels/NitrogenPixel.js';
 import { OxygenPixel } from './pixels/OxygenPixel.js';
 import { PlasmaPixel } from './pixels/PlasmaPixel.js';
+import { PlasticPixel } from './pixels/PlasticPixel.js';
+import { MetalPixel } from './pixels/MetalPixel.js';
 import { FlowerPixel } from './pixels/FlowerPixel.js';
 import { RockPixel } from './pixels/RockPixel.js';
 import { RootPixel } from './pixels/RootPixel.js';
 import { SpacePixel } from './pixels/SpacePixel.js';
+import { StarPixel } from './pixels/StarPixel.js';
 import { TreeSeedPixel } from './pixels/TreeSeedPixel.js';
 import { SmokePixel } from './pixels/SmokePixel.js';
 import { SteamPixel } from './pixels/SteamPixel.js';
@@ -44,6 +47,9 @@ const PIXEL_LIST = [
   new CharcoalPixel(),
   new ClothPixel(),
   new PlasmaPixel(),
+  new StarPixel(),
+  new PlasticPixel(),
+  new MetalPixel(),
   new RockPixel(),
   new FlowerPixel(),
 ];

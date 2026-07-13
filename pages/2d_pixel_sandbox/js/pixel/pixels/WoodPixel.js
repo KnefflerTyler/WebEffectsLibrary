@@ -7,11 +7,13 @@ export class WoodPixel extends Pixel {
       id: MATERIAL.WOOD,
       name: 'wood',
       color: [129, 82, 42],
+      usesCustomColor: true,
       weight: 70,
       flammability: 0.018,
       igniteTemperature: 300,
       burnLifeMin: 78,
       burnLifeMax: 126,
+      burnDurationScale: 3,
       burnoutChance: 0.0035,
       burnsTo: MATERIAL.CHARCOAL,
       burnsToChance: 0.82,
@@ -39,8 +41,8 @@ export class WoodPixel extends Pixel {
     if (hasFlame) {
       world.heatNeighbors(x, y, 70);
       world.tryIgniteHeatedNeighbors(x, y);
+      this.feedFlame(world, x, y, 0.5, 350);
     }
-    this.feedFlame(world, x, y, hasFlame ? 0.5 : 0.06, 350);
     world.keepActive(i);
   }
 

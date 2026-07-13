@@ -2,12 +2,14 @@ import { DaySkyTerrainGenerator } from './DaySkyTerrainGenerator.js';
 import { GrownTreesTerrainGenerator } from './GrownTreesTerrainGenerator.js';
 import { NightSkyTerrainGenerator } from './NightSkyTerrainGenerator.js';
 import { RollingGroundTerrainGenerator } from './RollingGroundTerrainGenerator.js';
+import { UndergroundDirtTerrainGenerator } from './UndergroundDirtTerrainGenerator.js';
 
 export const TERRAIN_GENERATORS = Object.freeze({
   'day-sky': DaySkyTerrainGenerator,
   'grown-trees': GrownTreesTerrainGenerator,
   'night-sky': NightSkyTerrainGenerator,
   'rolling-ground': RollingGroundTerrainGenerator,
+  'underground-dirt': UndergroundDirtTerrainGenerator,
 });
 
 export function runTerrainGenerators(world, references = []) {

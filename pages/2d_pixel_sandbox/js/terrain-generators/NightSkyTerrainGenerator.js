@@ -5,7 +5,7 @@ import { StarObject } from '../pixel/objects/sky/StarObject.js';
 export class NightSkyTerrainGenerator {
   static generate(world, options = {}) {
     const layerName = options.layer ?? 'backdrop';
-    const starChance = options.starChance ?? 0.000045;
+    const starChance = options.starChance ?? 0.00055;
     const seed = options.seed ?? 7319;
 
     world.withLayer(layerName, () => {

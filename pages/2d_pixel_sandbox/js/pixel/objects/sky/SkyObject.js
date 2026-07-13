@@ -8,9 +8,9 @@ export class SkyObject {
     this.destroyed = false;
   }
 
-  paintCell(world, x, y, color, intensity = 0) {
+  paintCell(world, x, y, color, intensity = 0, material = MATERIAL.PLASMA) {
     if (!world.inBounds(x, y)) return false;
-    return world.setCell(world.index(x, y), MATERIAL.PLASMA, intensity, {
+    return world.setCell(world.index(x, y), material, intensity, {
       force: true,
       flags: 0,
       color,

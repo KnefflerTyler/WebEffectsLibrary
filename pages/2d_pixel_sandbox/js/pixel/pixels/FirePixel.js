@@ -44,6 +44,11 @@ export class FirePixel extends Pixel {
     }
 
     if (!CombustionHelper.consumeOxygenNear(world, x, y, 0.22)) {
+      if (isStatic) {
+        world.emitIntoNeighbor(x, y, MATERIAL.SMOKE, 12, 0.08);
+        world.keepActive(i);
+        return;
+      }
       world.data[i] = Math.max(0, world.data[i] - 2);
       if (world.data[i] > 0) {
         world.emitIntoNeighbor(x, y, MATERIAL.SMOKE, 12, 0.1);

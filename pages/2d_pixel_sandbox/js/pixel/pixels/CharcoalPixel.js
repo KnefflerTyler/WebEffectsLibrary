@@ -14,6 +14,7 @@ export class CharcoalPixel extends Pixel {
       igniteTemperature: 350,
       burnLifeMin: 150,
       burnLifeMax: 230,
+      burnDurationScale: 3,
       burnoutChance: 0.0012,
       burnsTo: MATERIAL.ASH,
       burnsToChance: 0.35,
@@ -56,8 +57,8 @@ export class CharcoalPixel extends Pixel {
     if (hasFlame) {
       world.heatNeighbors(x, y, 95);
       world.tryIgniteHeatedNeighbors(x, y);
+      this.feedFlame(world, x, y, 0.66, 550);
     }
-    this.feedFlame(world, x, y, hasFlame ? 0.66 : 0.1, 550);
     world.keepActive(i);
   }
 

@@ -1,0 +1,30 @@
+{
+  "name": "Lake Ground Background",
+  "version": 1,
+  "width": 330,
+  "height": 204,
+  "encoding": "layers-rows-rle",
+  "transparent": true,
+  "layers": {
+    "foreground": [
+      { "repeat": 162, "runs": [["air", 330]] },
+      { "runs": [["dirt", 14, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["air", 174], ["grass", 3, 0, {"static": true}], ["dirt", 136, 0, {"static": true}]] },
+      { "runs": [["dirt", 15, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["air", 171], ["grass", 3, 0, {"static": true}], ["dirt", 138, 0, {"static": true}]] },
+      { "runs": [["dirt", 15, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["air", 168], ["grass", 4, 0, {"static": true}], ["dirt", 139, 0, {"static": true}]] },
+      { "runs": [["dirt", 16, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["air", 166], ["grass", 4, 0, {"static": true}], ["dirt", 141, 0, {"static": true}]] },
+      { "runs": [["dirt", 16, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["air", 164], ["grass", 4, 0, {"static": true}], ["dirt", 142, 0, {"static": true}]] },
+      { "runs": [["dirt", 17, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["air", 162], ["grass", 4, 0, {"static": true}], ["dirt", 144, 0, {"static": true}]] },
+      { "runs": [["dirt", 17, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["air", 160], ["grass", 4, 0, {"static": true}], ["dirt", 145, 0, {"static": true}]] },
+      { "runs": [["dirt", 18, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["air", 158], ["grass", 4, 0, {"static": true}], ["dirt", 147, 0, {"static": true}]] },
+      { "runs": [["dirt", 18, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["air", 156], ["grass", 4, 0, {"static": true}], ["dirt", 148, 0, {"static": true}]] },
+      { "runs": [["dirt", 19, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["air", 154], ["grass", 4, 0, {"static": true}], ["dirt", 150, 0, {"static": true}]] },
+      { "runs": [["dirt", 19, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["air", 152], ["grass", 4, 0, {"static": true}], ["dirt", 151, 0, {"static": true}]] },
+      { "runs": [["dirt", 20, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["air", 150], ["grass", 4, 0, {"static": true}], ["dirt", 153, 0, {"static": true}]] },
+      { "runs": [["dirt", 20, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["air", 148], ["grass", 4, 0, {"static": true}], ["dirt", 154, 0, {"static": true}]] },
+      { "runs": [["dirt", 21, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["air", 146], ["grass", 4, 0, {"static": true}], ["dirt", 156, 0, {"static": true}]] },
+      { "runs": [["dirt", 21, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["air", 144], ["grass", 4, 0, {"static": true}], ["dirt", 157, 0, {"static": true}]] },
+      { "runs": [["dirt", 22, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["air", 142], ["grass", 4, 0, {"static": true}], ["dirt", 159, 0, {"static": true}]] },
+      { "repeat": 26, "runs": [["dirt", 330, 0, {"static": true}]] }
+    ]
+  }
+}

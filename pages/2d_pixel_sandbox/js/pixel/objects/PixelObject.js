@@ -2,9 +2,10 @@ import { CELL_FLAGS } from '../../PixelWorld.js';
 import { MATERIAL } from '../Pixel.js';
 
 export class PixelObject {
-  constructor({ x, y }) {
+  constructor({ x, y, layer = 'foreground' }) {
     this.x = x;
     this.y = y;
+    this.layer = layer;
     this.cells = [];
     this.placed = false;
     this.destroyed = false;

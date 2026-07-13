@@ -7,7 +7,10 @@ export { MATERIAL, MATERIAL_BY_NAME } from './pixel/pixelRegistry.js';
 export const CELL_FLAGS = Object.freeze({
   STATIC: 1,
   NO_GRAVITY: 2,
+  DECORATIVE: 4,
 });
+
+const THERMAL_STEP_INTERVAL = 3;
 
 export class PixelWorld {
   constructor(width, height) {
@@ -149,6 +152,10 @@ export class PixelWorld {
     return (this.flags[i] & CELL_FLAGS.STATIC) !== 0;
   }
 
+  isDecorative(i) {
+    return (this.flags[i] & CELL_FLAGS.DECORATIVE) !== 0;
+  }
+
   canReactWhileStatic(i) {
     if (!this.isStatic(i)) return true;
     const pixel = this.getPixelAtIndex(i);
@@ -162,7 +169,7 @@ export class PixelWorld {
   }
 
   addObject(object) {
-    object.place(this);
+    this.withLayer(object.layer ?? 'foreground', () => object.place(this));
     this.objects.push(object);
     return object;
   }
@@ -381,6 +388,7 @@ export class PixelWorld {
     if (!this.canReactWhileStatic(i)) return false;
 
     const pixel = this.getPixelAtIndex(i);
+    if (this.isStatic(i) && (pixel.id === MATERIAL.WOOD || pixel.id === MATERIAL.CHARCOAL)) return false;
     if (pixel.flammability <= 0) return false;
     if (this.temperature[i] < pixel.igniteTemperature) return false;
     if (pixel.oxygen <= 0 && !this.hasNeighborWhereAcrossLayers(x, y, (neighbor) => neighbor.oxygen > 0)) return false;
@@ -401,6 +409,7 @@ export class PixelWorld {
   }
 
   heatNeighbors(x, y, amount = 80) {
+    if (this.tick % THERMAL_STEP_INTERVAL !== 0) return;
     const sourceLayer = this.activeLayerName;
     const heatCell = (n) => {
       const pixel = this.getPixelAtIndex(n);
@@ -432,6 +441,7 @@ export class PixelWorld {
   }
 
   coolCell(i, amount = 3) {
+    if ((this.tick + i) % THERMAL_STEP_INTERVAL !== 0) return;
     const ambient = this.getPixelAtIndex(i).temperature;
     if (this.temperature[i] > ambient) this.temperature[i] = Math.max(ambient, this.temperature[i] - amount);
     else if (this.temperature[i] < ambient) this.temperature[i] = Math.min(ambient, this.temperature[i] + 1);
@@ -449,7 +459,8 @@ export class PixelWorld {
   }
 
   getBurnoutChance(i) {
-    return PIXEL_BY_ID[this.burnSource[i]]?.burnoutChance ?? 0.008;
+    const sourcePixel = PIXEL_BY_ID[this.burnSource[i]];
+    return sourcePixel ? sourcePixel.burnoutChance / sourcePixel.burnDurationScale : 0.008;
   }
 
   canBurningCellDrift(i) {
@@ -662,6 +673,7 @@ export class PixelWorld {
       this.loadSaveLayer(name, save.layers[name]);
     }
     this.drawSaveTemplates(save.templates ?? []);
+    runTerrainGenerators(this, save.postGenerators ?? []);
     for (const name of ['backdrop', 'background', 'foreground']) {
       this.withLayer(name, () => this.activateAllDynamic());
     }
@@ -941,7 +953,9 @@ export class PixelWorld {
     }
 
     this.bindLayer('foreground');
-    for (const object of this.objects) object.update(this);
+    for (const object of this.objects) {
+      this.withLayer(object.layer ?? 'foreground', () => object.update(this));
+    }
     this.objects = this.objects.filter((object) => !object.destroyed);
 
     this.bindLayer('backdrop');
@@ -968,6 +982,7 @@ export class PixelWorld {
 
       const pixel = PIXEL_BY_ID[this.cells[i]];
       if (!pixel) continue;
+      if (this.isDecorative(i)) continue;
       pixel.update(this, i, i % this.width, Math.floor(i / this.width), this.isStatic(i));
       this.coolCell(i);
       this.markRenderDirty(i);

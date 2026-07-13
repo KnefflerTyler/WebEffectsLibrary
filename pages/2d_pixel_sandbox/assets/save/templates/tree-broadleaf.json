@@ -1,0 +1,21 @@
+{
+  "name": "Broadleaf Lake Tree",
+  "version": 1,
+  "width": 25,
+  "height": 32,
+  "encoding": "layers-rows-rle",
+  "transparent": true,
+  "layers": {
+    "foreground": [
+      { "repeat": 32, "runs": [["air", 25]] },
+      { "shape": "rect", "material": "wood", "x": 11, "y": 10, "width": 3, "height": 22, "static": true },
+      { "shape": "rect", "material": "wood", "x": 8, "y": 14, "width": 4, "height": 2, "static": true },
+      { "shape": "rect", "material": "wood", "x": 13, "y": 12, "width": 5, "height": 2, "static": true },
+      { "shape": "circle", "material": "leaf", "x": 12, "y": 5, "radius": 6, "static": true },
+      { "shape": "circle", "material": "leaf", "x": 6, "y": 9, "radius": 5, "static": true },
+      { "shape": "circle", "material": "leaf", "x": 18, "y": 9, "radius": 5, "static": true },
+      { "shape": "ellipse", "material": "leaf", "x": 12, "y": 11, "radiusX": 9, "radiusY": 6, "static": true },
+      { "shape": "rect", "material": "wood", "x": 11, "y": 13, "width": 3, "height": 19, "static": true }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "Tall Lake Tree",
+  "version": 1,
+  "width": 21,
+  "height": 38,
+  "encoding": "layers-rows-rle",
+  "transparent": true,
+  "layers": {
+    "foreground": [
+      { "repeat": 38, "runs": [["air", 21]] },
+      { "shape": "rect", "material": "wood", "x": 9, "y": 9, "width": 3, "height": 29, "static": true },
+      { "shape": "rect", "material": "wood", "x": 5, "y": 16, "width": 5, "height": 2, "static": true },
+      { "shape": "rect", "material": "wood", "x": 11, "y": 13, "width": 5, "height": 2, "static": true },
+      { "shape": "ellipse", "material": "leaf", "x": 10, "y": 5, "radiusX": 6, "radiusY": 5, "static": true },
+      { "shape": "circle", "material": "leaf", "x": 5, "y": 11, "radius": 5, "static": true },
+      { "shape": "circle", "material": "leaf", "x": 15, "y": 11, "radius": 5, "static": true },
+      { "shape": "ellipse", "material": "leaf", "x": 10, "y": 14, "radiusX": 8, "radiusY": 6, "static": true },
+      { "shape": "rect", "material": "wood", "x": 9, "y": 15, "width": 3, "height": 23, "static": true }
+    ]
+  }
+}

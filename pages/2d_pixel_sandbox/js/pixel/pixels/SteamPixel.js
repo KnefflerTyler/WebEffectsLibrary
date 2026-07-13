@@ -18,7 +18,8 @@ export class SteamPixel extends Pixel {
   }
 
   getInitialData(value = 0) {
-    return value || 22 + Math.floor(Math.random() * 28);
+    const baseLife = value || 22 + Math.floor(Math.random() * 28);
+    return baseLife * 3;
   }
 
   renderColor(tone, life) {
@@ -30,7 +31,7 @@ export class SteamPixel extends Pixel {
 
   update(world, i, x, y) {
     world.data[i] = Math.max(0, world.data[i] - 1);
-    if (world.data[i] <= 0 || Math.random() < 0.006) {
+    if (world.data[i] <= 0 || Math.random() < 0.002) {
       world.setCell(i, MATERIAL.WATER);
       world.touched[i] = world.tick;
       return;

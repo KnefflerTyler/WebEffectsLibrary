@@ -7,6 +7,7 @@ export class DirtPixel extends Pixel {
       id: MATERIAL.DIRT,
       name: 'dirt',
       color: [137, 103, 58],
+      usesCustomColor: true,
       weight: 85,
       swapBuffer: 12,
       displaceable: true,

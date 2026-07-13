@@ -8,86 +8,183 @@
     {
       "name": "night-sky",
       "options": { "layer": "backdrop" }
-    },
+    }
+  ],
+  "postGenerators": [
     {
-      "name": "rolling-ground",
+      "name": "underground-dirt",
       "options": {
         "layer": "background",
-        "baseY": 175,
-        "amplitude": 5
+        "startY": 162,
+        "seed": 7319,
+        "colors": ["#a77b48", "#936438", "#7f522f", "#684027"],
+        "noiseScale": 13,
+        "noiseStrength": 0.2,
+        "speckleChance": 0.055
       }
     },
     {
-      "name": "grown-trees",
+      "name": "underground-dirt",
       "options": {
-        "layer": "background",
-        "trees": [
-          { "x": 54, "y": 175, "energy": 255 },
-          { "x": 258, "y": 175, "energy": 255 }
-        ]
+        "layer": "foreground",
+        "startY": 162,
+        "seed": 7319,
+        "colors": ["#a77b48", "#936438", "#7f522f", "#684027"],
+        "noiseScale": 13,
+        "noiseStrength": 0.2,
+        "speckleChance": 0.055
       }
     }
   ],
   "templates": [
     {
-      "file": "templates/campfire.json",
-      "x": 207,
-      "y": 150
+      "file": "templates/tree-tall.json",
+      "x": 1,
+      "y": 124,
+      "layer": "background"
+    },
+    {
+      "file": "templates/tree-broadleaf.json",
+      "x": 191,
+      "y": 131,
+      "layer": "background"
+    },
+    {
+      "file": "templates/tree-tall.json",
+      "x": 286,
+      "y": 124,
+      "layer": "background"
+    },
+    {
+      "file": "templates/tree-broadleaf.json",
+      "x": 307,
+      "y": 131,
+      "layer": "background"
+    },
+    {
+      "file": "templates/tree-broadleaf.json",
+      "x": 190,
+      "y": 132,
+      "layer": "backdrop"
+    },
+    {
+      "file": "templates/tree-tall.json",
+      "x": 211,
+      "y": 126,
+      "layer": "backdrop"
+    },
+    {
+      "file": "templates/tree-broadleaf.json",
+      "x": 232,
+      "y": 132,
+      "layer": "backdrop"
+    },
+    {
+      "file": "templates/tree-tall.json",
+      "x": 253,
+      "y": 126,
+      "layer": "backdrop"
+    },
+    {
+      "file": "templates/tree-broadleaf.json",
+      "x": 274,
+      "y": 132,
+      "layer": "backdrop"
+    },
+    {
+      "file": "templates/tree-tall.json",
+      "x": 295,
+      "y": 126,
+      "layer": "backdrop"
+    },
+    {
+      "file": "templates/tree-broadleaf.json",
+      "x": 310,
+      "y": 132,
+      "layer": "backdrop"
+    },
+    {
+      "file": "templates/lake-ground-background.json",
+      "x": 0,
+      "y": 0,
+      "layer": "background"
     },
     {
       "file": "templates/lake-shore-detail.json",
-      "x": 10,
+      "x": 0,
       "y": 152
-    },
-    {
-      "file": "templates/campsite-detail.json",
-      "x": 176,
-      "y": 150
     },
     {
       "file": "templates/bench.json",
       "x": 181,
-      "y": 153
+      "y": 153,
+      "layer": "background"
     },
     {
       "file": "templates/bench.json",
       "x": 241,
-      "y": 153
+      "y": 153,
+      "layer": "background"
     },
     {
       "file": "templates/lakeside-props.json",
       "x": 110,
-      "y": 140
+      "y": 140,
+      "layer": "background"
     }
   ],
   "objects": [
     {
+      "type": "campfire",
+      "options": {
+        "x": 222,
+        "y": 164,
+        "layer": "background",
+        "woodColor": "#84502c"
+      }
+    },
+    {
+      "type": "fishingRod",
+      "options": {
+        "x": 126,
+        "y": 160,
+        "layer": "background",
+        "castDirection": -1,
+        "castLength": 31
+      }
+    },
+    {
       "type": "tent",
       "options": {
         "x": 268,
-        "y": 173,
-        "width": 21,
-        "height": 15,
+        "y": 162,
+        "layer": "background",
+        "width": 38,
+        "height": 28,
         "clothColor": [176, 48, 42]
       }
     }
   ],
   "layers": {
     "foreground": [
-      { "repeat": 165, "runs": [["air", 330]] },
-      { "runs": [["dirt", 20], ["grass", 4], ["water", 150], ["grass", 4], ["dirt", 152]] },
-      { "repeat": 12, "runs": [["dirt", 20], ["water", 158], ["dirt", 152]] },
-      { "repeat": 26, "runs": [["dirt", 330]] },
-      { "shape": "donut", "material": "rock", "x": 222, "y": 172, "outerRadiusX": 18, "outerRadiusY": 6, "innerRadiusX": 12, "innerRadiusY": 3 },
-      { "shape": "ellipse", "material": "ash", "x": 222, "y": 173, "radiusX": 11, "radiusY": 3 },
-      { "shape": "circle", "material": "rock", "x": 184, "y": 164, "radius": 2 },
-      { "shape": "ellipse", "material": "rock", "x": 197, "y": 165, "radiusX": 3, "radiusY": 2 },
-      { "shape": "rect", "material": "wood", "x": 173, "y": 161, "width": 8, "height": 2, "static": true },
-      { "shape": "rect", "material": "wood", "x": 175, "y": 158, "width": 8, "height": 2, "static": true },
-      { "shape": "circle", "material": "rock", "x": 251, "y": 169, "radius": 1 },
-      { "shape": "circle", "material": "rock", "x": 258, "y": 171, "radius": 1 },
-      { "shape": "circle", "material": "rock", "x": 265, "y": 170, "radius": 1 },
-      { "shape": "circle", "material": "rock", "x": 272, "y": 172, "radius": 1 },
+      { "repeat": 162, "runs": [["air", 330]] },
+      { "runs": [["dirt", 14, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["water", 174], ["grass", 3, 0, {"static": true}], ["dirt", 136, 0, {"static": true}]] },
+      { "runs": [["dirt", 15, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["water", 171], ["grass", 3, 0, {"static": true}], ["dirt", 138, 0, {"static": true}]] },
+      { "runs": [["dirt", 15, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["water", 168], ["grass", 4, 0, {"static": true}], ["dirt", 139, 0, {"static": true}]] },
+      { "runs": [["dirt", 16, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["water", 166], ["grass", 4, 0, {"static": true}], ["dirt", 141, 0, {"static": true}]] },
+      { "runs": [["dirt", 16, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["water", 164], ["grass", 4, 0, {"static": true}], ["dirt", 142, 0, {"static": true}]] },
+      { "runs": [["dirt", 17, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["water", 162], ["grass", 4, 0, {"static": true}], ["dirt", 144, 0, {"static": true}]] },
+      { "runs": [["dirt", 17, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["water", 160], ["grass", 4, 0, {"static": true}], ["dirt", 145, 0, {"static": true}]] },
+      { "runs": [["dirt", 18, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["water", 158], ["grass", 4, 0, {"static": true}], ["dirt", 147, 0, {"static": true}]] },
+      { "runs": [["dirt", 18, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["water", 156], ["grass", 4, 0, {"static": true}], ["dirt", 148, 0, {"static": true}]] },
+      { "runs": [["dirt", 19, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["water", 154], ["grass", 4, 0, {"static": true}], ["dirt", 150, 0, {"static": true}]] },
+      { "runs": [["dirt", 19, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["water", 152], ["grass", 4, 0, {"static": true}], ["dirt", 151, 0, {"static": true}]] },
+      { "runs": [["dirt", 20, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["water", 150], ["grass", 4, 0, {"static": true}], ["dirt", 153, 0, {"static": true}]] },
+      { "runs": [["dirt", 20, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["water", 148], ["grass", 4, 0, {"static": true}], ["dirt", 154, 0, {"static": true}]] },
+      { "runs": [["dirt", 21, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["water", 146], ["grass", 4, 0, {"static": true}], ["dirt", 156, 0, {"static": true}]] },
+      { "runs": [["dirt", 21, 0, {"static": true}], ["grass", 4, 0, {"static": true}], ["water", 144], ["grass", 4, 0, {"static": true}], ["dirt", 157, 0, {"static": true}]] },
+      { "runs": [["dirt", 22, 0, {"static": true}], ["grass", 3, 0, {"static": true}], ["water", 142], ["grass", 4, 0, {"static": true}], ["dirt", 159, 0, {"static": true}]] },
+      { "repeat": 26, "runs": [["dirt", 330, 0, {"static": true}]] },
       { "shape": "square", "material": "flower", "x": 188, "y": 161, "width": 1, "height": 2 },
       { "shape": "square", "material": "flower", "x": 192, "y": 162, "width": 1, "height": 2 },
       { "shape": "square", "material": "flower", "x": 296, "y": 164, "width": 2, "height": 2 },

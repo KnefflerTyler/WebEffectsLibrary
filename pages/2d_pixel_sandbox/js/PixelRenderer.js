@@ -18,6 +18,8 @@ export class PixelRenderer {
     this.stats = { pixels: 0, fires: 0, waters: 0 };
     this.statsTick = -1;
     this.layerVisibility = { backdrop: true, background: true, foreground: true };
+    this.layerOpacity = { foreground: 0.94, background: 0.88, backdrop: 1 };
+    this.layerDarkening = { background: 0.10, backdrop: 0.22 };
     this.uploadBuffers = new Map();
     this.gl = canvas.getContext('webgl2', {
       alpha: false,
@@ -73,14 +75,24 @@ export class PixelRenderer {
     }
 
     const palette = new Float32Array(32 * 3);
+    const materialOpacity = new Float32Array(32);
+    const materialEmissive = new Float32Array(32);
     for (const pixel of PIXEL_BY_ID) {
       if (!pixel) continue;
       palette.set(pixel.color, pixel.id * 3);
+      materialOpacity[pixel.id] = pixel.opacity;
+      materialEmissive[pixel.id] = pixel.emissive;
     }
     gl.uniform3fv(gl.getUniformLocation(this.program, 'u_palette[0]'), palette);
+    gl.uniform1fv(gl.getUniformLocation(this.program, 'u_materialOpacity[0]'), materialOpacity);
+    gl.uniform1fv(gl.getUniformLocation(this.program, 'u_materialEmissive[0]'), materialEmissive);
     gl.uniform1i(gl.getUniformLocation(this.program, 'u_height'), this.world.height);
     this.visibilityUniform = gl.getUniformLocation(this.program, 'u_layerVisibility');
+    this.opacityUniform = gl.getUniformLocation(this.program, 'u_layerOpacity');
+    this.darkeningUniform = gl.getUniformLocation(this.program, 'u_layerDarkening');
     this.updateVisibilityUniform();
+    this.updateOpacityUniform();
+    this.updateDarkeningUniform();
     gl.viewport(0, 0, this.world.width, this.world.height);
     gl.disable(gl.BLEND);
     gl.disable(gl.DEPTH_TEST);
@@ -176,6 +188,18 @@ export class PixelRenderer {
     if (this.gl) this.updateVisibilityUniform();
   }
 
+  setLayerOpacity(name, opacity) {
+    if (!(name in this.layerOpacity)) throw new Error(`Unknown opacity layer "${name}".`);
+    this.layerOpacity[name] = Math.min(1, Math.max(0, Number(opacity)));
+    if (this.gl) this.updateOpacityUniform();
+  }
+
+  setLayerDarkening(name, darkening) {
+    if (!(name in this.layerDarkening)) throw new Error(`Layer "${name}" does not support darkening.`);
+    this.layerDarkening[name] = Math.min(1, Math.max(0, Number(darkening)));
+    if (this.gl) this.updateDarkeningUniform();
+  }
+
   updateVisibilityUniform() {
     this.gl.useProgram(this.program);
     this.gl.uniform3i(
@@ -183,6 +207,25 @@ export class PixelRenderer {
       Number(this.layerVisibility.backdrop),
       Number(this.layerVisibility.background),
       Number(this.layerVisibility.foreground),
+    );
+  }
+
+  updateOpacityUniform() {
+    this.gl.useProgram(this.program);
+    this.gl.uniform3f(
+      this.opacityUniform,
+      this.layerOpacity.foreground,
+      this.layerOpacity.background,
+      this.layerOpacity.backdrop,
+    );
+  }
+
+  updateDarkeningUniform() {
+    this.gl.useProgram(this.program);
+    this.gl.uniform2f(
+      this.darkeningUniform,
+      this.layerDarkening.background,
+      this.layerDarkening.backdrop,
     );
   }
 
@@ -216,30 +259,30 @@ export class PixelRenderer {
     for (let i = 0; i < this.world.total; i++) {
       const fgType = foreground.cells[i];
       const bgType = background.cells[i];
-      let layer = null;
-      let layerTint = 0;
+      let color = [5, 7, 11];
+      const compositeLayer = (layer, type, opacity, darkening = 0) => {
+        const finalOpacity = opacity * PIXEL_BY_ID[type].opacity;
+        const layerColor = PIXEL_BY_ID[type].renderColor(layer.shade[i], layer.data[i], [layer.tintR[i], layer.tintG[i], layer.tintB[i]]);
+        const highlight = (layer.flags[i] & CELL_FLAGS.STATIC) !== 0 ? 30 : 0;
+        const brightness = 1 - darkening * (1 - PIXEL_BY_ID[type].emissive);
+        color = color.map((channel, index) => (
+          channel * (1 - finalOpacity) + Math.min(255, layerColor[index] + highlight) * brightness * finalOpacity
+        ));
+      };
+
+      if (this.layerVisibility.backdrop) {
+        compositeLayer(backdrop, backdrop.cells[i], this.layerOpacity.backdrop, this.layerDarkening.backdrop);
+      }
+      if (this.layerVisibility.background && bgType !== MATERIAL.SPACE && bgType !== MATERIAL.AIR) {
+        compositeLayer(background, bgType, this.layerOpacity.background, this.layerDarkening.background);
+      }
       if (this.layerVisibility.foreground && fgType !== MATERIAL.SPACE && fgType !== MATERIAL.AIR) {
-        layer = foreground;
-      } else if (this.layerVisibility.background && bgType !== MATERIAL.SPACE && bgType !== MATERIAL.AIR) {
-        layer = background;
-        layerTint = 0.05;
-      } else if (this.layerVisibility.backdrop) {
-        layer = backdrop;
-        layerTint = 0.10;
+        compositeLayer(foreground, fgType, this.layerOpacity.foreground);
       }
-      if (!layer) {
-        out[p++] = 5;
-        out[p++] = 7;
-        out[p++] = 11;
-        out[p++] = 255;
-        continue;
-      }
-      const type = layer.cells[i];
-      const color = PIXEL_BY_ID[type].renderColor(layer.shade[i], layer.data[i], [layer.tintR[i], layer.tintG[i], layer.tintB[i]]);
-      const highlight = (layer.flags[i] & CELL_FLAGS.STATIC) !== 0 ? 30 : 0;
-      out[p++] = Math.min(255, color[0] * (1 - layerTint) + 5 * layerTint + highlight);
-      out[p++] = Math.min(255, color[1] * (1 - layerTint) + 7 * layerTint + highlight);
-      out[p++] = Math.min(255, color[2] * (1 - layerTint) + 11 * layerTint + highlight);
+
+      out[p++] = Math.min(255, color[0]);
+      out[p++] = Math.min(255, color[1]);
+      out[p++] = Math.min(255, color[2]);
       out[p++] = 255;
     }
     this.ctx.putImageData(this.image, 0, 0);

@@ -1,18 +1,25 @@
 import { CELL_FLAGS, MATERIAL, MATERIAL_BY_NAME, PixelWorld } from './PixelWorld.js';
 import { PixelRenderer } from './PixelRenderer.js';
+import { PIXEL_BY_ID } from './pixel/pixelRegistry.js';
 import { TentObject } from './pixel/objects/TentObject.js';
+import { EditorWindowManager } from './EditorWindowManager.js';
+import { StampTool } from './StampTool.js';
 
 const WORLD_WIDTH = 330;
 const WORLD_HEIGHT = 204;
 const SAVE_DIRECTORY = 'assets/save';
 
 const canvas = document.getElementById('world');
-const toolbar = document.getElementById('toolbar');
-const toolbarToggle = document.getElementById('toolbar-toggle');
+new EditorWindowManager(document.getElementById('editor-windows'));
+const stampPreviewCanvas = document.getElementById('stamp-preview');
+const stampControls = document.getElementById('stamp-controls');
+const stampSelect = document.getElementById('stamp-select');
 const brushInput = document.getElementById('brush-size');
-const brushLayerInput = document.getElementById('brush-layer');
+const brushLayerInputs = [...document.querySelectorAll('.brush-layer-selection')];
 const brushStaticInput = document.getElementById('brush-static');
 const brushNoGravityInput = document.getElementById('brush-no-gravity');
+const pixelInspectorToggle = document.getElementById('pixel-inspector-toggle');
+const pixelInspector = document.getElementById('pixel-inspector');
 const clothColorInput = document.getElementById('cloth-color');
 const speedInput = document.getElementById('sim-speed');
 const brushValue = document.getElementById('brush-value');
@@ -29,6 +36,16 @@ const waterCount = document.getElementById('water-count');
 const materialButtons = [...document.querySelectorAll('.material')];
 const paintModeButtons = [...document.querySelectorAll('.paint-mode')];
 const layerVisibilityInputs = [...document.querySelectorAll('.layer-visibility')];
+const foregroundOpacityInput = document.getElementById('foreground-opacity');
+const backgroundOpacityInput = document.getElementById('background-opacity');
+const backdropOpacityInput = document.getElementById('backdrop-opacity');
+const foregroundOpacityValue = document.getElementById('foreground-opacity-value');
+const backgroundOpacityValue = document.getElementById('background-opacity-value');
+const backdropOpacityValue = document.getElementById('backdrop-opacity-value');
+const backgroundDarkeningInput = document.getElementById('background-darkening');
+const backdropDarkeningInput = document.getElementById('backdrop-darkening');
+const backgroundDarkeningValue = document.getElementById('background-darkening-value');
+const backdropDarkeningValue = document.getElementById('backdrop-darkening-value');
 
 const world = new PixelWorld(WORLD_WIDTH, WORLD_HEIGHT);
 const renderer = await PixelRenderer.create(canvas, world);
@@ -42,21 +59,13 @@ let drawPoint = null;
 let strokeRadius = 0;
 let frame = 0;
 let paintMode = 'brush';
-
-function setToolbarOpen(open) {
-  toolbar.classList.toggle('open', open);
-  toolbar.setAttribute('aria-hidden', String(!open));
-  toolbarToggle.setAttribute('aria-expanded', String(open));
-  toolbarToggle.textContent = open ? '>' : '<';
-  toolbarToggle.setAttribute('aria-label', open ? 'Hide controls' : 'Show controls');
-}
-
-toolbarToggle.addEventListener('click', () => setToolbarOpen(!toolbar.classList.contains('open')));
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && toolbar.classList.contains('open')) {
-    setToolbarOpen(false);
-    toolbarToggle.focus();
-  }
+let pixelInspectorEnabled = true;
+const stampTool = new StampTool({
+  world,
+  previewCanvas: stampPreviewCanvas,
+  select: stampSelect,
+  getLayers: getBrushLayers,
+  getClothColor: () => hexToRgb(clothColorInput.value),
 });
 
 function canvasToWorld(clientX, clientY) {
@@ -65,6 +74,51 @@ function canvasToWorld(clientX, clientY) {
     x: Math.floor((clientX - rect.left) / rect.width * world.width),
     y: Math.floor((clientY - rect.top) / rect.height * world.height),
   };
+}
+
+function getVisiblePixelName(x, y) {
+  if (!world.inBounds(x, y)) return null;
+  const index = world.index(x, y);
+  const visibleLayers = ['foreground', 'background', 'backdrop'];
+
+  for (const name of visibleLayers) {
+    if (!renderer.layerVisibility[name]) continue;
+    const type = world.layers[name].cells[index];
+    if (type === MATERIAL.SPACE || type === MATERIAL.AIR) continue;
+    return PIXEL_BY_ID[type]?.name ?? null;
+  }
+
+  for (const name of visibleLayers) {
+    if (!renderer.layerVisibility[name]) continue;
+    const type = world.layers[name].cells[index];
+    return PIXEL_BY_ID[type]?.name ?? null;
+  }
+
+  return null;
+}
+
+function formatPixelName(name) {
+  const spaced = name.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[-_]/g, ' ');
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
+function hidePixelInspector() {
+  pixelInspector.setAttribute('aria-hidden', 'true');
+}
+
+function updatePixelInspector(event) {
+  if (!pixelInspectorEnabled) return;
+  const point = canvasToWorld(event.clientX, event.clientY);
+  const name = getVisiblePixelName(point.x, point.y);
+  if (!name) {
+    hidePixelInspector();
+    return;
+  }
+
+  pixelInspector.textContent = formatPixelName(name);
+  pixelInspector.style.left = `${Math.min(event.clientX, window.innerWidth - 170)}px`;
+  pixelInspector.style.top = `${Math.min(event.clientY, window.innerHeight - 48)}px`;
+  pixelInspector.setAttribute('aria-hidden', 'false');
 }
 
 function updateStats(stats) {
@@ -91,9 +145,15 @@ function getPaintOptions() {
   return material === MATERIAL.CLOTH ? { color: hexToRgb(clothColorInput.value) } : {};
 }
 
+function getBrushLayers() {
+  return brushLayerInputs.filter((input) => input.checked).map((input) => input.value);
+}
+
 function paintAt(clientX, clientY, radius = brushSize) {
   const point = canvasToWorld(clientX, clientY);
-  world.paintCircle(point.x, point.y, Math.round(radius), material, getBrushFlags(), getPaintOptions(), brushLayerInput.value);
+  for (const layer of getBrushLayers()) {
+    world.paintCircle(point.x, point.y, Math.round(radius), material, getBrushFlags(), getPaintOptions(), layer);
+  }
   render(true);
 }
 
@@ -104,7 +164,9 @@ function paintCurrentStroke() {
 
 function fillAt(clientX, clientY) {
   const point = canvasToWorld(clientX, clientY);
-  world.fillConnected(point.x, point.y, material, getBrushFlags(), getPaintOptions(), brushLayerInput.value);
+  for (const layer of getBrushLayers()) {
+    world.fillConnected(point.x, point.y, material, getBrushFlags(), getPaintOptions(), layer);
+  }
   render(true);
 }
 
@@ -169,12 +231,12 @@ async function resolveTemplateReferences(references, baseUrl, loading) {
     if (!file) return reference;
 
     const templateUrl = new URL(file, baseUrl);
-    if (loading.has(templateUrl.href)) throw new Error(`Circular save template reference "${file}".`);
+    const branchLoading = new Set(loading);
+    if (branchLoading.has(templateUrl.href)) throw new Error(`Circular save template reference "${file}".`);
 
-    loading.add(templateUrl.href);
+    branchLoading.add(templateUrl.href);
     const template = await loadJson(templateUrl.href);
-    const nestedTemplates = await resolveTemplateReferences(template.templates ?? [], templateUrl, loading);
-    loading.delete(templateUrl.href);
+    const nestedTemplates = await resolveTemplateReferences(template.templates ?? [], templateUrl, branchLoading);
 
     const resolved = typeof reference === 'string' ? { file } : { ...reference };
     return {
@@ -198,7 +260,27 @@ paintModeButtons.forEach((button) => {
   button.addEventListener('click', () => {
     paintMode = button.dataset.paintMode;
     paintModeButtons.forEach((item) => item.classList.toggle('active', item === button));
+    const stamping = paintMode === 'stamp';
+    stampControls.hidden = !stamping;
+    stampTool.setEnabled(stamping);
   });
+});
+
+brushLayerInputs.forEach((input) => {
+  input.addEventListener('change', () => {
+    if (getBrushLayers().length === 0) input.checked = true;
+  });
+});
+
+clothColorInput.addEventListener('input', () => {
+  if (paintMode === 'stamp' && stampSelect.value === 'object:tent') stampTool.selectAsset();
+});
+
+pixelInspectorToggle.addEventListener('click', () => {
+  pixelInspectorEnabled = !pixelInspectorEnabled;
+  pixelInspectorToggle.setAttribute('aria-pressed', String(pixelInspectorEnabled));
+  pixelInspectorToggle.textContent = `Inspect pixel names: ${pixelInspectorEnabled ? 'On' : 'Off'}`;
+  if (!pixelInspectorEnabled) hidePixelInspector();
 });
 
 layerVisibilityInputs.forEach((input) => {
@@ -207,6 +289,29 @@ layerVisibilityInputs.forEach((input) => {
     render();
   });
 });
+
+function bindLayerOpacity(input, output, layer) {
+  input.addEventListener('input', () => {
+    output.textContent = `${input.value}%`;
+    renderer.setLayerOpacity(layer, Number(input.value) / 100);
+    render();
+  });
+}
+
+bindLayerOpacity(foregroundOpacityInput, foregroundOpacityValue, 'foreground');
+bindLayerOpacity(backgroundOpacityInput, backgroundOpacityValue, 'background');
+bindLayerOpacity(backdropOpacityInput, backdropOpacityValue, 'backdrop');
+
+function bindLayerDarkening(input, output, layer) {
+  input.addEventListener('input', () => {
+    output.textContent = `${input.value}%`;
+    renderer.setLayerDarkening(layer, Number(input.value) / 100);
+    render();
+  });
+}
+
+bindLayerDarkening(backgroundDarkeningInput, backgroundDarkeningValue, 'background');
+bindLayerDarkening(backdropDarkeningInput, backdropDarkeningValue, 'backdrop');
 
 brushInput.addEventListener('input', () => {
   brushSize = Number(brushInput.value);
@@ -245,7 +350,12 @@ clearBtn.addEventListener('click', () => {
 });
 
 canvas.addEventListener('pointerdown', (event) => {
-  if (toolbar.classList.contains('open')) setToolbarOpen(false);
+  if (paintMode === 'stamp') {
+    stampTool.stampAt(canvasToWorld(event.clientX, event.clientY)).then((placed) => {
+      if (placed) render(true);
+    });
+    return;
+  }
   if (paintMode === 'bucket') {
     fillAt(event.clientX, event.clientY);
     return;
@@ -259,10 +369,17 @@ canvas.addEventListener('pointerdown', (event) => {
 });
 
 canvas.addEventListener('pointermove', (event) => {
+  updatePixelInspector(event);
+  if (paintMode === 'stamp') stampTool.updatePreview(canvasToWorld(event.clientX, event.clientY));
   if (!drawing) return;
   drawPoint = { clientX: event.clientX, clientY: event.clientY };
   if (paintMode === 'pencil') paintAt(event.clientX, event.clientY, 0);
   else paintCurrentStroke();
+});
+
+canvas.addEventListener('pointerleave', () => {
+  hidePixelInspector();
+  stampTool.hidePreview();
 });
 
 canvas.addEventListener('pointerup', () => {

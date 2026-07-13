@@ -10,115 +10,200 @@
 </head>
 <body>
   <main class="app">
+    <header class="editor-toolbar" aria-label="Editor windows">
+      <div class="editor-brand" aria-label="Pixel Sandbox">
+        <span class="brand-mark" aria-hidden="true">PX</span>
+        <span>Pixel Sandbox</span>
+      </div>
+      <nav class="window-launchers" aria-label="Open editor windows">
+        <button type="button" data-panel-target="materials-panel" aria-pressed="true"><span aria-hidden="true">▦</span> Materials</button>
+        <button type="button" data-panel-target="brush-panel" aria-pressed="true"><span aria-hidden="true">✎</span> Brush</button>
+        <button type="button" data-panel-target="layers-panel" aria-pressed="false"><span aria-hidden="true">▱</span> Layers</button>
+        <button type="button" data-panel-target="world-panel" aria-pressed="false"><span aria-hidden="true">◇</span> World</button>
+        <button type="button" data-panel-target="stats-panel" aria-pressed="false"><span aria-hidden="true">⌁</span> Stats</button>
+      </nav>
+      <button class="layout-reset" id="layout-reset" type="button" title="Restore the default window layout">Reset layout</button>
+    </header>
+
     <section class="stage" aria-label="Pixel world">
       <div class="world-frame">
         <canvas id="world" width="330" height="204" aria-label="Pixel sandbox simulation"></canvas>
+        <canvas class="stamp-preview" id="stamp-preview" width="330" height="204" aria-hidden="true" hidden></canvas>
       </div>
     </section>
 
-    <button class="toolbar-toggle" id="toolbar-toggle" type="button" aria-controls="toolbar" aria-expanded="false" aria-label="Show controls">&lt;</button>
-
-    <aside class="toolbar" id="toolbar" aria-label="Pixel sandbox controls" aria-hidden="true">
-      <div class="title">
-        <p class="eyebrow">Cellular sim</p>
-        <h1>Pixel Sandbox</h1>
-      </div>
-
-      <section class="tool-group" aria-label="Materials">
-        <div class="group-label">Material</div>
-        <div class="materials">
-          <button class="material active" type="button" data-material="water"><span class="swatch water"></span>Water</button>
-          <button class="material" type="button" data-material="dirt"><span class="swatch dirt"></span>Dirt</button>
-          <button class="material" type="button" data-material="grass"><span class="swatch grass"></span>Grass</button>
-          <button class="material" type="button" data-material="wood"><span class="swatch wood"></span>Wood</button>
-          <button class="material" type="button" data-material="cloth"><span class="swatch cloth"></span>Cloth</button>
-          <button class="material" type="button" data-material="seed"><span class="swatch seed"></span>Seed</button>
-          <button class="material" type="button" data-material="root"><span class="swatch root"></span>Root</button>
-          <button class="material" type="button" data-material="leaf"><span class="swatch leaf"></span>Leaf</button>
-          <button class="material" type="button" data-material="flower"><span class="swatch flower"></span>Flower</button>
-          <button class="material" type="button" data-material="fire"><span class="swatch fire"></span>Fire</button>
-          <button class="material" type="button" data-material="steam"><span class="swatch steam"></span>Steam</button>
-          <button class="material" type="button" data-material="wetWood"><span class="swatch wet-wood"></span>Wet wood</button>
-          <button class="material" type="button" data-material="mud"><span class="swatch mud"></span>Mud</button>
-          <button class="material" type="button" data-material="charcoal"><span class="swatch charcoal"></span>Charcoal</button>
-          <button class="material" type="button" data-material="rock"><span class="swatch rock"></span>Rock</button>
-          <button class="material" type="button" data-material="ash"><span class="swatch ash"></span>Ash</button>
-          <button class="material" type="button" data-material="air"><span class="swatch air"></span>Air</button>
-          <button class="material" type="button" data-material="oxygen"><span class="swatch oxygen"></span>Oxygen</button>
-          <button class="material" type="button" data-material="nitrogen"><span class="swatch nitrogen"></span>Nitrogen</button>
-          <button class="material" type="button" data-material="space"><span class="swatch space"></span>Space</button>
+    <div class="editor-windows" id="editor-windows">
+      <section class="editor-panel materials-panel" id="materials-panel" aria-label="Materials window"
+        data-default-open="true" data-default-x="16" data-default-y="62" data-default-width="280" data-default-height="650">
+        <header class="panel-header">
+          <div class="panel-title"><span aria-hidden="true">▦</span> Materials</div>
+          <div class="panel-actions">
+            <button type="button" data-panel-minimize aria-label="Minimize Materials">−</button>
+            <button type="button" data-panel-close aria-label="Close Materials">×</button>
+          </div>
+        </header>
+        <div class="panel-body">
+          <div class="materials">
+            <button class="material active" type="button" data-material="water"><span class="swatch water"></span>Water</button>
+            <button class="material" type="button" data-material="dirt"><span class="swatch dirt"></span>Dirt</button>
+            <button class="material" type="button" data-material="grass"><span class="swatch grass"></span>Grass</button>
+            <button class="material" type="button" data-material="wood"><span class="swatch wood"></span>Wood</button>
+            <button class="material" type="button" data-material="cloth"><span class="swatch cloth"></span>Cloth</button>
+            <button class="material" type="button" data-material="seed"><span class="swatch seed"></span>Seed</button>
+            <button class="material" type="button" data-material="root"><span class="swatch root"></span>Root</button>
+            <button class="material" type="button" data-material="leaf"><span class="swatch leaf"></span>Leaf</button>
+            <button class="material" type="button" data-material="flower"><span class="swatch flower"></span>Flower</button>
+            <button class="material" type="button" data-material="fire"><span class="swatch fire"></span>Fire</button>
+            <button class="material" type="button" data-material="steam"><span class="swatch steam"></span>Steam</button>
+            <button class="material" type="button" data-material="wetWood"><span class="swatch wet-wood"></span>Wet wood</button>
+            <button class="material" type="button" data-material="mud"><span class="swatch mud"></span>Mud</button>
+            <button class="material" type="button" data-material="charcoal"><span class="swatch charcoal"></span>Charcoal</button>
+            <button class="material" type="button" data-material="plastic"><span class="swatch plastic"></span>Plastic</button>
+            <button class="material" type="button" data-material="metal"><span class="swatch metal"></span>Metal</button>
+            <button class="material" type="button" data-material="rock"><span class="swatch rock"></span>Rock</button>
+            <button class="material" type="button" data-material="ash"><span class="swatch ash"></span>Ash</button>
+            <button class="material" type="button" data-material="air"><span class="swatch air"></span>Air</button>
+            <button class="material" type="button" data-material="oxygen"><span class="swatch oxygen"></span>Oxygen</button>
+            <button class="material" type="button" data-material="nitrogen"><span class="swatch nitrogen"></span>Nitrogen</button>
+            <button class="material" type="button" data-material="space"><span class="swatch space"></span>Space</button>
+          </div>
         </div>
       </section>
 
-      <section class="tool-group" aria-label="Brush">
-        <div class="group-label">Brush</div>
-        <label class="range-row">
-          Layer
-          <select id="brush-layer">
-            <option value="foreground">Foreground</option>
-            <option value="background">Background</option>
-          </select>
-        </label>
-        <div class="paint-modes" role="group" aria-label="Paint tool">
-          <button class="paint-mode" type="button" data-paint-mode="pencil">Pencil</button>
-          <button class="paint-mode active" type="button" data-paint-mode="brush">Brush</button>
-          <button class="paint-mode" type="button" data-paint-mode="bucket">Bucket</button>
-        </div>
-        <label class="range-row">
-          Size
-          <output id="brush-value">6</output>
-          <input id="brush-size" type="range" min="1" max="18" value="6">
-        </label>
-        <label class="range-row">
-          Speed
-          <output id="speed-value">4</output>
-          <input id="sim-speed" type="range" min="1" max="10" value="4">
-        </label>
-        <div class="brush-options">
-          <label class="check-row"><input id="brush-static" type="checkbox"> Static</label>
-          <label class="check-row"><input id="brush-no-gravity" type="checkbox"> No gravity</label>
-        </div>
-        <label class="color-row">
-          Cloth
-          <input id="cloth-color" type="color" value="#bc3638">
-        </label>
-      </section>
-
-      <section class="tool-group" aria-label="Layer visibility">
-        <div class="group-label">Visible layers</div>
-        <div class="visibility-options">
-          <label class="check-row"><input class="layer-visibility" type="checkbox" value="foreground" checked> Foreground</label>
-          <label class="check-row"><input class="layer-visibility" type="checkbox" value="background" checked> Background</label>
-          <label class="check-row"><input class="layer-visibility" type="checkbox" value="backdrop" checked> Backdrop</label>
-        </div>
-      </section>
-
-      <section class="tool-group" aria-label="Actions">
-        <div class="group-label">World</div>
-        <label class="scene-row">
-          Scene
-          <select id="scene-select">
-            <option value="default-simulation.json">Rolling Green Hills</option>
-            <option value="campfire-lake.json" selected>Campfire by the Lake</option>
-          </select>
-        </label>
-        <div class="actions">
-          <button id="pause" type="button">Pause</button>
-          <button id="step" type="button">Step</button>
-          <button id="reset" type="button">Reset</button>
-          <button id="tent" type="button">Tent</button>
-          <button id="clear" type="button">Clear</button>
+      <section class="editor-panel" id="brush-panel" aria-label="Brush window"
+        data-default-open="true" data-default-side="right" data-default-x="16" data-default-y="62" data-default-width="300" data-default-height="390">
+        <header class="panel-header">
+          <div class="panel-title"><span aria-hidden="true">✎</span> Brush</div>
+          <div class="panel-actions">
+            <button type="button" data-panel-minimize aria-label="Minimize Brush">−</button>
+            <button type="button" data-panel-close aria-label="Close Brush">×</button>
+          </div>
+        </header>
+        <div class="panel-body tool-group">
+          <fieldset class="brush-layer-picker" id="brush-layer">
+            <legend>Paint layers</legend>
+            <div class="brush-layer-options">
+              <label class="check-row"><input class="brush-layer-selection" type="checkbox" value="foreground" checked> Foreground</label>
+              <label class="check-row"><input class="brush-layer-selection" type="checkbox" value="background"> Background</label>
+              <label class="check-row"><input class="brush-layer-selection" type="checkbox" value="backdrop"> Backdrop</label>
+            </div>
+          </fieldset>
+          <div class="paint-modes" role="group" aria-label="Paint tool">
+            <button class="paint-mode" type="button" data-paint-mode="pencil">Pencil</button>
+            <button class="paint-mode active" type="button" data-paint-mode="brush">Brush</button>
+            <button class="paint-mode" type="button" data-paint-mode="bucket">Bucket</button>
+            <button class="paint-mode" type="button" data-paint-mode="stamp">Stamp</button>
+          </div>
+          <label class="stamp-picker" id="stamp-controls" hidden>Stamp
+            <select id="stamp-select">
+              <optgroup label="Objects">
+                <option value="object:tent" data-kind="object" data-object="tent">Tent</option>
+                <option value="object:campfire" data-kind="object" data-object="campfire">Campfire</option>
+                <option value="object:fishing-rod" data-kind="object" data-object="fishingRod">Fishing rod</option>
+              </optgroup>
+              <optgroup label="Templates">
+                <option value="template:bench" data-kind="template" data-file="assets/save/templates/bench.json">Bench</option>
+                <option value="template:broadleaf-tree" data-kind="template" data-file="assets/save/templates/tree-broadleaf.json">Broadleaf tree</option>
+                <option value="template:tall-tree" data-kind="template" data-file="assets/save/templates/tree-tall.json">Tall tree</option>
+                <option value="template:campsite-detail" data-kind="template" data-file="assets/save/templates/campsite-detail.json">Campsite detail</option>
+              </optgroup>
+            </select>
+          </label>
+          <button class="inspector-toggle" id="pixel-inspector-toggle" type="button" aria-pressed="true">Inspect pixel names: On</button>
+          <label class="range-row">Size <output id="brush-value">1</output>
+            <input id="brush-size" type="range" min="1" max="18" value="1">
+          </label>
+          <label class="range-row">Speed <output id="speed-value">1</output>
+            <input id="sim-speed" type="range" min="1" max="10" value="1">
+          </label>
+          <div class="brush-options">
+            <label class="check-row"><input id="brush-static" type="checkbox"> Static</label>
+            <label class="check-row"><input id="brush-no-gravity" type="checkbox"> No gravity</label>
+          </div>
+          <label class="color-row">Cloth <input id="cloth-color" type="color" value="#bc3638"></label>
         </div>
       </section>
 
-      <section class="stats" aria-label="Simulation stats">
-        <div class="stat-line"><span>Pixels</span><strong id="pixel-count">0</strong></div>
-        <div class="stat-line"><span>Fire</span><strong id="fire-count">0</strong></div>
-        <div class="stat-line"><span>Water</span><strong id="water-count">0</strong></div>
+      <section class="editor-panel" id="layers-panel" aria-label="Layers window" hidden
+        data-default-open="false" data-default-side="right" data-default-x="32" data-default-y="86" data-default-width="310" data-default-height="460">
+        <header class="panel-header">
+          <div class="panel-title"><span aria-hidden="true">▱</span> Layers</div>
+          <div class="panel-actions">
+            <button type="button" data-panel-minimize aria-label="Minimize Layers">−</button>
+            <button type="button" data-panel-close aria-label="Close Layers">×</button>
+          </div>
+        </header>
+        <div class="panel-body tool-group">
+          <div class="visibility-options">
+            <label class="check-row"><input class="layer-visibility" type="checkbox" value="foreground" checked> Foreground</label>
+            <label class="check-row"><input class="layer-visibility" type="checkbox" value="background" checked> Background</label>
+            <label class="check-row"><input class="layer-visibility" type="checkbox" value="backdrop" checked> Backdrop</label>
+          </div>
+          <label class="range-row">Foreground opacity <output id="foreground-opacity-value">94%</output>
+            <input id="foreground-opacity" type="range" min="0" max="100" value="94">
+          </label>
+          <label class="range-row">Background opacity <output id="background-opacity-value">88%</output>
+            <input id="background-opacity" type="range" min="0" max="100" value="88">
+          </label>
+          <label class="range-row">Backdrop opacity <output id="backdrop-opacity-value">100%</output>
+            <input id="backdrop-opacity" type="range" min="0" max="100" value="100">
+          </label>
+          <label class="range-row">Background darkening <output id="background-darkening-value">10%</output>
+            <input id="background-darkening" type="range" min="0" max="60" value="10">
+          </label>
+          <label class="range-row">Backdrop darkening <output id="backdrop-darkening-value">22%</output>
+            <input id="backdrop-darkening" type="range" min="0" max="60" value="22">
+          </label>
+        </div>
       </section>
-    </aside>
+
+      <section class="editor-panel" id="world-panel" aria-label="World window" hidden
+        data-default-open="false" data-default-x="316" data-default-y="82" data-default-width="300" data-default-height="250">
+        <header class="panel-header">
+          <div class="panel-title"><span aria-hidden="true">◇</span> World</div>
+          <div class="panel-actions">
+            <button type="button" data-panel-minimize aria-label="Minimize World">−</button>
+            <button type="button" data-panel-close aria-label="Close World">×</button>
+          </div>
+        </header>
+        <div class="panel-body tool-group">
+          <label class="scene-row">Scene
+            <select id="scene-select">
+              <option value="default-simulation.json">Rolling Green Hills</option>
+              <option value="campfire-lake.json" selected>Campfire by the Lake</option>
+            </select>
+          </label>
+          <div class="actions">
+            <button id="pause" type="button">Pause</button>
+            <button id="step" type="button">Step</button>
+            <button id="reset" type="button">Reset</button>
+            <button id="tent" type="button">Tent</button>
+            <button id="clear" type="button">Clear</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="editor-panel" id="stats-panel" aria-label="Statistics window" hidden
+        data-default-open="false" data-default-x="40" data-default-y="470" data-default-width="260" data-default-height="170">
+        <header class="panel-header">
+          <div class="panel-title"><span aria-hidden="true">⌁</span> Stats</div>
+          <div class="panel-actions">
+            <button type="button" data-panel-minimize aria-label="Minimize Stats">−</button>
+            <button type="button" data-panel-close aria-label="Close Stats">×</button>
+          </div>
+        </header>
+        <div class="panel-body">
+          <section class="stats" aria-label="Simulation stats">
+            <div class="stat-line"><span>Pixels</span><strong id="pixel-count">0</strong></div>
+            <div class="stat-line"><span>Fire</span><strong id="fire-count">0</strong></div>
+            <div class="stat-line"><span>Water</span><strong id="water-count">0</strong></div>
+          </section>
+        </div>
+      </section>
+    </div>
   </main>
 
+  <div class="pixel-inspector" id="pixel-inspector" role="status" aria-hidden="true"></div>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>
