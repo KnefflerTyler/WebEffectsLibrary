@@ -72,7 +72,7 @@ export class CampfireObject extends PixelObject {
         dy: cell.dy,
         material: cell.material,
         color: cell.color,
-        flags: CELL_FLAGS.STATIC,
+        flags: CELL_FLAGS.STATIC | CELL_FLAGS.FIREPROOF,
         role: cell.role,
       });
     }

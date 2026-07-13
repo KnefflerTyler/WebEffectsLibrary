@@ -78,7 +78,7 @@ export class FirePixel extends Pixel {
 
     if (world.data[i] <= 0 || Math.random() < world.getBurnoutChance(i)) {
       const residue = world.getBurnResidue(i);
-      world.setCell(i, residue, residue === MATERIAL.SMOKE ? 16 : 0);
+      world.setCell(i, residue, residue === MATERIAL.SMOKE ? 16 : 0, { flags: 0 });
       world.touched[i] = world.tick;
       return;
     }

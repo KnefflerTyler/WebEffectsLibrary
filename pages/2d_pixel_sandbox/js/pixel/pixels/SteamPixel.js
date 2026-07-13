@@ -31,8 +31,20 @@ export class SteamPixel extends Pixel {
 
   update(world, i, x, y) {
     world.data[i] = Math.max(0, world.data[i] - 1);
-    if (world.data[i] <= 0 || Math.random() < 0.002) {
-      world.setCell(i, MATERIAL.WATER);
+    const touchingColdSurface = world.hasNeighborWhere(x, y, (pixel, neighbor) => (
+      pixel.id !== MATERIAL.SPACE
+      && !pixel.gas
+      && world.temperature[neighbor] < 65
+    ));
+
+    if (world.data[i] <= 0) {
+      world.setCell(i, touchingColdSurface ? MATERIAL.WATER : MATERIAL.AIR, 0, { flags: 0 });
+      world.touched[i] = world.tick;
+      return;
+    }
+
+    if (touchingColdSurface && Math.random() < 0.012) {
+      world.setCell(i, MATERIAL.WATER, 0, { flags: 0 });
       world.touched[i] = world.tick;
       return;
     }

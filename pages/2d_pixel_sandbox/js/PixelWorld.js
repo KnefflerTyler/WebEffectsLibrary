@@ -8,6 +8,7 @@ export const CELL_FLAGS = Object.freeze({
   STATIC: 1,
   NO_GRAVITY: 2,
   DECORATIVE: 4,
+  FIREPROOF: 8,
 });
 
 const THERMAL_STEP_INTERVAL = 3;
@@ -154,6 +155,10 @@ export class PixelWorld {
 
   isDecorative(i) {
     return (this.flags[i] & CELL_FLAGS.DECORATIVE) !== 0;
+  }
+
+  isFireproof(i) {
+    return (this.flags[i] & CELL_FLAGS.FIREPROOF) !== 0;
   }
 
   canReactWhileStatic(i) {
@@ -388,15 +393,17 @@ export class PixelWorld {
     if (!this.canReactWhileStatic(i)) return false;
 
     const pixel = this.getPixelAtIndex(i);
-    if (this.isStatic(i) && (pixel.id === MATERIAL.WOOD || pixel.id === MATERIAL.CHARCOAL)) return false;
+    if (this.isFireproof(i)) return false;
     if (pixel.flammability <= 0) return false;
     if (this.temperature[i] < pixel.igniteTemperature) return false;
     if (pixel.oxygen <= 0 && !this.hasNeighborWhereAcrossLayers(x, y, (neighbor) => neighbor.oxygen > 0)) return false;
     const heatMargin = Math.min(6, Math.max(1, (this.temperature[i] - pixel.igniteTemperature) / 18));
     if (Math.random() >= Math.min(0.95, pixel.flammability * heatMargin)) return false;
 
+    const wasStatic = this.isStatic(i);
     this.setCell(i, MATERIAL.FIRE, pixel.getBurnLife(), {
-      force: this.isStatic(i),
+      force: wasStatic,
+      flags: wasStatic ? CELL_FLAGS.NO_GRAVITY : this.flags[i],
       burnSource: pixel.id,
       temperature: Math.max(this.temperature[i], PIXEL_BY_ID[MATERIAL.FIRE].temperature),
     });
@@ -558,6 +565,15 @@ export class PixelWorld {
     this.activeFlags = this.nextActiveFlags;
     this.nextActiveList = emptyList;
     this.nextActiveFlags = emptyFlags;
+
+    // Cross-layer reactions temporarily re-bind the world during an update.
+    // Keep the layer's references current so returning to this layer does not
+    // restore the pre-promotion queues and drop reacting pixels after one tick.
+    const layer = this.layers[this.activeLayerName];
+    layer.activeList = this.activeList;
+    layer.activeFlags = this.activeFlags;
+    layer.nextActiveList = this.nextActiveList;
+    layer.nextActiveFlags = this.nextActiveFlags;
   }
 
   forNeighbors(x, y, fn) {

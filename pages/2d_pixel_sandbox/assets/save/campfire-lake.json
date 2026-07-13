@@ -57,51 +57,39 @@
     },
     {
       "file": "templates/tree-broadleaf.json",
-      "x": 307,
-      "y": 131,
-      "layer": "background"
-    },
-    {
-      "file": "templates/tree-broadleaf.json",
       "x": 190,
       "y": 132,
-      "layer": "backdrop"
-    },
-    {
-      "file": "templates/tree-tall.json",
-      "x": 211,
-      "y": 126,
-      "layer": "backdrop"
+      "layer": "background"
     },
     {
       "file": "templates/tree-broadleaf.json",
       "x": 232,
       "y": 132,
-      "layer": "backdrop"
+      "layer": "background"
     },
     {
       "file": "templates/tree-tall.json",
       "x": 253,
       "y": 126,
-      "layer": "backdrop"
+      "layer": "background"
     },
     {
       "file": "templates/tree-broadleaf.json",
       "x": 274,
       "y": 132,
-      "layer": "backdrop"
+      "layer": "background"
     },
     {
       "file": "templates/tree-tall.json",
       "x": 295,
       "y": 126,
-      "layer": "backdrop"
+      "layer": "background"
     },
     {
       "file": "templates/tree-broadleaf.json",
       "x": 310,
       "y": 132,
-      "layer": "backdrop"
+      "layer": "background"
     },
     {
       "file": "templates/lake-ground-background.json",
