@@ -3,7 +3,9 @@ import { AshPixel } from './pixels/AshPixel.js';
 import { CharcoalPixel } from './pixels/CharcoalPixel.js';
 import { ClothPixel } from './pixels/ClothPixel.js';
 import { DirtPixel } from './pixels/DirtPixel.js';
+import { DynamitePixel } from './pixels/DynamitePixel.js';
 import { FirePixel } from './pixels/FirePixel.js';
+import { FusePixel } from './pixels/FusePixel.js';
 import { GrassPixel } from './pixels/GrassPixel.js';
 import { LeafPixel } from './pixels/LeafPixel.js';
 import { MudPixel } from './pixels/MudPixel.js';
@@ -52,6 +54,8 @@ const PIXEL_LIST = [
   new MetalPixel(),
   new RockPixel(),
   new FlowerPixel(),
+  new DynamitePixel(),
+  new FusePixel(),
 ];
 
 export const PIXELS = Object.freeze(PIXEL_LIST);

@@ -11,6 +11,7 @@ export class MetalPixel extends Pixel {
       swapBuffer: 22,
       displaceable: true,
       waterproof: true,
+      blastResistance: 0.72,
       acceptsDisplacementFrom: new Set([MATERIAL.WATER, MATERIAL.FIRE, MATERIAL.SMOKE, MATERIAL.STEAM, MATERIAL.ASH]),
     });
   }

@@ -11,6 +11,7 @@ export class RockPixel extends Pixel {
       displaceable: true,
       acceptsDisplacementFrom: new Set([MATERIAL.WATER, MATERIAL.FIRE, MATERIAL.SMOKE, MATERIAL.STEAM, MATERIAL.ASH]),
       rootGrowThrough: true,
+      blastResistance: 0.38,
     });
   }
 

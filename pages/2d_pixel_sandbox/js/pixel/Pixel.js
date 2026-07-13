@@ -25,6 +25,8 @@ export const MATERIAL = Object.freeze({
   METAL: 22,
   ROCK: 23,
   FLOWER: 24,
+  DYNAMITE: 25,
+  FUSE: 26,
 });
 
 export class Pixel {
@@ -68,6 +70,7 @@ export class Pixel {
     temperature = 20,
     igniteTemperature = null,
     heatOutput = 0,
+    blastResistance = 0,
   }) {
     this.id = id;
     this.name = name;
@@ -109,6 +112,7 @@ export class Pixel {
     this.temperature = temperature;
     this.igniteTemperature = igniteTemperature ?? (flammability > 0 ? 180 : Infinity);
     this.heatOutput = heatOutput;
+    this.blastResistance = Math.min(1, Math.max(0, blastResistance));
   }
 
   inferOpacity(name, gas, burns) {
