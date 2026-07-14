@@ -135,6 +135,17 @@ export class GameWorld {
     });
   }
 
+  addCpu(id, name = '', index = this.players.size) {
+    return this.addPlayer({
+      id,
+      name: name || `CPU ${index + 1}`,
+      isCpu: true,
+      x: 0.25 + (index % 3) * 0.25,
+      y: 0.7,
+      color: PLAYER_COLORS[index % PLAYER_COLORS.length]
+    });
+  }
+
   removePlayer(id) {
     this.players.get(id)?.destroy();
     this.players.delete(id);

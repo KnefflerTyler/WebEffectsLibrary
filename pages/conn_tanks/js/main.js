@@ -49,7 +49,7 @@ const network = new NetworkManager({
   },
 
   onPlayerJoined: player => {
-    world.addGuest(player.id, player.name, player.index);
+    world.addGuest(player.id, player.name, world.players.size);
     ui.updatePlayerCount(world.players.size);
   },
 
@@ -85,6 +85,10 @@ const network = new NetworkManager({
 const ui = new GameUI({
   onHost: (name, roomCode) => network.host(name, roomCode),
   onJoin: (roomCode, name) => network.join(roomCode, name),
+  onCpuCountChange: count => {
+    if (network.role !== 'host' || !world.setCpuCount(count)) return;
+    ui.updatePlayerCount(world.players.size);
+  },
   onStartGame: async (levels, winsRequired) => {
     ui.setHostStatus(`Loading ${levels[0].name ?? levels[0].id}…`);
     try {

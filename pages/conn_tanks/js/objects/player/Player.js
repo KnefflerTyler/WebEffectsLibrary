@@ -4,6 +4,7 @@ export class Player {
   constructor(options = {}) {
     this.id = options.id ?? '';
     this.name = options.name ?? '';
+    this.isCpu = Boolean(options.isCpu);
     this.color = options.color ?? '#ffffff';
     this.baseMaxHealth = 100;
     this.maxHealth = Math.max(this.baseMaxHealth, Number(options.maxHealth) || this.baseMaxHealth);
@@ -84,6 +85,7 @@ export class Player {
   }
 
   applyState(state) {
+    if (typeof state?.isCpu === 'boolean') this.isCpu = state.isCpu;
     if (Number.isFinite(Number(state?.maxHealth))) {
       this.maxHealth = Math.max(this.baseMaxHealth, Number(state.maxHealth));
     }
@@ -210,12 +212,12 @@ export class Player {
 
   serialize() {
     const {
-      id, name, color, lives, maxHealth,
+      id, name, color, isCpu, lives, maxHealth,
       ammo, maxAmmo, reloading, reloadElapsed, reloadDuration, lobbyRegenElapsed
     } = this;
     const { targetX: x, targetY: y, targetRotation: rotation } = this.tank;
     return {
-      id, name, x, y, rotation, color, lives, maxHealth,
+      id, name, x, y, rotation, color, isCpu, lives, maxHealth,
       ammo, maxAmmo, reloading, reloadElapsed, reloadDuration,
       lobbyRegenElapsed,
       reloadProgress: this.reloadProgress

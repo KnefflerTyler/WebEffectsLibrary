@@ -2,7 +2,7 @@ import CardSelectionView from './cardSelectionView.js';
 import AmmoView from './ammoView.js';
 
 export class GameUI {
-  constructor({ onHost, onJoin, onStartGame, onSelectCard, onGrantCard, onRemoveCard, onEndRound, onExit } = {}) {
+  constructor({ onHost, onJoin, onStartGame, onCpuCountChange, onSelectCard, onGrantCard, onRemoveCard, onEndRound, onExit } = {}) {
     this.elements = {
       menu: document.getElementById('menu'),
       hud: document.getElementById('hud'),
@@ -17,6 +17,7 @@ export class GameUI {
       hostControls: document.getElementById('host-controls'),
       levelList: document.getElementById('level-list'),
       winsRequired: document.getElementById('wins-required'),
+      cpuCount: document.getElementById('cpu-count'),
       startGame: document.getElementById('start-game'),
       hostStatus: document.getElementById('host-status'),
       hostCardControls: document.getElementById('host-card-controls'),
@@ -43,6 +44,11 @@ export class GameUI {
     this.elements.roomCode.addEventListener('click', () => this.copyRoomLink());
     this.elements.hudToggle.addEventListener('click', () => this.toggleHud());
     this.elements.endRound.addEventListener('click', () => onEndRound?.());
+    this.elements.cpuCount.addEventListener('change', () => {
+      const count = this.cpuCount;
+      this.elements.cpuCount.value = String(count);
+      onCpuCountChange?.(count);
+    });
     document.getElementById('exit-game').addEventListener('click', () => onExit?.());
     this.elements.startGame.addEventListener('click', async () => {
       const levels = this.selectedLevels;
@@ -151,6 +157,10 @@ export class GameUI {
     return Math.max(1, Math.min(20, Math.floor(Number(this.elements.winsRequired.value) || 3)));
   }
 
+  get cpuCount() {
+    return Math.max(0, Math.min(5, Math.floor(Number(this.elements.cpuCount.value) || 0)));
+  }
+
   updateMatchState(game, players = [], localId = null) {
     this.players = players;
     this.updateHostCardPlayers(players);
@@ -184,7 +194,7 @@ export class GameUI {
     this.elements.hostCardPlayer.replaceChildren(...players.map(player => {
       const option = document.createElement('option');
       option.value = player.id;
-      option.textContent = player.name || player.id;
+      option.textContent = `${player.name || player.id}${player.isCpu ? ' (CPU)' : ''}`;
       return option;
     }));
     if (players.some(player => player.id === selected)) this.elements.hostCardPlayer.value = selected;

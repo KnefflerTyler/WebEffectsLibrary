@@ -1,6 +1,7 @@
 // #region Imports
 import GameWorld from '../game/gameWorld.js';
 import CardManager, { getCardData } from './CardManager.js';
+import CpuTankController from '../objects/cpu/CpuTankController.js';
 // #endregion
 
 const DEFAULT_HEALTH = 100;
@@ -10,9 +11,14 @@ const LOBBY_LEVEL_FILE = 'lobby.level.json';
 
 export class GameManager {
   // #region Lifecycle
-  constructor(world = new GameWorld(), cardManager = new CardManager()) {
+  constructor(
+    world = new GameWorld(),
+    cardManager = new CardManager(),
+    cpuController = new CpuTankController()
+  ) {
     this.world = world;
     this.cardManager = cardManager;
+    this.cpuController = cpuController;
     this.phase = 'lobby';
     this.winnerId = null;
     this.matchWinnerId = null;
@@ -171,7 +177,16 @@ export class GameManager {
     this.cardManager.createOffers([...this.players.keys()]);
     this.phase = 'cardSelection';
     this.notifyGameStateChanged();
+    this.selectCpuCards();
     return true;
+  }
+
+  selectCpuCards() {
+    for (const player of this.players.values()) {
+      if (!player.isCpu) continue;
+      const offers = this.cardManager.offers[player.id];
+      if (offers?.length) this.selectCard(player.id, offers[Math.floor(Math.random() * offers.length)]);
+    }
   }
 
   selectCard(playerId, cardId) {
@@ -285,8 +300,32 @@ export class GameManager {
     return player;
   }
 
+  addCpu(id, name = '', index = this.players.size) {
+    const player = this.world.addCpu(id, name, index);
+    this.cardManager.ensurePlayer(player.id);
+    this.applyCardModifiers(player.id);
+    return player;
+  }
+
+  setCpuCount(count) {
+    if (this.phase !== 'lobby') return false;
+    const requested = Math.max(0, Math.min(5, Math.floor(Number(count) || 0)));
+    const current = [...this.players.values()].filter(player => player.isCpu);
+    while (current.length > requested) {
+      const player = current.pop();
+      this.removePlayer(player.id);
+    }
+    for (let number = current.length + 1; number <= requested; number += 1) {
+      const id = `cpu-${number}`;
+      this.addCpu(id, `CPU ${number}`, this.players.size);
+    }
+    this.notifyGameStateChanged();
+    return true;
+  }
+
   removePlayer(id) {
     this.world.removePlayer(id);
+    this.cpuController.remove(id);
     this.cardManager.removePlayer(id);
     if (this.phase === 'cardSelection' && this.cardManager.allSelected) this.completeCardSelection();
   }
@@ -343,6 +382,7 @@ export class GameManager {
   // #region Update and Serialization
   update(dt, { authoritative = false } = {}) {
     const activeCombat = this.phase === 'playing' || this.phase === 'lobby';
+    if (authoritative && this.phase === 'playing') this.cpuController.update(this.world, dt);
     this.world.update(dt, {
       authoritative: authoritative && activeCombat,
       behaviorsActive: activeCombat
