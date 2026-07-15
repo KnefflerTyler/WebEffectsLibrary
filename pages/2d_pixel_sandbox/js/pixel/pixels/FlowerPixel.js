@@ -29,6 +29,10 @@ export class FlowerPixel extends Pixel {
   }
 
   update(world, i, x, y) {
-    world.tryIgniteFromNeighbors(i, x, y);
+    if (world.tryIgniteFromNeighbors(i, x, y)) return;
+
+    if (world.tryDisplaceInto(i, x, y + 1, 1)) return;
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    if (Math.random() < 0.25) world.tryDisplaceInto(i, x + dir, y + 1, 1);
   }
 }

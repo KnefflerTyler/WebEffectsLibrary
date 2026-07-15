@@ -1,3 +1,4 @@
+import { CELL_FLAGS } from '../../PixelWorld.js';
 import { MATERIAL } from '../Pixel.js';
 
 export class PlantGrowthHelper {
@@ -241,7 +242,7 @@ export class PlantGrowthHelper {
     const pixel = world.getPixelAtIndex(index);
     if (!pixel.rootGrowThrough && pixel.plantMoisture <= 0) return false;
 
-    return world.setCell(index, MATERIAL.ROOT);
+    return world.setCell(index, MATERIAL.ROOT, 0, { flags: CELL_FLAGS.NO_GRAVITY });
   }
 
   static findMoistureTarget(world, x, y, radius) {
@@ -278,7 +279,7 @@ export class PlantGrowthHelper {
     if (world.isStatic(index)) return false;
     if (!world.getPixelAtIndex(index).plantGrowThrough) return false;
 
-    return world.setCell(index, material, value);
+    return world.setCell(index, material, value, { flags: CELL_FLAGS.NO_GRAVITY });
   }
 
   static tryGrowAerialCell(world, x, y, material, sourceLayer) {

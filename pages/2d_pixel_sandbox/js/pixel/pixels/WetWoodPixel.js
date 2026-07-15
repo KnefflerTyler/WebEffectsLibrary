@@ -34,7 +34,7 @@ export class WetWoodPixel extends Pixel {
     ];
   }
 
-  update(world, i, x, y) {
+  update(world, i, x, y, isStatic = false) {
     if (world.hasNeighborWhere(x, y, (pixel) => pixel.burns)) {
       world.data[i] = Math.max(0, world.data[i] - 5);
       world.emitIntoNeighbor(x, y, MATERIAL.STEAM, 18, 0.25);
@@ -48,7 +48,13 @@ export class WetWoodPixel extends Pixel {
       return;
     }
 
-    world.tryIgniteFromNeighbors(i, x, y);
+    if (world.tryIgniteFromNeighbors(i, x, y)) return;
+
+    if (!isStatic && world.tryDisplaceInto(i, x, y + 1, 1)) return;
+    if (!isStatic) {
+      const dir = Math.random() < 0.5 ? -1 : 1;
+      if (Math.random() < 0.08 && world.tryDisplaceInto(i, x + dir, y + 1, 1)) return;
+    }
     world.keepActive(i);
   }
 }

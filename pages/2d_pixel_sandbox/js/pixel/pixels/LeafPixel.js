@@ -6,6 +6,7 @@ export class LeafPixel extends Pixel {
       id: MATERIAL.LEAF,
       name: 'leaf',
       color: [65, 150, 78],
+      weight: 18,
       flammability: 0.072,
       igniteTemperature: 220,
       fireHeatOutputScale: 0.5,
@@ -25,6 +26,10 @@ export class LeafPixel extends Pixel {
   }
 
   update(world, i, x, y) {
-    world.tryIgniteFromNeighbors(i, x, y);
+    if (world.tryIgniteFromNeighbors(i, x, y)) return;
+
+    if (world.tryDisplaceInto(i, x, y + 1, 1)) return;
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    if (Math.random() < 0.35) world.tryDisplaceInto(i, x + dir, y + 1, 1);
   }
 }
